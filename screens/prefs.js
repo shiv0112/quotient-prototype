@@ -1,0 +1,140 @@
+/* S19 Settings (#prefs). Builder A. One page, no primary button: each row saves on change with a quiet "Saved".
+   Edition section differs for web and desktop (Q.edition()). States via ?state= : disconnect | phrase | loading | error */
+(function(){
+  'use strict';
+  var D = Q.data, A = QD.a, ad = D.adviser;
+  var pf = { cal:true, outlook:false, tg:true, digest:true };
+  var autoOpened = false;
+  Q.on('render', function(r){ if(r.id!=='prefs') autoOpened = false; });
+
+
+  function sec(id, title, hint, body){
+    return '<section class="pf-sec rise" aria-labelledby="pf-'+id+'"><header><div class="pf-h"><h2 id="pf-'+id+'">'+title+'</h2>'+
+      '<span class="pf-saved" data-saved="'+id+'" role="status">'+Q.icon('check','i-sm')+'Saved</span></div>'+(hint?'<p class="hint">'+hint+'</p>':'')+'</header>'+
+      '<div class="pf-body">'+body+'</div></section>';
+  }
+  function conn(logo, title, sub, chip, btn){
+    return '<div class="pf-conn">'+logo+'<span class="who"><b>'+title+'</b><small>'+sub+'</small></span>'+chip+btn+'</div>';
+  }
+  var on = '<span class="chip chip-ok chip-dot desk-only">Connected</span>';
+  function dayLine(d){ return 'Remind me <b class="num">'+d+' day'+(d>1?'s':'')+'</b> after I share.'; }
+
+  function render(p){
+    var web = p.edition!=='desktop';
+    var head = '<header class="page-head rise"><div><h1 class="h1">Settings</h1><p class="sub">Changes save as you go.</p></div></header>';
+    if(p.state==='loading') return '<div class="page pf">'+head+'<div class="pf-list" aria-busy="true">'+[1,2,3,4].map(function(){
+      return '<div class="pf-sec"><span class="skel" style="width:60%"></span><div class="stack" style="gap:12px"><span class="skel skel-lg" style="width:80%"></span><span class="skel" style="width:50%"></span></div></div>'; }).join('')+'</div></div>';
+    var banner = p.state==='error' ? '<div class="banner banner-error rise" role="alert" style="margin-bottom:var(--s-6)">'+Q.icon('alert')+'<p>Can\'t reach Quotient. Your last change didn\'t save.</p><button class="btn-link" data-toast="Saved">Try again</button></div>' : '';
+
+    var account = sec('acct','Account','',
+      '<dl class="pf-rows"><dt>Name</dt><dd>'+Q.esc(ad.name)+'</dd><dt>Email</dt><dd>'+Q.esc(ad.email)+'</dd><dt>Firm</dt><dd>'+Q.esc(ad.firm)+'</dd><dt>Sign-in</dt><dd>Signed in with '+Q.esc(ad.signin)+'</dd></dl>'+
+      '<div><a class="btn btn-secondary" href="#signin">Sign out</a></div>');
+
+    var calendar = sec('cal','Calendar','Your meetings show up in Quotient.',
+      '<div class="pf-stack">'+
+      (pf.cal ? conn(A.logo.google,'Google Calendar',Q.esc(ad.email),on,'<button class="btn btn-secondary btn-sm" data-act="cal-off">Disconnect</button>')
+              : conn(A.logo.google,'Google Calendar','Not connected','','<button class="btn btn-secondary btn-sm" data-act="cal-on">Connect Google Calendar</button>'))+
+      (pf.outlook ? conn(A.logo.microsoft,'Microsoft Outlook',Q.esc(ad.email),on,'<button class="btn btn-secondary btn-sm" data-act="ol-off">Disconnect</button>')
+                  : conn(A.logo.microsoft,'Microsoft Outlook','Not connected','','<button class="btn btn-secondary btn-sm" data-act="ol-on">Connect Microsoft Outlook</button>'))+
+      '</div>');
+
+    var telegram = sec('tg','Telegram','Reminders show case numbers only, never client names.',
+      (pf.tg ? conn(A.logo.telegram,'Connected · '+Q.esc(ad.telegram),'Reminders from '+A.bot,'','<button class="btn btn-secondary btn-sm" data-act="tg-off">Disconnect</button>')
+             : conn(A.logo.telegram,'Not connected','Get follow-up reminders on your phone','','<button class="btn btn-secondary btn-sm" data-act="tg-on">Connect Telegram</button>'))+
+      '<p class="hint phone-only">Reminders show case numbers only, never client names.</p>');
+
+    var wait = sec('wait','Follow-up wait','How long after you share before we remind you.',
+      '<div class="pf-days" role="group" aria-label="Days to wait">'+[1,2,3,4,5,6,7].map(function(i){
+        return '<button aria-pressed="'+(i===ad.waitDays)+'" data-day="'+i+'" aria-label="'+i+' day'+(i>1?'s':'')+'">'+i+'</button>'; }).join('')+'</div>'+
+      '<p class="pf-line" id="pf-dayline" aria-live="polite">'+dayLine(ad.waitDays)+'</p>');
+
+    var digest = sec('dg','Morning digest','Today\'s meetings and who needs you, in one notification.',
+      '<label class="switch"><input type="checkbox" id="pf-dg"'+(pf.digest?' checked':'')+'> Send me a morning digest</label>'+
+      '<div class="pf-time"><label class="label" for="pf-time">Time</label><select class="select" id="pf-time"'+(pf.digest?'':' disabled')+'>'+A.digestTimes.map(function(t){
+        return '<option'+(t===ad.digestTime?' selected':'')+'>'+t+'</option>'; }).join('')+'</select></div>'+
+      '<p class="small device-line">'+Q.icon('device','i-sm')+' Shown on this device only. <a href="#digest">See an example</a></p>');
+
+    var phrase = sec('rp','Recovery phrase','',
+      '<div><button class="btn btn-secondary" data-act="phrase">Show recovery phrase</button></div>'+
+      '<p class="hint">Needed to open your cases on a new device.</p>');
+
+    var edition = sec('ed','Edition','',
+      (web ? '<p class="pf-line">You\'re using the web app. The desktop app adds call audio.</p>'+
+             '<div class="pf-dl"><button class="btn btn-secondary" data-toast="Downloading Quotient for Mac">'+Q.icon('device','i-sm')+'Download for Mac</button>'+
+             '<button class="btn btn-secondary" data-toast="Downloading Quotient for Windows">'+Q.icon('device','i-sm')+'Download for Windows</button></div>'
+           : '<p class="pf-line"><b>Desktop app · version '+A.version+'</b></p><p class="hint">Call audio is available on each meeting. It starts off every time.</p>')+
+      '<div class="pf-proto"><span>Prototype only · Preview as</span><div class="seg"><button data-ed="web" aria-pressed="'+web+'">Web</button><button data-ed="desktop" aria-pressed="'+!web+'">Desktop</button></div></div>');
+
+    return '<div class="page pf">'+head+banner+'<div class="pf-list">'+account+calendar+telegram+wait+digest+phrase+edition+'</div></div>';
+  }
+
+  function saved(pg, id){
+    var s = pg.querySelector('[data-saved="'+id+'"]'); if(!s) return;
+    s.classList.add('on'); clearTimeout(s._t); s._t = setTimeout(function(){ s.classList.remove('on'); }, 2000);
+  }
+  function refreshSaved(id){ Q.refresh(); var pg = document.querySelector('#screen .page'); if(pg) saved(pg, id); }
+
+  function disconnect(kind){
+    var cal = kind==='cal' || kind==='ol', name = kind==='cal' ? 'Google Calendar' : kind==='ol' ? 'Microsoft Outlook' : 'Telegram';
+    return Q.dialog({ title:'Disconnect '+name+'?',
+      body:'<p>'+(cal?'Meetings will stop updating. Your cases stay.':'Reminders will stop. Your cases stay.')+'</p>',
+      actions:[{label:'Cancel',value:'no',kind:'secondary'},{label:'Disconnect',value:'yes',kind:'danger'}], safe:'no' })
+    .then(function(v){ if(v!=='yes') return; pf[kind==='ol'?'outlook':kind] = false; refreshSaved(cal?'cal':'tg'); });
+  }
+  function showWords(){
+    return Q.dialog({ title:'Your recovery phrase',
+      body:'<p>Needed to open your cases on a new device. Keep these words somewhere safe.</p><ol class="pf-words" aria-label="Recovery phrase">'+
+        ad.phrase.map(function(w,i){ return '<li><small>'+(i+1)+'</small><b>'+Q.esc(w)+'</b></li>'; }).join('')+'</ol>',
+      actions:[{label:'Done',value:'done',kind:'secondary'}], safe:'done' });
+  }
+  function askPassword(){
+    var pw = QD.a.demoPassword;
+    Q.dialog({ title:'Show recovery phrase',
+      body:'<p>Type your password first.</p><div class="field" style="margin-top:var(--s-4)"><label class="label" for="pf-pw">Password</label>'+
+        '<input class="input" id="pf-pw" type="password" autocomplete="current-password" value="'+Q.esc(pw)+'" aria-describedby="pf-pw-h pf-pw-e">'+
+        '<span class="hint" id="pf-pw-h">Demo password: '+Q.esc(pw)+'</span><span class="field-error" id="pf-pw-e" role="alert" hidden></span></div>',
+      actions:[{label:'Cancel',value:'no',kind:'secondary'},{label:'Show words',value:'ok',kind:'primary'}], safe:'no',
+      mount:function(w, close){
+        var i = w.querySelector('#pf-pw'), err = w.querySelector('#pf-pw-e'), ok = w.querySelector('.btn-primary');
+        // Only the right password opens the words; the dialog stays open on a wrong or empty one.
+        function check(e){ if(e){ e.preventDefault(); e.stopPropagation(); }
+          var msg = !i.value ? 'Type your password.' : i.value!==pw ? 'That password is not right.' : '';
+          if(!msg){ close('ok'); return; }
+          err.textContent = msg; err.hidden = false; i.setAttribute('aria-invalid','true'); i.focus(); }
+        i.focus(); i.select();
+        i.addEventListener('input', function(){ err.hidden = true; i.removeAttribute('aria-invalid'); });
+        i.addEventListener('keydown', function(e){ if(e.key==='Enter') check(e); });
+        ok.addEventListener('click', check); } })
+    .then(function(v){ if(v==='ok') showWords(); });
+  }
+
+  Q.screen('prefs', {
+    title:'Settings', nav:'prefs',
+    render:render,
+    mount:function(el, p){
+      var pg = el.querySelector('.page'); if(!pg) return;
+      pg.addEventListener('click', function(e){
+        var d = e.target.closest('[data-day]');
+        if(d){ ad.waitDays = +d.dataset.day;
+          pg.querySelectorAll('[data-day]').forEach(function(b){ b.setAttribute('aria-pressed', String(b===d)); });
+          pg.querySelector('#pf-dayline').innerHTML = dayLine(ad.waitDays); saved(pg,'wait'); return; }
+        var ed = e.target.closest('[data-ed]'); if(ed){ Q.edition(ed.dataset.ed); return; }
+        var a = e.target.closest('[data-act]'); if(!a) return;
+        var act = a.dataset.act;
+        if(act==='cal-off') disconnect('cal');
+        if(act==='ol-off') disconnect('ol');
+        if(act==='tg-off') disconnect('tg');
+        if(act==='cal-on'){ pf.cal = true; refreshSaved('cal'); }
+        if(act==='ol-on'){ pf.outlook = true; refreshSaved('cal'); }
+        if(act==='tg-on'){ pf.tg = true; refreshSaved('tg'); }
+        if(act==='phrase') askPassword();
+      });
+      pg.addEventListener('change', function(e){
+        if(e.target.id==='pf-dg'){ pf.digest = e.target.checked; pg.querySelector('#pf-time').disabled = !pf.digest; saved(pg,'dg'); }
+        if(e.target.id==='pf-time'){ ad.digestTime = e.target.value; saved(pg,'dg'); }
+      });
+      if(!autoOpened && p.state==='disconnect'){ autoOpened = true; disconnect('cal'); }
+      if(!autoOpened && p.state==='phrase'){ autoOpened = true; showWords(); }
+    }
+  });
+})();

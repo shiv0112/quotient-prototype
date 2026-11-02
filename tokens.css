@@ -1,0 +1,100 @@
+/* Quotient tokens · Direction 3 "Shophouse Modern" + Direction 2 table treatment.
+   Every visual constant lives here. To swap a direction, replace this file and the font <link> in index.html.
+   Colour rules: --accent (coral) = actions only. --link (teal) = links and things that stay on the device.
+   --confirm* (yellow) = a number or blank the adviser must check. Tile motif only in headers. */
+
+:root{
+  /* fonts */
+  --f-display:'Bricolage Grotesque',ui-sans-serif,system-ui,sans-serif;
+  --f-text:'Plus Jakarta Sans',ui-sans-serif,system-ui,sans-serif;
+
+  /* type scale (1.25 from 15px) */
+  --t-xs:12px; --t-sm:13px; --t-base:15px; --t-md:17px; --t-lg:20px; --t-xl:25px; --t-2xl:31px; --t-3xl:39px; --t-4xl:48px;
+  --lh-tight:1.1; --lh-snug:1.3; --lh-body:1.55;
+  --w-reg:400; --w-med:500; --w-semi:600; --w-bold:700;
+  --track-display:-0.025em; --track-caps:0.08em;
+
+  /* spacing (4px base) */
+  --s-1:4px; --s-2:8px; --s-3:12px; --s-4:16px; --s-5:20px; --s-6:24px; --s-8:32px; --s-10:40px; --s-12:48px; --s-16:64px;
+
+  /* radii */
+  --r-sm:6px; --r-md:10px; --r-lg:16px; --r-xl:22px; --r-pill:999px;
+
+  /* layout */
+  --rail-w:232px; --content-max:1120px; --sheet-w:560px; --target:44px; --gutter:16px;
+
+  /* motion */
+  --dur-1:120ms; --dur-2:200ms; --dur-3:320ms; --dur-4:480ms;
+  --ease-out:cubic-bezier(.2,.7,.2,1); --ease-in:cubic-bezier(.5,0,.75,0); --ease-io:cubic-bezier(.65,0,.35,1);
+
+  /* colour · light */
+  --bg:#F3F6F8;          /* page */
+  --surface:#FFFFFF;     /* cards, inputs */
+  --surface-2:#EAF1F4;   /* quiet fills, table group rows */
+  --line:#D8E2E7;        /* hairlines, borders */
+  --line-strong:#B9C8D1;
+  --ink:#0F2436;         /* marine: primary text */
+  --text-2:#425768;
+  --text-3:#576B7B;
+  --rail:#E8EFF2; --rail-ink:#0F2436; --rail-muted:#4B5F70;
+  --hero:#0F2436; --hero-ink:#F3F6F8; --hero-muted:#AFC0CC; --hero-line:#22394B;
+  --accent:#C2462B; --accent-hover:#A93A21; --on-accent:#FFFFFF; --accent-soft:#FBE9E3;
+  --link:#0B6470; --link-hover:#084C55;
+  --ph-bg:#D9EFF0; --ph-ink:#08505A;           /* placeholders, proof chips, on-device */
+  --confirm-bg:#FFE8A6; --confirm-ink:#563D00; --confirm-line:#E0AE1E;
+  --ok:#1D6B45; --ok-bg:#E2F2E8;
+  --err:#A3271A; --err-bg:#FBE6E2;
+  --danger:#A3271A; --danger-hover:#87200F; --on-danger:#FFFFFF;
+  --paper:#FFFFFF; --paper-ink:#0F2436; --paper-muted:#5D6F7D; --paper-line:#DCE4E8;
+  --paper-hl:#FFE8A6; --paper-mark:#C2462B; /* PDF pages stay paper-coloured in both themes */
+  --scrim:rgba(8,20,30,.42);
+  --focus:#0F2436;
+  --shadow-pop:0 1px 2px rgba(15,36,54,.06),0 12px 32px rgba(15,36,54,.14);
+  --tile:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 56 56'%3E%3Cg fill='none' stroke='%230B6470' stroke-width='1.2' opacity='.22'%3E%3Cpath d='M28 6c6 8 6 14 0 22-6-8-6-14 0-22zM28 50c-6-8-6-14 0-22 6 8 6 14 0 22zM6 28c8-6 14-6 22 0-8 6-14 6-22 0zM50 28c-8 6-14 6-22 0 8-6 14-6 22 0z'/%3E%3Ccircle cx='28' cy='28' r='3'/%3E%3Cpath d='M0 0l8 8M56 0l-8 8M0 56l8-8M56 56l-8-8'/%3E%3C/g%3E%3Ccircle cx='28' cy='28' r='1.6' fill='%23C2462B' opacity='.5'/%3E%3C/svg%3E");
+  color-scheme:light;
+}
+
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0A1824; --surface:#10222F; --surface-2:#152C3C; --line:#22394B; --line-strong:#33506A;
+    --ink:#EAF0F3; --text-2:#B3C3CE; --text-3:#90A6B5;
+    --rail:#071420; --rail-ink:#EAF0F3; --rail-muted:#90A6B5;
+    --hero:#18344A; --hero-ink:#EAF0F3; --hero-muted:#A3B6C3; --hero-line:#2E4C62;
+    --accent:#FF8466; --accent-hover:#FF9C83; --on-accent:#2A0A02; --accent-soft:#3A1D17;
+    --link:#6FD3DC; --link-hover:#9BE4EA;
+    --ph-bg:#0F3E47; --ph-ink:#A6EBF1;
+    --confirm-bg:#45350A; --confirm-ink:#FFD866; --confirm-line:#8C6C12;
+    --ok:#7DD9A6; --ok-bg:#103326;
+    --err:#FF9C8A; --err-bg:#3A1712;
+    --danger:#C93A36; --danger-hover:#B3302C; --on-danger:#FFFFFF;
+    --paper:#E6ECEF; --paper-ink:#0F2436; --paper-muted:#4D5F6C; --paper-line:#C7D2D8;
+    --scrim:rgba(0,0,0,.6);
+    --focus:#EAF0F3;
+    --shadow-pop:0 1px 2px rgba(0,0,0,.3),0 16px 40px rgba(0,0,0,.45);
+    --tile:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 56 56'%3E%3Cg fill='none' stroke='%236FD3DC' stroke-width='1.2' opacity='.16'%3E%3Cpath d='M28 6c6 8 6 14 0 22-6-8-6-14 0-22zM28 50c-6-8-6-14 0-22 6 8 6 14 0 22zM6 28c8-6 14-6 22 0-8 6-14 6-22 0zM50 28c-8 6-14 6-22 0 8-6 14-6 22 0z'/%3E%3Ccircle cx='28' cy='28' r='3'/%3E%3Cpath d='M0 0l8 8M56 0l-8 8M0 56l8-8M56 56l-8-8'/%3E%3C/g%3E%3Ccircle cx='28' cy='28' r='1.6' fill='%23FF8466' opacity='.5'/%3E%3C/svg%3E");
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0A1824; --surface:#10222F; --surface-2:#152C3C; --line:#22394B; --line-strong:#33506A;
+  --ink:#EAF0F3; --text-2:#B3C3CE; --text-3:#90A6B5;
+  --rail:#071420; --rail-ink:#EAF0F3; --rail-muted:#90A6B5;
+  --hero:#18344A; --hero-ink:#EAF0F3; --hero-muted:#A3B6C3; --hero-line:#2E4C62;
+  --accent:#FF8466; --accent-hover:#FF9C83; --on-accent:#2A0A02; --accent-soft:#3A1D17;
+  --link:#6FD3DC; --link-hover:#9BE4EA;
+  --ph-bg:#0F3E47; --ph-ink:#A6EBF1;
+  --confirm-bg:#45350A; --confirm-ink:#FFD866; --confirm-line:#8C6C12;
+  --ok:#7DD9A6; --ok-bg:#103326;
+  --err:#FF9C8A; --err-bg:#3A1712;
+  --danger:#C93A36; --danger-hover:#B3302C; --on-danger:#FFFFFF;
+  --paper:#E6ECEF; --paper-ink:#0F2436; --paper-muted:#4D5F6C; --paper-line:#C7D2D8;
+  --scrim:rgba(0,0,0,.6);
+  --focus:#EAF0F3;
+  --shadow-pop:0 1px 2px rgba(0,0,0,.3),0 16px 40px rgba(0,0,0,.45);
+  --tile:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 56 56'%3E%3Cg fill='none' stroke='%236FD3DC' stroke-width='1.2' opacity='.16'%3E%3Cpath d='M28 6c6 8 6 14 0 22-6-8-6-14 0-22zM28 50c-6-8-6-14 0-22 6 8 6 14 0 22zM6 28c8-6 14-6 22 0-8 6-14 6-22 0zM50 28c-8 6-14 6-22 0 8-6 14-6 22 0z'/%3E%3Ccircle cx='28' cy='28' r='3'/%3E%3Cpath d='M0 0l8 8M56 0l-8 8M0 56l8-8M56 56l-8-8'/%3E%3C/g%3E%3Ccircle cx='28' cy='28' r='1.6' fill='%23FF8466' opacity='.5'/%3E%3C/svg%3E");
+  color-scheme:dark;
+}
+
+@media (prefers-reduced-motion: reduce){
+  :root{--dur-1:0ms;--dur-2:0ms;--dur-3:0ms;--dur-4:0ms}
+}
