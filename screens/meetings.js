@@ -21,12 +21,24 @@
     return '<section class="card s05-sec rise" aria-labelledby="up-h"><div class="card-head"><h2 class="h3" id="up-h">Upcoming</h2><span class="small muted">Notes on means a reminder 10 minutes before. You still press Record.</span></div>'+out+'</section>';
   }
 
+  /* Unfiled quick notes (Record notes, kept unfiled). Filed notes show in Past with their case. */
+  function notesGroup(){
+    var list = M.past.filter(function(m){ return m.kind==='notes' && !m.c; });
+    if(!list.length) return '';
+    return '<section class="card s05-sec rise" aria-labelledby="qn-h"><div class="card-head"><h2 class="h3" id="qn-h">Notes</h2><span class="small muted">Quick notes not filed to a case yet</span></div>'+list.map(function(m){
+      return '<div class="s05-row s05-past"><span class="s05-t">'+m.date+'<small>'+m.time+'</small></span>'+
+        '<span class="s05-who"><a href="#meeting-'+m.id+'">'+Q.esc(m.who)+'</a></span>'+
+        '<span class="stat"><span class="chip">'+Q.icon('mic','i-sm')+'Quick notes · '+Q.esc(m.len||'')+'</span></span>'+
+        '<span class="small muted">No case yet</span>'+
+        '<a class="btn btn-secondary btn-sm open" href="#meeting-'+m.id+'">Open</a></div>'; }).join('')+'</section>';
+  }
+
   function past(){
-    return '<section class="card s05-sec rise" aria-labelledby="past-h"><div class="card-head"><h2 class="h3" id="past-h">Past</h2></div>'+M.past.map(function(m){
+    return '<section class="card s05-sec rise" aria-labelledby="past-h"><div class="card-head"><h2 class="h3" id="past-h">Past</h2></div>'+M.past.filter(function(m){ return !(m.kind==='notes' && !m.c); }).map(function(m){
       var c = m.c ? D.cases[m.c] : null;
       return '<div class="s05-row s05-past"><span class="s05-t">'+m.date+'<small>'+m.time+'</small></span>'+
         '<span class="s05-who"><a href="#meeting-'+m.id+'">'+Q.esc(m.who)+'</a></span>'+
-        '<span class="stat">'+(m.notesReady?'<span class="chip chip-device">'+Q.icon('check','i-sm')+'Notes ready</span>':'<span class="chip">No notes</span>')+'</span>'+
+        '<span class="stat">'+(m.kind==='notes'?'<span class="chip">'+Q.icon('mic','i-sm')+'Quick notes</span>':m.notesReady?'<span class="chip chip-device">'+Q.icon('check','i-sm')+'Notes ready</span>':'<span class="chip">No notes</span>')+'</span>'+
         '<span class="small">'+(c?'<a href="#case-'+m.c+'">Case #'+c.no+'</a>':'<span class="muted">No case yet</span>')+'</span>'+
         '<a class="btn btn-secondary btn-sm open" href="#meeting-'+m.id+'">Open</a></div>'; }).join('')+'</section>';
   }
@@ -59,7 +71,7 @@
     else if(s.s==='week') body = '<div class="empty rise"><h2>No meetings this week.</h2><p>New meetings show up here as soon as they are on your calendar.</p></div>'+past();
     else if(s.s==='loading') body = '<div class="card" aria-busy="true">'+[1,2,3,4].map(function(){ return '<div class="skel-row"><span class="skel" style="width:8%"></span><span class="skel" style="width:30%"></span><span class="skel" style="width:14%"></span><span class="skel" style="width:12%"></span></div>'; }).join('')+'</div>';
     else body = (s.s==='error' ? '<div class="banner banner-error rise" role="alert">'+Q.icon('alert')+'<p>Couldn\'t sync. Showing meetings from 10:02.</p><button class="btn-link" data-act="retry">Try again</button></div>' : '')+
-      live(s.s==='live')+upcoming()+past();
+      live(s.s==='live')+upcoming()+notesGroup()+past();
     return '<div class="page s05">'+demo+head+'<div class="stack">'+body+'</div>'+(s.s==='reminder'?note():'')+'</div>';
   }
 
@@ -84,7 +96,7 @@
       '<div class="field"><label class="label" for="pn-txt">Notes or transcript</label><textarea class="textarea" id="pn-txt" rows="10"></textarea></div>',
       foot:'<button class="btn btn-primary" data-act="save">Save notes</button><button class="btn btn-ghost" data-close>Cancel</button>',
       mount:function(sh){ sh.querySelector('#pn-who').focus();
-        sh.querySelector('[data-act="save"]').addEventListener('click', function(){ Q.closeSheet(); Q.toast('Notes saved on this device'); }); } });
+        sh.querySelector('[data-act="save"]').addEventListener('click', function(){ Q.closeSheet(); Q.toast('Notes saved'); }); } });
   }
   QD.b.pasteSheet = pasteSheet;
 

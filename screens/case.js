@@ -44,13 +44,13 @@
         if(c.shareSent){ h='Revised plan shared with '+first; p='We\'ll remind you on '+D.share.remindOn+' if there\'s no reply.'; btn=a('#nudge-'+key+'-reply', 'Log a reply', 'secondary'); }
         else { h='Share the revised plan with '+first; p='Harbour v2 is S$3,300 a year, down from S$4,200.'; btn=a('#share-'+key, 'Share v2', 'primary', 'share'); }
         break;
-      case 5: n = D.writeup.c===key ? D.writeup.parts.filter(function(x){ return x.ticked; }).length : 0;
-        if(n<4){ h='Finish the write-up · '+n+' of 4 parts ticked'; p=first+' chose '+(c.chose||'a plan')+'.'; btn=a('#writeup-'+key, 'Continue write-up'); }
-        else { h='Write-up ready · copy it to your firm portal'; p='All 4 parts are ticked.'; btn=a('#writeup-'+key, 'Open write-up'); }
+      case 5: n = Q.writeupProgress(key);
+        if(n.done<n.total){ h='Finish the write-up · '+n.done+' of '+n.total+' parts ticked'; p=first+' chose '+(c.chose||'a plan')+'.'; btn=a('#writeup-'+key, 'Continue write-up'); }
+        else { h='Write-up ready · copy it to your firm portal'; p='All '+n.total+' required parts are ticked.'; btn=a('#writeup-'+key, 'Open write-up'); }
         break;
-      case 6: n = D.mas.c===key ? D.mas.checklist.filter(function(x){ return x.done; }).length : 5;
-        if(n<5){ h='Firm review · '+(5-n)+' check'+(5-n>1?'s':'')+' left'; p=first+' is a Selected Client. '+n+' of 5 checks are done.'; btn=a('#mas-'+key, 'Open checklist'); }
-        else { h='Firm review done · Mark won when the policy starts'; p='All 5 checks are ticked. Your firm decides when the policy starts.'; btn='<button class="btn btn-primary" data-act="won">Mark won</button>'; }
+      case 6: n = Q.masProgress(key); var left = n.total-n.done;
+        if(left){ h='Firm review · '+left+' check'+(left>1?'s':'')+' left'; p=first+' is a Selected Client. '+n.done+' of '+n.total+' checks are done.'; btn=a('#mas-'+key, 'Open checklist'); }
+        else { h='Firm review done · Mark won when the policy starts'; p='All '+n.total+' checks are ticked. Your firm decides when the policy starts.'; btn='<button class="btn btn-primary" data-act="won">Mark won</button>'; }
         break;
       default: h='No next step';
     }
@@ -99,13 +99,22 @@
       '<p class="small muted">Click any number to see it on its PDF page.</p></div>'+tabs+table(key, ver)+'</section>';
   }
 
-  function notes(key, c){
-    var tr = D.transcripts[c.meeting==='wei-today'?'wei-oct':c.meeting] || D.transcripts[key+'-oct'];
-    if(!tr) return '';
-    var mid = c.meeting==='wei-today' ? 'wei-oct' : (c.meeting || key+'-oct');
-    return '<details class="card notes rise"><summary><span class="h3">Notes from the meeting</span><span class="small muted">'+tr.lines.length+' lines · on this device</span></summary>'+
-      '<ul class="transcript">'+tr.lines.slice(0,3).map(function(l){ var lab = tr.labels; return '<li><span class="num muted">'+(lab?l[1]:l[0])+'</span>'+(lab?'<b>'+l[0]+'</b>':'')+'<span>'+Q.esc(lab?l[2]:l[1])+'</span></li>'; }).join('')+'</ul>'+
-      '<a href="#meeting-'+mid+'">Open transcript</a></details>';
+  /* Meetings and notes: every calendar meeting and quick note on this case, oldest first. */
+  function meetingsSec(key, c){
+    var list = Q.caseMeetings(key);
+    var rows = list.map(function(x, i){
+      var m = x.m, tr = D.transcripts[m.id], quick = m.kind==='notes';
+      var type = quick ? 'Quick notes' : 'Calendar meeting · '+Q.esc(m.app||'');
+      var lab = x.upcoming ? 'Upcoming' : !tr && !m.notesReady ? 'No notes' : (tr && tr.labels ? 'You and Client' : 'Mic only');
+      var ti = c.selected ? (m.ti ? '<span class="cm-ti">Trusted individual: '+Q.esc(m.ti)+' present</span>' : x.upcoming ? '<span class="cm-ti muted">Trusted individual needed at this meeting (§10D)</span>' : '') : '';
+      return '<li><span class="cm-when num"><b>'+Q.esc(x.upcoming && m.day==='Today' ? 'Today' : m.date)+'</b><small>'+Q.esc(m.time)+'</small></span>'+
+        '<span class="cm-what"><span>'+(quick?Q.icon('mic','i-sm'):Q.icon(m.app==='In person'?'meetings':'video','i-sm'))+type+'</span>'+
+        '<small class="muted">Meeting '+(i+1)+' of '+list.length+(m.len?'<span class="dot-sep"></span>'+Q.esc(m.len):'')+'<span class="dot-sep"></span>'+lab+'</small>'+ti+'</span>'+
+        '<a class="btn btn-ghost btn-sm" href="#meeting-'+m.id+'">'+(x.upcoming?'Open':'Transcript')+'</a></li>'; }).join('');
+    return '<section class="card cm rise" aria-labelledby="cm-h"><div class="cm-head"><div><h2 class="h3" id="cm-h">Meetings and notes</h2>'+
+      '<p class="small muted">'+(list.length ? list.length+' on this case · transcripts stay on this device' : 'No meetings yet')+'</p></div>'+
+      '<button class="btn btn-secondary btn-sm" data-quick-notes="'+key+'">'+Q.icon('mic','i-sm')+'Record notes for this case</button></div>'+
+      (rows ? '<ol class="cm-list">'+rows+'</ol>' : '')+'</section>';
   }
 
   function switcher(key){
@@ -128,7 +137,7 @@
           '<button role="menuitem" data-act="won">Mark won</button><button role="menuitem" data-act="lost">Mark lost</button>'+
           '<button role="menuitem" data-go="#new-case-'+key+'">Add plans</button><button role="menuitem" class="danger" data-act="delete">Delete case</button></div></div></header>'+
       '<section class="rise" aria-label="Progress">'+timeline(c)+'</section>'+
-      nextStep(key, c)+comparison(key, c, p.state)+notes(key, c)+
+      nextStep(key, c)+comparison(key, c, p.state)+meetingsSec(key, c)+
       '<p class="case-foot rise">'+Q.icon('device','i-sm')+'<a href="#sent-'+key+'">What left your device for this case</a><span class="muted">'+(sends?sends+' send'+(sends>1?'s':''):'Nothing sent')+'</span></p>'+
     '</div>';
   }

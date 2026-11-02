@@ -9,17 +9,20 @@
   var gate = {
     compare: { map:[ ['Wei Tan','[CLIENT]','Name'], ['Tan Jia Hui','[CHILD 1]','Child\'s name'], ['Tan Jia Le','[CHILD 2]','Child\'s name'],
         ['Straits Freight Pte Ltd','[EMPLOYER]','Employer'], ['14 Mar 1991','age 35','Date of birth'], ['9123 4567','removed','Phone'] ],
-      cards: D.gate.compare.cards, known: D.gate.compare.known },
+      cards: D.gate.compare.cards.map(function(c,i){ return i===0 ? { src:'Your notes · Wed 28 Oct meeting', mid:'wei-oct', text:c.text } : c; }), known: D.gate.compare.known },
     writeup: { map:[ ['Siti Nur','[CLIENT]','Name'], ['Changi Health Group','[EMPLOYER]','Employer'], ['2 Jun 1993','age 33','Date of birth'], ['S8812345D','removed','NRIC'] ],
       cards:[
-        { src:'Your notes', text:'[CLIENT], age 33, nurse at [EMPLOYER]. Two young children. Wants cover until age 65 while the children are young. [CLIENT] said a premium under S$3,500 a year is comfortable.' },
+        { src:'Your notes · Tue 13 Oct meeting', mid:'siti-oct13', text:'[CLIENT], age 33, nurse at [EMPLOYER]. Two young children who need support until they finish school. Wants cover until age 65 while the children are young. Income about S$5,800 a month, home loan about S$1,600 a month. [CLIENT] said a premium under S$3,500 a year is comfortable.' },
+        { src:'Your notes · Thu 29 Oct meeting', mid:'siti-oct29', text:'[CLIENT] chose the revised Harbour plan. Not replacing any policy. [CLIENT] understands illustrated values are not guaranteed.' },
         { src:'Chosen plan · Harbour Assurance v2', text:'Annual premium S$3,300, premium term 20 years, sum assured S$165,000, early critical illness rider. Illustrated values at 3.00% and 4.25% a year are not guaranteed.' },
         { src:'Other plans', text:'Meridian Life: premium term 25 years. Orchid Mutual: no riders. [CLIENT] asked to keep the critical illness rider. [CLIENT] compared all three on Mon 19 Oct.' } ] },
     'compare-daniel': { map:[ ['Daniel Lee','[CLIENT]','Name'] ], known: D.gate.compare.known,
-      cards:[ { src:'Your notes', text:'[CLIENT], age 31. Group cover from work only. Hoping to start a family in two years. Budget about S$3,000 a year.' } ] },
+      cards:[ { src:'Your notes · Mon 2 Nov meeting', mid:'daniel-past', text:'[CLIENT], age 31. Group cover from work only. Hoping to start a family in two years. Budget about S$3,000 a year.' } ] },
     nudge: { map:[ ['Priya Krishnan','[CLIENT]','Name'] ], cards: D.gate.nudge.cards },
     'mas-suggest': { map:[ ['Marcus Raj','[CLIENT]','Name'], ['8 Jul 1962','age 64','Date of birth'] ],
-      cards:[ { src:'Meeting · Tue 27 Oct', text:'[CLIENT], age 64. 02:15 "Can we go through it in Mandarin?" 04:02 "My daughter will come for the next meeting." [CLIENT] did not mention schooling.' } ] }
+      cards:[ { src:'Your notes · Tue 27 Oct meeting', mid:'marcus-oct', text:'[CLIENT], age 64. 02:15 "Can we go through it in Mandarin?" 04:02 "My daughter will help me read the English papers." [CLIENT] did not mention schooling.' },
+              { src:'Your notes · Thu 29 Oct meeting', mid:'marcus-oct29', text:'[CLIENT]\'s daughter went through the three plans with [CLIENT] in Mandarin. [CLIENT] prefers Harbour for the shorter premium term.' },
+              { src:'Your notes · Mon 2 Nov meeting', mid:'marcus-nov2', text:'[CLIENT] and the adviser signed the Selected Client declaration. [CLIENT] was told to expect a call-back from the supervisor.' } ] }
   };
 
   /* After Send: processing copy and where each flow lands. lift = the returning line where names go back in. */
@@ -95,6 +98,14 @@
   function reEsc(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
   QB.WORD = /[A-Za-z0-9$][A-Za-z0-9$,.'’-]*[A-Za-z0-9]|[A-Za-z0-9]/g;
 
+  /* Which meetings and notes feed "Your notes" for a case (default: every held meeting with notes). Shared by New case and the gate. */
+  var picks = {};
+  QB.pick = function(key, ids){
+    if(ids) picks[key] = ids;
+    if(!picks[key]) picks[key] = Q.caseMeetings(key).filter(function(x){ return !x.upcoming && x.m.notesReady; }).map(function(x){ return x.m.id; });
+    return picks[key];
+  };
+
   /* The text as it will be sent, after the adviser's edits. */
   QB.view = function(key){
     var f = QB.feature(key), g = gate[f], e = QB.edits(key);
@@ -105,13 +116,14 @@
     var byPh = {}; reps.forEach(function(r){ byPh[r.ph] = r; });
     var rx = reps.length ? new RegExp('('+reps.map(function(r){ return reEsc(r.ph); }).sort(function(a,b){ return b.length-a.length; }).join('|')+')') : null;
     var chars = 0;
-    var cards = (g.cards||[]).map(function(c){
+    var pick = QB.pick(key);
+    var cards = (g.cards||[]).filter(function(c){ return !c.mid || pick.indexOf(c.mid)>=0; }).map(function(c){
       var t = c.text;
       g.map.forEach(function(m){ if(e.shown.indexOf(m[1])>=0) t = t.split(m[1]).join(m[0]); });
       e.hidden.forEach(function(w,i){ t = t.replace(new RegExp('(^|[^A-Za-z0-9$\'’-])'+reEsc(w)+'(?=$|[^A-Za-z0-9$\'’-])','g'), '$1[HIDDEN '+(i+1)+']'); });
       var parts = rx ? t.split(rx).filter(function(s){ return s!==''; }).map(function(s){
         var r = byPh[s]; if(r){ r.n++; return { ph:s, r:r }; } return { s:s }; }) : [{ s:t }];
-      return { src:c.src, parts:parts, text:t };
+      return { src:c.src, mid:c.mid, parts:parts, text:t };
     });
     chars = cards.map(function(c){ return c.text; }).join('\n\n').length;
     var rows = reps.filter(function(r){ return r.n; }).concat(removed);

@@ -56,8 +56,9 @@ body.focus .rail,body.focus .tabbar{display:none}
 .tabbar{display:none}
 
 /* tile motif: headers only */
-.tiled{position:relative;overflow:hidden;isolation:isolate}
-.tiled::after{content:"";position:absolute;inset:0 0 0 auto;width:min(46%,420px);background:var(--tile);background-size:44px 44px;-webkit-mask-image:linear-gradient(90deg,transparent,#000 70%);mask-image:linear-gradient(90deg,transparent,#000 70%);pointer-events:none;z-index:-1}
+.tiled{position:relative;isolation:isolate}
+/* No overflow clip on the header (menus must escape it); the tile clips itself to the card's corners. */
+.tiled::after{content:"";position:absolute;inset:0 0 0 auto;border-radius:inherit;width:min(46%,420px);background:var(--tile);background-size:44px 44px;-webkit-mask-image:linear-gradient(90deg,transparent,#000 70%);mask-image:linear-gradient(90deg,transparent,#000 70%);pointer-events:none;z-index:-1}
 
 /* ---------- buttons ---------- */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--s-2);min-height:var(--target);padding:0 var(--s-5);border-radius:var(--r-md);border:1px solid transparent;font-size:var(--t-base);font-weight:var(--w-semi);line-height:1;white-space:nowrap;text-decoration:none;transition:background var(--dur-1) var(--ease-out),border-color var(--dur-1) var(--ease-out),color var(--dur-1) var(--ease-out),transform var(--dur-1) var(--ease-out)}
@@ -290,6 +291,8 @@ button.proof,a.proof{border:0;cursor:pointer;text-decoration:none}
 .menu{position:relative}
 .menu-pop{position:absolute;right:0;top:calc(100% + 6px);min-width:200px;padding:var(--s-2);background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);box-shadow:var(--shadow-pop);z-index:20;display:none}
 .menu.open .menu-pop{display:block}
+/* An open menu lifts its stacking context (e.g. the isolated tiled header) above the cards that follow. */
+.tiled:has(.menu.open),.card:has(.menu.open),.rise:has(.menu.open){position:relative;z-index:25}
 .menu-pop button{display:flex;width:100%;min-height:40px;align-items:center;padding:0 var(--s-3);border:0;background:none;border-radius:var(--r-sm);text-align:left;font-size:var(--t-sm);font-weight:var(--w-med)}
 .menu-pop button:hover{background:var(--surface-2)}
 .menu-pop .danger{color:var(--danger)}
@@ -327,8 +330,9 @@ button.proof,a.proof{border:0;cursor:pointer;text-decoration:none}
   :root{--rail-w:0px}
   .shell{grid-template-columns:minmax(0,1fr)}
   .rail{display:none}
-  .tabbar{display:grid;grid-template-columns:repeat(4,1fr);position:fixed;left:0;right:0;bottom:0;z-index:35;background:var(--rail);border-top:1px solid var(--line);padding:4px 4px calc(4px + env(safe-area-inset-bottom))}
-  .tabbar a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:52px;border-radius:var(--r-md);color:var(--rail-muted);font-size:11px;font-weight:var(--w-semi);text-decoration:none}
+  .tabbar{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;z-index:35;background:var(--rail);border-top:1px solid var(--line);padding:4px 4px calc(4px + env(safe-area-inset-bottom))}
+  .tabbar button{font:inherit;border:0;background:none;cursor:pointer}
+  .tabbar a,.tabbar button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:52px;border-radius:var(--r-md);color:var(--rail-muted);font-size:11px;font-weight:var(--w-semi);text-decoration:none}
   .tabbar a[aria-current="page"]{color:var(--rail-ink);background:var(--surface)}
   .page{padding:var(--s-6) var(--gutter) 120px}
   body.focus .page{padding-bottom:var(--s-12)}
@@ -1144,3 +1148,47 @@ button.blank:hover{box-shadow:inset 0 -2.5px 0 var(--confirm-line)}
 
 /* Phone: focus-mode top bars leave room for the Demo pill (prototype only) */
 @media (max-width:760px){ .ob-top,.dgst-top{padding-right:100px;gap:var(--s-3)} .ob-prog,.dgst-top>*{white-space:nowrap} .ob-segs{grid-template-columns:repeat(4,20px)} }
+
+/* case: meetings and notes (screens/case.js) */
+.cm-head{display:flex;justify-content:space-between;align-items:flex-start;gap:var(--s-4);flex-wrap:wrap}
+.cm-list{list-style:none;margin:var(--s-4) 0 0;padding:0}
+.cm-list>li{display:grid;grid-template-columns:88px minmax(0,1fr) auto;gap:var(--s-4);align-items:center;padding:var(--s-3) 0;border-top:1px solid var(--line)}
+.cm-when b{display:block;font-weight:var(--w-semi)}
+.cm-when small{color:var(--text-3);font-size:var(--t-sm)}
+.cm-what{display:flex;flex-direction:column;gap:2px;min-width:0}
+.cm-what>span:first-child{display:inline-flex;align-items:center;gap:6px;font-weight:var(--w-med)}
+.cm-what small{font-size:var(--t-sm)}
+.cm-ti{font-size:var(--t-sm);color:var(--text-2)}
+@media (max-width:760px){.cm-list>li{grid-template-columns:64px minmax(0,1fr);gap:var(--s-1) var(--s-3)}.cm-list .btn{grid-column:2;justify-self:start}.cm-head .btn{width:100%}}
+
+/* Record notes: rail, phone bar and the save sheet (screens/quicknotes.js) */
+.rail .rail-notes{width:100%;margin-top:calc(-1*var(--s-4))}
+.qn-opts{border:0;padding:0;margin:0;min-width:0;display:flex;flex-direction:column;gap:var(--s-2)}
+.qn-opts .select{margin:var(--s-1) 0 0 28px;width:calc(100% - 28px)}
+.qn-busy{display:flex;align-items:center;gap:var(--s-3)}
+.s07-notes{display:flex;flex-direction:column;gap:var(--s-2);max-width:560px;border:0;padding:0;margin:0}
+.s08-pick{display:flex;flex-direction:column;gap:var(--s-2);margin-bottom:var(--s-5)}
+
+/* write-up: FAA-N16 §35 parts (screens/writeup.js) */
+.wu-ref{flex:none}
+.wu-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;line-height:1.7}
+.wu-list li{padding-left:var(--s-4);position:relative}
+.wu-list li::before{content:"";position:absolute;left:0;top:.8em;width:5px;height:5px;border-radius:50%;background:var(--line-strong)}
+.wu-pf .btn-link{margin-left:auto}
+.wu-cond{display:flex;align-items:center;justify-content:space-between;gap:var(--s-4);padding-top:var(--s-4);padding-bottom:var(--s-4);background:var(--surface-2)}
+.wu-cond p{display:flex;align-items:center;flex-wrap:wrap}
+.wu-foot{display:flex;flex-direction:column;gap:var(--s-2);font-size:var(--t-sm);color:var(--text-2);padding:0 var(--s-2)}
+.wu-foot p{display:flex;gap:var(--s-2);align-items:flex-start}
+.wu-foot .i{margin-top:3px;flex:none;color:var(--text-3)}
+@media (max-width:760px){.wu-ph{flex-wrap:wrap}.wu-ph h2{flex-basis:calc(100% - 44px)}}
+
+/* MAS checks: notice detail (screens/mas.js) */
+.mas-det{margin-top:var(--s-1);font-size:var(--t-sm);color:var(--text-2)}
+.mas-det summary{cursor:pointer;color:var(--link);font-weight:var(--w-semi);min-height:32px;display:inline-flex;align-items:center}
+.mas-detb{display:flex;flex-direction:column;gap:var(--s-2);padding:var(--s-2) 0 var(--s-1);max-width:68ch}
+.mas-detb .check{font-size:var(--t-sm);align-items:flex-start}
+.mas-crit{margin:0;padding-left:var(--s-5);display:flex;flex-direction:column;gap:2px}
+.mas-path{align-self:flex-start;flex-wrap:wrap}
+.mas-why{font-style:italic;color:var(--ink)}
+.mas-10b{align-self:flex-start;margin-top:var(--s-2);white-space:normal;text-align:left;height:auto;min-height:40px;padding-top:6px;padding-bottom:6px;line-height:1.35;padding:8px 12px}
+.mas-review>.switch{font-size:var(--t-sm)}

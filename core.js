@@ -19,6 +19,9 @@
                             cases, writeup, mas and meetings to sessionStorage, so the state is shared by all screens.
                             ?reset (or Demo > Reset demo data) starts fresh.
      Q.status(caseKey)      {why, btn, go, needs}: the one short next step, used by Today, Cases and Case.
+     Q.writeupProgress(k) / Q.masProgress(k)  {done,total}: the one count for write-up parts and firm review checks.
+     Q.caseMeetings(k)      [{m, upcoming}] every meeting and quick note on a case, oldest first.  Q.meetingById(id) -> {m, past}.
+     [data-quick-notes]     any button starts Record notes (screens/quicknotes.js); ='<case>' pre-picks that case.
      Q.go('#case-wei')      navigate.          Q.refresh()   re-render current screen, keeps scroll, no entrance motion.
      Q.state()              'normal'|'empty'|'error'|'loading'  (demo toolbar). Render the matching state.
      Q.edition()            'web'|'desktop'.   Q.theme(t?) get/set 'light'|'dark'|'system'.
@@ -42,13 +45,13 @@
   var qs = new URLSearchParams(location.search);
 
   /* ---------- shared case state (one store, all screens) ---------- */
-  var SAVED = ['cases','writeup','mas','meetings'];
+  var SAVED = ['cases','writeup','mas','meetings','transcripts'], VER = 2; // bump VER when the data shape changes
   try{
     if(qs.has('reset')) sessionStorage.removeItem('q-data');
     var saved = JSON.parse(sessionStorage.getItem('q-data') || 'null');
-    if(saved) SAVED.forEach(function(k){ if(saved[k]) Q.data[k] = saved[k]; });
+    if(saved && saved.v===VER) SAVED.forEach(function(k){ if(saved[k]) Q.data[k] = saved[k]; });
   }catch(e){}
-  Q.save = function(){ try{ var o = {}; SAVED.forEach(function(k){ o[k] = Q.data[k]; }); sessionStorage.setItem('q-data', JSON.stringify(o)); }catch(e){} };
+  Q.save = function(){ try{ var o = { v:VER }; SAVED.forEach(function(k){ o[k] = Q.data[k]; }); sessionStorage.setItem('q-data', JSON.stringify(o)); }catch(e){} };
   Q.resetData = function(){ try{ sessionStorage.removeItem('q-data'); }catch(e){} location.reload(); };
 
   /* ---------- small utils ---------- */
@@ -76,12 +79,38 @@
       case 3: return s('Replied · note the plan '+c.first+' chose', 'Open', '#case-'+k, true);
       case 4: return c.shareSent ? s('Revised plan shared · reminder '+D.share.remindOn, 'Log reply', '#nudge-'+k+'-reply')
                                  : s('Revised plan ready to share', 'Share v2', '#share-'+k, true);
-      case 5: n = D.writeup.c===k ? D.writeup.parts.filter(function(p){ return p.ticked; }).length : 0;
-        return n<4 ? s('Write-up · '+n+' of 4 parts done', 'Continue', '#writeup-'+k, true) : s('Write-up ready to copy', 'Copy', '#writeup-'+k, true);
-      case 6: n = D.mas.c===k ? D.mas.checklist.filter(function(x){ return !x.done; }).length : 0;
+      case 5: n = Q.writeupProgress(k);
+        return n.done<n.total ? s('Write-up · '+n.done+' of '+n.total+' parts done', 'Continue', '#writeup-'+k, true) : s('Write-up ready to copy', 'Copy', '#writeup-'+k, true);
+      case 6: n = Q.masProgress(k); n = n.total - n.done;
         return n ? s('Firm review · '+n+' check'+(n>1?'s':'')+' left', 'Open', '#mas-'+k, true) : s('Firm review done · mark won when the policy starts', 'Open', '#case-'+k);
     }
     return s('Open case', 'Open', '#case-'+k);
+  };
+  /* Write-up progress: required parts (plus conditional parts that apply) ticked. Optional parts never count. */
+  Q.wuCounts = function(p){ return p.need==='req' || (p.need==='cond' && p.on); };
+  Q.writeupProgress = function(k){
+    var W = Q.data.writeup; if(W.c!==k) return { done:0, total:3 };
+    var req = W.parts.filter(Q.wuCounts);
+    return { done:req.filter(function(p){ return p.ticked; }).length, total:req.length };
+  };
+  /* Firm review progress (FAA-N16 safeguards). A call-back not needed because a supervisor was there throughout counts as done. */
+  Q.masDone = function(x){ return x.done || (x.id==='call' && x.sup); };
+  Q.masProgress = function(k){
+    var M = Q.data.mas; if(M.c!==k) return { done:5, total:5 };
+    return { done:M.checklist.filter(Q.masDone).length, total:M.checklist.length };
+  };
+  /* All meetings and quick notes for a case, oldest first. Each: {m, upcoming}. */
+  Q.caseMeetings = function(k){
+    var M = Q.data.meetings, out = [];
+    M.past.forEach(function(m){ if(m.c===k) out.push({ m:m, upcoming:false }); });
+    M.upcoming.forEach(function(m){ if(m.c===k && !m.internal) out.push({ m:m, upcoming:true }); });
+    return out.sort(function(a,b){ return (a.m.at||'') < (b.m.at||'') ? -1 : 1; });
+  };
+  Q.meetingById = function(id){
+    var M = Q.data.meetings, u = M.upcoming.filter(function(m){ return m.id===id; })[0];
+    if(u) return { m:u, past:false };
+    var p = M.past.filter(function(m){ return m.id===id; })[0];
+    return p ? { m:p, past:true } : null;
   };
   /* Cases that need the adviser, most urgent first. */
   Q.needs = function(){

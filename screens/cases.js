@@ -1,4 +1,4 @@
-/* S18 Cases (#cases[-<state>]). Filters: Needs you (default) / In progress / Closed. Search runs on this device.
+/* S18 Cases (#cases[-<state>]). Filters: Needs you (default) / In progress / Closed. Search filters the list.
    States: needs, progress, closed, noresults, empty, loading, error. */
 (function(){
   'use strict';
@@ -45,7 +45,7 @@
     else list = (q?'<p class="cs-scope" aria-live="polite">'+keys.length+' result'+(keys.length>1?'s':'')+' in all cases</p>':'')+
       '<div class="card cs-card"><div class="cs-row cs-headrow" aria-hidden="true"><span>Client</span><span>Stage</span><span>Next step</span><span class="cs-last">Last activity</span><span></span></div>'+
       '<ul class="list cs-list">'+keys.map(row).join('')+'</ul></div>';
-    return '<div class="page">'+chips+head+tools+'<div id="cs-res">'+list+'</div><p class="cs-dev">'+Q.icon('device','i-sm')+'Search runs on this device.</p></div>';
+    return '<div class="page">'+chips+head+tools+'<div id="cs-res">'+list+'</div></div>';
   }
 
   function mount(el){

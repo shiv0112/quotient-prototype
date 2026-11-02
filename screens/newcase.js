@@ -24,7 +24,6 @@
     var tooMany = st.files.length>4;
     var ok = good.length>=2 && good.length<=4 && !bad.length && !tooMany;
     var why = tooMany ? 'Up to 4 plans at a time.' : bad.length ? 'Remove the files marked in red.' : good.length===1 ? 'Add at least one more PDF to compare.' : good.length===0 ? 'Add 2 to 4 PDFs to compare.' : '';
-    var mtg = key==='daniel' ? 'Daniel Lee · Mon 2 Nov 16:00 · transcript' : key==='alvin' ? 'Alvin Lim · Mon 26 Oct · transcript' : 'Wei Tan · Today 11:00 · transcript';
     var title = c ? 'Add plans · '+c.name+' #'+c.no : 'New case';
     var drop = '<div class="s07-drop'+(st.files.length?' small':'')+(st.over?' over':'')+'" data-drop>'+
       '<span class="ic">'+Q.icon('file')+'</span>'+
@@ -42,14 +41,26 @@
       (c?'<a class="back" href="#case-'+key+'">'+Q.icon('back','i-sm')+'Back to '+Q.esc(c.name)+'</a>':'')+
       '<header class="page-head rise"><div><h1 class="h1">'+Q.esc(title)+'</h1><p class="sub">Your PDFs are read on this device. Nothing is sent until you see exactly what goes.</p></div></header>'+
       '<form class="s07-form rise" novalidate onsubmit="return false">'+
-        (c?'':'<div class="field s07-name"><label class="label" for="nc-name">Client name</label><input class="input" id="nc-name" autocomplete="off" value="'+Q.esc(st.name)+'"><span class="hint">'+Q.icon('device','i-sm')+'Stays on this device until you choose to share</span></div>')+
+        (c?'':'<div class="field s07-name"><label class="label" for="nc-name">Client name</label><input class="input" id="nc-name" autocomplete="off" value="'+Q.esc(st.name)+'"></div>')+
         '<div class="field"><span class="label" id="pdf-l">Policy illustrations</span>'+drop+'</div>'+banner+files+
-        '<div class="field" style="max-width:420px"><label class="label" for="nc-notes">Use notes from</label><select class="select" id="nc-notes">'+
-          '<option value="meeting"'+(st.notes==='meeting'?' selected':'')+'>'+Q.esc(mtg)+'</option><option value="paste"'+(st.notes==='paste'?' selected':'')+'>Paste notes</option><option value="none"'+(st.notes==='none'?' selected':'')+'>No notes</option></select></div>'+
+        notesPicker(key)+
         '<div class="s07-acts"><button class="btn btn-primary" data-act="compare"'+(ok?'':' aria-disabled="true" title="'+Q.esc(why)+'"')+'>Compare plans</button>'+
         '<a class="btn btn-ghost" href="'+(c?'#case-'+key:'#today')+'">Cancel</a>'+(why?'<span class="why" aria-live="polite">'+Q.esc(why)+'</span>':'')+'</div>'+
       '</form></div>';
     // keep dest for mount
+  }
+
+  /* Which meetings and notes to use (default: all held meetings on the case). Shared with the privacy gate through QB.pick. */
+  function notesPicker(key){
+    var list = key ? Q.caseMeetings(key).filter(function(x){ return !x.upcoming && x.m.notesReady; }).map(function(x){ return x.m; })
+                   : D.meetings.past.filter(function(m){ return !m.c && m.notesReady; });
+    var pick = QB.pick(key);
+    var rows = list.map(function(m){
+      return '<label class="check"><input type="checkbox" data-nc-pick="'+m.id+'"'+(pick.indexOf(m.id)>=0?' checked':'')+'> '+
+        Q.esc(m.kind==='notes' ? m.who : (m.date+' '+m.time+' · '+(m.app||'Meeting')))+' <span class="muted small">'+(m.kind==='notes'?'quick notes':'meeting')+(m.len?' · '+Q.esc(m.len):'')+'</span></label>'; }).join('');
+    return '<fieldset class="field s07-notes"><legend class="label">Use notes from</legend>'+
+      (rows || '<p class="small muted">'+(key?'No notes on this case yet.':'No unfiled notes.')+'</p>')+
+      '<button type="button" class="btn-link" data-act="paste" style="align-self:flex-start">Paste notes instead</button></fieldset>';
   }
 
   function fromFile(f){
@@ -67,6 +78,7 @@
     pg.addEventListener('click', function(e){
       var rm = e.target.closest('[data-rm]'); if(rm){ st.files.splice(+rm.dataset.rm,1); Q.refresh(); var d = document.querySelector('[data-drop] label'); if(d) d.focus(); return; }
       var a = e.target.closest('[data-act]'); if(!a) return;
+      if(a.dataset.act==='paste'){ QD.b.pasteSheet(); return; }
       if(a.dataset.act==='sample'){ st.files = ['harbour','meridian','orchid'].map(function(k){ return F[k]; }); if(!st.name) st.name = 'Wei Tan'; Q.refresh(); }
       if(a.dataset.act==='compare'){ if(a.getAttribute('aria-disabled')==='true') return;
         // Each case goes to its own gate. A case that already has plans has no demo gate for new ones.
@@ -76,7 +88,8 @@
     });
     pg.addEventListener('change', function(e){
       if(e.target.matches('[data-pick]')) add(e.target.files);
-      if(e.target.id==='nc-notes') st.notes = e.target.value;
+      var pk = e.target.closest('[data-nc-pick]');
+      if(pk){ var cur = QB.pick(key), i = cur.indexOf(pk.dataset.ncPick); if(pk.checked && i<0) cur.push(pk.dataset.ncPick); if(!pk.checked && i>=0) cur.splice(i,1); }
     });
     pg.addEventListener('input', function(e){ if(e.target.id==='nc-name') st.name = e.target.value; });
     ['dragenter','dragover'].forEach(function(t){ drop.addEventListener(t, function(e){ e.preventDefault(); drop.classList.add('over'); }); });

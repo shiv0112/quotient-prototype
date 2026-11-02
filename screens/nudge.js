@@ -38,7 +38,7 @@
     else if(st==='reply') body = '<section class="card ng-draft" aria-labelledby="ng-r"><h2 class="h3" id="ng-r">What did '+Q.esc(c.first)+' say?</h2>'+
       '<div class="ng-opts" role="radiogroup" aria-labelledby="ng-r">'+['Wants to go ahead','Has questions','Wants a revised quote','Not interested'].map(function(o,i){
         return '<label class="check"><input type="radio" name="ng-why" value="'+o+'"'+(i===1?' checked':'')+'> '+o+'</label>'; }).join('')+'</div>'+
-      '<div class="field"><label class="label" for="ng-note">Note <span class="muted" style="font-weight:400">(optional, stays on this device)</span></label><textarea class="textarea" id="ng-note" rows="3" placeholder="What they asked or said"></textarea></div></section>'+
+      '<div class="field"><label class="label" for="ng-note">Note <span class="muted" style="font-weight:400">(optional)</span></label><textarea class="textarea" id="ng-note" rows="3" placeholder="What they asked or said"></textarea></div></section>'+
       '<div class="ng-acts"><button class="btn btn-primary" data-act="savereply">Save reply</button><div class="row"><button class="btn btn-ghost" data-act="back">Cancel</button></div></div>';
     else {
       var share = ui.method==='share', isWeb = p.edition!=='desktop';

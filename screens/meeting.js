@@ -5,11 +5,12 @@
   var D = Q.data, B = QD.b, MS = {}, ticker = null, askNow = false;
 
 
-  function find(id){
-    var u = D.meetings.upcoming.filter(function(m){ return m.id===id; })[0];
-    if(u) return { m:u, past:false };
-    var p = D.meetings.past.filter(function(m){ return m.id===id; })[0];
-    return p ? { m:p, past:true } : null;
+  function find(id){ return Q.meetingById(id); }
+  /* "Case #402 · meeting 2 of 2" */
+  function caseLine(x){
+    var c = x.m.c ? D.cases[x.m.c] : null; if(!c) return 'No case yet';
+    var list = Q.caseMeetings(x.m.c), i = list.map(function(z){ return z.m.id; }).indexOf(x.m.id);
+    return '<a href="#case-'+x.m.c+'">Case #'+c.no+'</a> · meeting '+(i+1)+' of '+list.length;
   }
   function stamp(i){ var s = 12 + i*41; return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0'); }
   function state(id){
@@ -143,11 +144,13 @@
     var s = QB.local('meeting', STATES.map(function(z){ return z[0]; }), 'none', p);
     if(s.fresh && s.s!=='none') apply(id, s.s);
     var c = x.m.c ? D.cases[x.m.c] : null;
-    var when = x.past ? x.m.date+' '+x.m.time : x.m.day+' '+x.m.time;
+    var when = x.past ? x.m.date+' '+x.m.time : x.m.day+' '+x.m.time, quick = x.m.kind==='notes';
     var states = STATES.filter(function(z){ return Q.edition()==='desktop' || (z[0]!=='call' && z[0]!=='callperm'); });
     var head = '<a class="back" href="#meetings">'+Q.icon('back','i-sm')+'Back to Meetings</a>'+
-      '<header class="page-head rise"><div><h1 class="h1">'+Q.esc(x.m.who)+' · '+Q.esc(when)+'</h1>'+
-      '<p class="sub">'+Q.esc(x.m.app)+(c?'<span class="dot-sep"></span><a href="#case-'+x.m.c+'">Case #'+c.no+'</a>':'<span class="dot-sep"></span>No case yet')+
+      '<header class="page-head rise"><div><h1 class="h1">'+Q.esc(quick ? x.m.who : x.m.who+' · '+when)+'</h1>'+
+      '<p class="sub">'+(quick?'Quick notes · microphone only':Q.esc(x.m.app))+'<span class="dot-sep"></span>'+caseLine(x)+
+      (c && c.selected && x.m.ti ? '<span class="dot-sep"></span>Trusted individual: '+Q.esc(x.m.ti)+' present' : '')+
+      (x.past ? '<span class="dot-sep"></span><button class="btn-link" data-act="move">'+(c?'Move to another case':'Add to a case')+'</button>' : '')+
       (!x.past?'<span class="dot-sep s06-rdot"></span><label class="switch s06-remind" title="We\'ll remind you before it starts. You still press Record."><input type="checkbox" data-act="notes"'+(x.m.notes?' checked':'')+'> Remind me 10 min before</label>':'')+'</p></div></header>';
     var main = (ms.phase==='done' ? cta(x) : '') + banner(ms) +
       (ms.phase==='before' || ms.phase==='recording' || ms.phase==='idle' ? recordCard(id, x, ms) : '') + transcript(id, ms);
@@ -171,6 +174,7 @@
             if(!ls.length){ t.setAttribute('aria-invalid','true'); return; }
             ms.lines = ls.map(function(z){ return { t:'', s:z }; }); ms.phase = 'done'; ms.banner = null; Q.closeSheet(); Q.refresh(); Q.toast('Notes added'); }); } });
       if(act==='upload') pg.querySelector('[data-file]').click();
+      if(act==='move') moveDialog(x);
       if(act==='add'){ Q.toast('Notes added to case #'+D.cases[x.m.c].no); Q.go('#case-'+x.m.c); }
     });
     pg.addEventListener('change', function(e){
@@ -192,6 +196,16 @@
       pg.querySelectorAll('.s06-tr li').forEach(function(li){ var hit = li.textContent.toLowerCase().indexOf(v)>=0; li.hidden = !hit; if(hit) n++; });
       pg.querySelector('[data-none]').hidden = n>0; });
     if(askNow){ askNow = false; setTimeout(function(){ askRecord(id); }, 250); }
+  }
+
+  function moveDialog(x){
+    var pick = x.m.c;
+    var opts = D.caseOrder.map(function(k){ var c = D.cases[k]; return '<option value="'+k+'"'+(k===x.m.c?' selected':'')+'>'+Q.esc(c.name)+' #'+c.no+'</option>'; }).join('');
+    Q.dialog({ title:x.m.c ? 'Move to another case' : 'Add to a case',
+      body:'<div class="field"><label class="label" for="mv-case">Case</label><select class="select" id="mv-case">'+opts+'</select></div><p class="small muted">The transcript stays on this device.</p>',
+      actions:[{label:'Cancel',value:null},{label:'Move',value:'ok',kind:'primary'}], safe:null,
+      mount:function(w){ var sel = w.querySelector('#mv-case'); pick = sel.value; sel.addEventListener('change', function(){ pick = sel.value; }); } })
+    .then(function(v){ if(!v || pick===x.m.c) return; x.m.c = pick; Q.refresh(); Q.toast('Moved to case #'+D.cases[pick].no); });
   }
 
   Q.screen('meeting', { title:function(p){ var x = find(p.arg); return x ? x.m.who+' meeting' : 'Meeting'; }, nav:'meetings', render:render, mount:mount });

@@ -108,24 +108,32 @@
   var digest = { sent:'8:00', items:[
     { text:'Wei Tan 11:00', go:'#case-wei' }, { text:'Priya quiet 3 days', go:'#case-priya' }, { text:'Share v2 with Alvin', go:'#case-alvin' } ] };
 
+  /* Meetings. A case holds many meetings and quick notes (c = case key, null = unfiled).
+     at = sortable time. kind: 'calendar' (from the calendar) | 'notes' (Record notes, no calendar meeting).
+     labels = transcript has You/Client (desktop call audio); otherwise mic only. ti = trusted individual present (Selected Clients). */
   var meetings = {
     sync:'Google Calendar · synced 2 min ago',
     upcoming:[
-      { id:'wei-today', day:'Today', time:'11:00', end:'12:00', who:'Wei Tan', app:'Google Meet', c:'wei', notes:true },
+      { id:'wei-today', day:'Today', time:'11:00', end:'12:00', who:'Wei Tan', app:'Google Meet', c:'wei', notes:true, at:'2026-11-03 11:00', date:'Tue 3 Nov' },
       { id:'huddle', day:'Today', time:'14:30', end:'15:00', who:'Team huddle', app:'Teams', internal:true, notes:false },
-      { id:'alvin-wed', day:'Tomorrow', time:'10:00', end:'10:45', who:'Alvin Lim', app:'Zoom', c:'alvin', notes:true },
-      { id:'siti-thu', day:'Thu 5 Nov', time:'15:00', end:'16:00', who:'Siti Nur', app:'In person', c:'siti', notes:false },
-      { id:'marcus-fri', day:'Fri 6 Nov', time:'10:30', end:'11:30', who:'Marcus Raj', app:'In person', c:'marcus', notes:true }
+      { id:'alvin-wed', day:'Tomorrow', time:'10:00', end:'10:45', who:'Alvin Lim', app:'Zoom', c:'alvin', notes:true, at:'2026-11-04 10:00', date:'Wed 4 Nov' },
+      { id:'siti-thu', day:'Thu 5 Nov', time:'15:00', end:'16:00', who:'Siti Nur', app:'In person', c:'siti', notes:false, at:'2026-11-05 15:00', date:'Thu 5 Nov' },
+      { id:'marcus-fri', day:'Fri 6 Nov', time:'10:30', end:'11:30', who:'Marcus Raj', app:'In person', c:'marcus', notes:true, at:'2026-11-06 10:30', date:'Fri 6 Nov' }
     ],
     past:[
-      { id:'daniel-past', date:'Mon 2 Nov', time:'16:00', who:'Daniel Lee', app:'In person', c:'daniel', notesReady:true },
-      { id:'junhao', date:'Fri 30 Oct', time:'12:30', who:'Teo Jun Hao', app:'Zoom', c:null, notesReady:false },
-      { id:'wei-oct', date:'Wed 28 Oct', time:'11:00', who:'Wei Tan', app:'Google Meet', c:'wei', notesReady:true },
-      { id:'marcus-oct', date:'Tue 27 Oct', time:'14:00', who:'Marcus Raj', app:'In person', c:'marcus', notesReady:true }
+      { id:'notes-1102', kind:'notes', date:'Mon 2 Nov', time:'18:10', at:'2026-11-02 18:10', who:'Notes · Mon 2 Nov 18:10', c:null, len:'2 min', notesReady:true },
+      { id:'marcus-nov2', date:'Mon 2 Nov', time:'15:00', at:'2026-11-02 15:00', who:'Marcus Raj', app:'In person', c:'marcus', len:'40 min', notesReady:true, ti:'Mei (daughter)' },
+      { id:'daniel-past', date:'Mon 2 Nov', time:'16:00', at:'2026-11-02 16:00', who:'Daniel Lee', app:'In person', c:'daniel', len:'35 min', notesReady:true },
+      { id:'junhao', date:'Fri 30 Oct', time:'12:30', at:'2026-10-30 12:30', who:'Teo Jun Hao', app:'Zoom', c:null, notesReady:false },
+      { id:'marcus-oct29', date:'Thu 29 Oct', time:'10:00', at:'2026-10-29 10:00', who:'Marcus Raj', app:'In person', c:'marcus', len:'55 min', notesReady:true, ti:'Mei (daughter)' },
+      { id:'siti-oct29', date:'Thu 29 Oct', time:'15:00', at:'2026-10-29 15:00', who:'Siti Nur', app:'In person', c:'siti', len:'30 min', notesReady:true },
+      { id:'wei-oct', date:'Wed 28 Oct', time:'11:00', at:'2026-10-28 11:00', who:'Wei Tan', app:'Google Meet', c:'wei', len:'38 min', notesReady:true },
+      { id:'marcus-oct', date:'Tue 27 Oct', time:'14:00', at:'2026-10-27 14:00', who:'Marcus Raj', app:'In person', c:'marcus', len:'50 min', notesReady:true, ti:'Mei (daughter)' },
+      { id:'siti-oct13', date:'Tue 13 Oct', time:'15:00', at:'2026-10-13 15:00', who:'Siti Nur', app:'In person', c:'siti', len:'45 min', notesReady:true }
     ]
   };
 
-  /* Transcripts. labels:false = mic only (one plain transcript). */
+  /* Transcripts by meeting id. labels:false = mic only (one plain transcript). Siti's and Marcus's later lines are synthetic demo text. */
   var transcripts = {
     'daniel-past': { labels:false, lines:[
       ['00:12','Thanks for coming in. Shall we start with what you have now?'],
@@ -142,7 +150,28 @@
     'marcus-oct': { labels:false, lines:[
       ['00:30','Good afternoon, thank you for having me.'],
       ['02:15','Can we go through it in Mandarin?'],
-      ['04:02','My daughter will come for the next meeting.'] ] }
+      ['04:02','My daughter Mei will help me read the English papers.'] ] },
+    'marcus-oct29': { labels:false, lines:[
+      ['01:10','Mei went through the three plans with me last night.'],
+      ['06:40','I prefer Harbour. The premium term is shorter.'] ] },
+    'marcus-nov2': { labels:false, lines:[
+      ['00:45','We will sign the Selected Client declaration together today.'],
+      ['03:20','Your supervisor will call you in the next few days to check you understand the plan.'] ] },
+    'siti-oct13': { labels:false, lines:[
+      ['01:20','I work full time as a nurse.'],
+      ['01:45','I take home about five thousand eight hundred a month.'],
+      ['02:30','The home loan is about one thousand six hundred a month.'],
+      ['03:12','I want cover until 65, while the kids are still young.'],
+      ['04:05','The two of them will need support until they finish school.'],
+      ['05:40','I would like to stay under three and a half thousand a year.'],
+      ['07:05','The critical illness part matters to me.'] ] },
+    'siti-oct29': { labels:false, lines:[
+      ['00:50','I will go with the revised Harbour plan.'],
+      ['02:15','I am not replacing any policy. This is my first one of my own.'],
+      ['04:30','I understand the illustrated values are not guaranteed.'] ] },
+    'notes-1102': { labels:false, lines:[
+      ['00:05','Reminder to myself: bring the revised Harbour illustration on Thursday.'],
+      ['00:40','Ask the supervisor about the call-back slot for Friday.'] ] }
   };
 
   /* Privacy gate: exact text sent, by feature. Wei has two children, aged 8 and 11. */
@@ -170,25 +199,52 @@
     fixed:[ 'MAS checks: plain rules on this device. Nothing sent.', 'Shares: the PDF went from you to the client. Nothing uploaded.', 'Recordings and transcripts stay on this device.' ]
   };
 
-  /* Write-up for Siti (2 of 4 ticked). Sentence: [text, sourceLabel, sourceRef]. Blanks: {blank:'Existing cover'}. */
+  /* Write-up for Siti, laid out as FAA-N16 para 35 (with 31 and 36). need: 'req' | 'opt' | 'cond' (shown only when on).
+     Sentence: [text, sourceLabel, sourceRef]. Meeting refs are 'm:<meetingId>@<time>'. Blanks: {blank:'Risk tolerance'}. Never guessed. */
   var writeup = { c:'siti', plan:'Harbour Assurance v2', drafted:'Tue 3 Nov', parts:[
-    { title:'What Siti needs', ticked:true, s:[ ['Cover until age 65 while her children are young.','Meeting 03:12','m:03:12'], ['A premium she can keep paying, under S$3,500 a year.','Meeting 05:40','m:05:40'] ] },
-    { title:'Why this plan', ticked:true, s:[ ['Harbour v2 costs S$3,300 a year, within her budget.','Table · Harbour v2 · premium','siti/v2/harbour/premium'], ['It keeps the early critical illness rider she asked about.','Table · Harbour v2 · riders','siti/v2/harbour/riders'] ] },
-    { title:'Why not the others', ticked:false, s:[ ['Meridian Life has a 25-year premium term, longer than she wanted.','Table · Meridian · premium term','siti/v2/meridian/term'], [{ blank:'Reason Orchid was not chosen' }] ] },
-    { title:'What Siti should know', ticked:false, s:[ ['Illustrated values at 3.00% and 4.25% are not guaranteed.','Table · group label','siti/v2/harbour/b20'], ['Existing cover: ',null,null,{ blank:'Existing cover' }] ] } ] };
+    { key:'needs', title:'Siti\'s objectives, finances and needs', ref:'§35(a)', need:'req', ticked:false, s:[
+      ['Objective: cover until age 65 while her children are young.','Tue 13 Oct · 03:12','m:siti-oct13@03:12'],
+      ['Risk tolerance: ',null,null,{ blank:'Risk tolerance' }],
+      ['Employment: works full time as a nurse.','Tue 13 Oct · 01:20','m:siti-oct13@01:20'],
+      ['Income: about S$5,800 a month.','Tue 13 Oct · 01:45','m:siti-oct13@01:45'],
+      ['Assets and liabilities: ',null,null,{ blank:'Assets and liabilities' }],
+      ['Financial commitments: home loan of about S$1,600 a month.','Tue 13 Oct · 02:30','m:siti-oct13@02:30'],
+      ['Budget: a premium under S$3,500 a year.','Tue 13 Oct · 05:40','m:siti-oct13@05:40'],
+      ['Existing policies: ',null,null,{ blank:'Existing policies' }],
+      ['Dependants: two children who need support until they finish school.','Tue 13 Oct · 04:05','m:siti-oct13@04:05'] ] },
+    { key:'why', title:'Why this plan suits Siti', ref:'§35(b) · §31', need:'req', ticked:true, s:[
+      ['Harbour v2 costs S$3,300 a year, within her budget.','Table · Harbour v2 · premium','siti/v2/harbour/premium'],
+      ['It keeps the early critical illness rider she asked about.','Table · Harbour v2 · riders','siti/v2/harbour/riders'],
+      ['It covers her with a sum assured of S$165,000.','Table · Harbour v2 · sum assured','siti/v2/harbour/sa'] ] },
+    { key:'cons', title:'Disadvantages of this plan for Siti', ref:'§35(c)', need:'req', ticked:false, s:[
+      ['Ending the policy early returns less than she paid: at year 10 the guaranteed value is S$14,500 against S$33,000 in premiums.','Table · Harbour v2 · guaranteed year 10','siti/v2/harbour/g10'],
+      ['Illustrated values at 3.00% and 4.25% are not guaranteed and could be lower.','Table · Harbour v2 · 4.25% year 20','siti/v2/harbour/b20'],
+      ['She pays premiums for 20 years.','Table · Harbour v2 · premium term','siti/v2/harbour/term'],
+      ['The early critical illness rider adds to the premium: ',null,null,{ blank:'Rider cost per year' }] ] },
+    { key:'others', title:'Other plans considered', ref:'From the comparison', need:'opt', ticked:false, s:[
+      ['Meridian Life has a 25-year premium term, longer than she wanted.','Table · Meridian · premium term','siti/v2/meridian/term'],
+      ['Orchid Mutual: ',null,null,{ blank:'Reason Orchid was not chosen' }] ] },
+    { key:'switch', title:'Replacing an existing policy', ref:'§42 to §44', need:'cond', on:false, ticked:false, s:[
+      ['Penalty for ending the old policy: ',null,null,{ blank:'Penalty for ending the old policy' }],
+      ['Costs of switching: ',null,null,{ blank:'Costs of switching' }],
+      ['Benefits lost: ',null,null,{ blank:'Benefits lost' }],
+      ['Fees and charges disclosed to the client in writing (§44): ',null,null,{ blank:'Date disclosed in writing' }] ] },
+    { key:'chose', title:'Client chose differently', ref:'§32', need:'cond', on:false, ticked:false, s:[
+      ['Siti chose a plan you did not recommend: ',null,null,{ blank:'Plan the client chose' }],
+      ['You told her in writing that it is her responsibility to make sure the plan suits her: ',null,null,{ blank:'Date told in writing' }] ] } ] };
 
-  /* MAS checks for Marcus (Selected Client, firm review 3 of 5). */
+  /* MAS checks for Marcus (Selected Client, firm review 3 of 5). Wording follows MAS Notice FAA-N16 (29 Dec 2025) and its FAQs. */
   var mas = { c:'marcus',
     questions:[
-      { q:'Is the client under 62?', answer:'no', from:'From the case: age 64' },
-      { q:'Is the client proficient in the language of the meeting and documents?', answer:'no', suggest:{ value:'no', quote:'Can we go through it in Mandarin?', at:'02:15' } },
-      { q:'Does the client have at least O-level or N-level education?', answer:null } ],
+      { q:'Is the client under 62?', answer:'no', from:'From the case: age 64', note:'If the client turns 62 before the policy starts, apply the safeguards (FAQ 6).' },
+      { q:'Is the client proficient in spoken and written English, or the language the meeting and documents use?', answer:'no', suggest:{ value:'no', quote:'Can we go through it in Mandarin?', at:'02:15', mid:'marcus-oct' } },
+      { q:'Does the client have at least GCE O-Level or N-Level, or equivalent?', answer:null } ],
     checklist:[
-      { t:'Declaration signed by the client and you', ref:'§10C', done:true, date:'Mon 2 Nov' },
-      { t:'Trusted individual present, with the client\'s consent', ref:'§10D', done:true, date:'Mon 2 Nov' },
-      { t:'Supervisor reviewed the documents', ref:'§41K(a)', done:true, date:'Mon 2 Nov' },
-      { t:'Supervisor call-back done and audio-recorded', ref:'§41S', done:false },
-      { t:'Policy starts only after both supervisor checks pass', ref:'§41K', done:false } ] };
+      { id:'decl', t:'Selected Client assessment documented and declared, signed by the client and you. Client told of their status and safeguards', ref:'§10C', faq:'FAQ 5', done:true, date:'Mon 2 Nov' },
+      { id:'ti', t:'Trusted individual at every meeting, or the client\'s written statement', ref:'§10D', done:true, date:'Mon 2 Nov', path:'a', ti:'Mei (daughter)' },
+      { id:'doc', t:'Documentation review of the needs analysis and know-your-client records', ref:'§41K(a)', done:true, date:'Mon 2 Nov', by:'Your supervisor' },
+      { id:'call', t:'Call-back, audio-recorded', ref:'§41K(b) · §41S', done:false, sup:false, summary:false },
+      { id:'eff', t:'Both checks done before the policy\'s effective date', ref:'§41K', done:false } ] };
 
   var nudge = { c:'priya', shared:'Sat 31 Oct', draft:'Hi Priya, just checking in on the comparison I sent on Saturday. Happy to walk through the plans whenever suits you.',
     next:'Fri 6 Nov',

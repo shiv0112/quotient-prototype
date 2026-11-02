@@ -39,7 +39,7 @@
       '<span class="chip chip-device">'+Q.icon('device','i-sm')+'0 characters</span><p class="big">Nothing leaves your device for this comparison.</p>'+
       '<p class="muted">Harbour Assurance, Meridian Life and Orchid Mutual are all read on this device.</p></div></div>'+
       '<div class="s08-acts"><button class="btn btn-primary" data-act="build">Build comparison</button><span class="spacer"></span><a class="btn btn-ghost" href="'+fl.back+'">Cancel</a></div></div>';
-    return '<div class="page s08">'+head+
+    return '<div class="page s08">'+head+picker(x, v)+
       '<article class="s08-rc rise" aria-label="Outgoing text">'+
         '<div class="s08-rc-top"><span class="s08-sec" style="margin:0">Outgoing text · '+Q.esc(B.featureName[x.f])+'</span><span class="s08-sec r" style="margin:0">Case #'+x.c.no+'</span>'+
         '<span class="meta">To the AI, after you press Send</span><span class="meta r num">'+D.today.date+' · 10:12</span></div>'+
@@ -53,6 +53,15 @@
       '<span class="spacer"></span><a class="btn btn-ghost" href="'+fl.back+'">Cancel</a></div></div>';
   }
 
+  /* "Your notes": choose which meetings and notes go in (default all for the case). The receipt shows each one's text under its own heading. */
+  function picker(x, v){
+    if(!(v.g.cards||[]).some(function(c){ return c.mid; })) return '';
+    var pick = QB.pick(x.key), list = Q.caseMeetings(x.key).filter(function(m){ return !m.upcoming && m.m.notesReady; });
+    return '<div class="s08-pick rise" role="group" aria-labelledby="s08-pk"><span class="label" id="s08-pk">Your notes from</span><div class="switcher-chips" style="flex-wrap:wrap">'+list.map(function(z){ var m = z.m;
+      return '<button class="chip" data-pick="'+m.id+'" aria-pressed="'+(pick.indexOf(m.id)>=0)+'">'+(m.kind==='notes'?'Quick notes · ':'Meeting · ')+Q.esc(m.date)+' '+Q.esc(m.time)+'</button>'; }).join('')+'</div>'+
+      (pick.length ? '' : '<span class="small muted">No notes selected. Only the other text below is sent.</span>')+'</div>';
+  }
+
   function countUp(el, to, ms, fmt){
     var n = 14, k = 0;
     var t = setInterval(function(){ k++; var e = 1-Math.pow(1-k/n,3);
@@ -63,6 +72,8 @@
   function mountGate(el, p){
     var x = ctx(p), pg = el.querySelector('.page');
     pg.addEventListener('click', function(e){
+      var pk = e.target.closest('[data-pick]');
+      if(pk){ var cur = QB.pick(x.key), i = cur.indexOf(pk.dataset.pick); if(i>=0) cur.splice(i,1); else cur.push(pk.dataset.pick); Q.refresh(); var f = document.querySelector('[data-pick="'+pk.dataset.pick+'"]'); if(f) f.focus({preventScroll:true}); return; }
       var a = e.target.closest('[data-act]'); if(!a) return;
       var v = QB.view(x.key);
       if(a.dataset.act==='send'){
