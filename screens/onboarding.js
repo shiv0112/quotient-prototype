@@ -1,23 +1,22 @@
-/* S03a-d Onboarding (#welcome-1 .. #welcome-4). Builder A. Focus layout: wordmark + progress header with the tile motif.
+/* S03a-c Onboarding (#welcome-1 .. #welcome-3). Builder A. Focus layout: wordmark + progress header with the tile motif.
    States via ?state= : welcome-1 connecting | connected | error
                         welcome-2 waiting | connected | expired
-                        welcome-3 changed
-                        welcome-4 copied | checked */
+                        welcome-3 changed */
 (function(){
   'use strict';
   var D = Q.data, A = QD.a, ad = D.adviser;
   var mode = null, timer = null, focusSel = null;
-  var o = { cal:'Google', code:ad.telegramCode, days:ad.waitDays, saved:false, copied:false };
+  var o = { cal:'Google', code:ad.telegramCode, days:ad.waitDays, saved:false };
   var last = null;
   function later(fn, ms){ var h = Q.route().hash; return setTimeout(function(){ if(Q.route().hash===h) fn(); }, ms); }
-  function fresh(){ var h = Q.route().hash; if(h!==last){ last = h; mode = null; clearTimeout(timer); o.copied = false; } }
+  function fresh(){ var h = Q.route().hash; if(h!==last){ last = h; mode = null; clearTimeout(timer); } }
 
 
-  var STEPS = ['Calendar','Reminders','Follow-up','Recovery'];
+  var STEPS = ['Calendar','Reminders','Follow-up'];
   function shell(n, inner){
     return '<div class="page ob"><header class="ob-top tiled"><span class="wordmark">Quotient</span>'+
-      '<div class="ob-prog" role="progressbar" aria-label="Setup progress" aria-valuemin="1" aria-valuemax="4" aria-valuenow="'+n+'" aria-valuetext="Step '+n+' of 4, '+STEPS[n-1]+'">'+
-      '<span class="num">Step '+n+' of 4</span><span class="ob-segs" aria-hidden="true">'+[1,2,3,4].map(function(i){ return '<i class="'+(i<=n?'on':'')+'"></i>'; }).join('')+'</span></div></header>'+
+      '<div class="ob-prog" role="progressbar" aria-label="Setup progress" aria-valuemin="1" aria-valuemax="3" aria-valuenow="'+n+'" aria-valuetext="Step '+n+' of 3, '+STEPS[n-1]+'">'+
+      '<span class="num">Step '+n+' of 3</span><span class="ob-segs" aria-hidden="true">'+[1,2,3].map(function(i){ return '<i class="'+(i<=n?'on':'')+'"></i>'; }).join('')+'</span></div></header>'+
       '<div class="ob-body">'+(n>1?'<a class="back" href="#welcome-'+(n-1)+'">'+Q.icon('back','i-sm')+'Back</a>':'<span class="back" aria-hidden="true" style="visibility:hidden">'+Q.icon('back','i-sm')+'Back</span>')+inner+'</div></div>';
   }
   function head(h, sub){ return '<header class="ob-head rise"><h1 class="h1">'+h+'</h1><p class="lede">'+sub+'</p></header>'; }
@@ -66,26 +65,16 @@
       '<fieldset class="ob-days rise"><legend class="sr">Days to wait before a reminder</legend>'+[1,2,3,4,5,6,7].map(function(i){
         return '<label class="ob-day"><input type="radio" name="ob-days" value="'+i+'"'+(i===d?' checked':'')+' aria-label="'+i+' day'+(i>1?'s':'')+'"><b>'+i+'</b><small>day'+(i>1?'s':'')+'</small></label>'; }).join('')+'</fieldset>'+
       '<p class="ob-live" aria-live="polite">We\'ll remind you <b class="num">'+d+' day'+(d>1?'s':'')+'</b> after you share.</p>'+
-      '<div class="ob-acts"><a class="btn btn-primary" href="#welcome-4">Continue'+Q.icon('arrow','i-sm')+'</a>'+skip(3)+'</div>'+
+      '<div class="ob-acts"><button class="btn btn-primary" data-act="finish">Finish</button></div>'+
       '<p class="ob-note">You can change this any time in Settings.</p>');
   }
 
-  /* S03d */
-  function phrase(s){
-    var copied = o.copied || s==='copied', checked = mode==='checked' || (!mode && s==='checked');
-    return shell(4, head('Save your recovery phrase','Your clients\' details are locked with a key on this device. These 4 words open them on a new device. We can\'t recover them for you.')+
-      '<ol class="ob-words rise" aria-label="Recovery phrase">'+ad.phrase.map(function(w,i){ return '<li><small>'+(i+1)+'</small><b>'+Q.esc(w)+'</b></li>'; }).join('')+'</ol>'+
-      '<button class="btn btn-secondary ob-copy'+(copied?' done':'')+'" data-act="copy">'+Q.icon(copied?'check':'file','i-sm')+'<span aria-live="polite">'+(copied?'Copied':'Copy words')+'</span></button>'+
-      '<label class="check"><input type="checkbox" id="ob-saved"'+(checked?' checked':'')+'> I\'ve saved these words somewhere safe</label>'+
-      '<div class="ob-acts"><button class="btn btn-primary" data-act="finish"'+(checked?'':' aria-disabled="true" title="Tick the box first"')+'>Finish</button></div>');
-  }
-
   Q.screen('welcome', {
-    title:function(p){ return 'Set up · step '+(p.arg||1)+' of 4'; }, nav:'', rail:false,
+    title:function(p){ return 'Set up · step '+(p.arg||1)+' of 3'; }, nav:'', rail:false,
     render:function(p){
       fresh();
       var n = +p.arg || 1, s = mode || p.state;
-      return n===2 ? tg(s) : n===3 ? wait(s) : n===4 ? phrase(s) : cal(s);
+      return n===2 ? tg(s) : n===3 ? wait(s) : cal(s);
     },
     mount:function(el, p){
       var pg = el.querySelector('.page'); if(!pg) return;
@@ -98,19 +87,11 @@
         if(act==='open'){ if(a.getAttribute('aria-disabled')) return; mode = 'waiting'; Q.refresh(); clearTimeout(timer);
           timer = later(function(){ mode = 'connected'; focusSel = '.ob-acts .btn-primary'; Q.refresh(); }, 2600); }
         if(act==='newcode'){ o.code = A.newCode; mode = 'default'; focusSel = '[data-act="open"]'; Q.refresh(); }
-        if(act==='copy'){
-          try{ navigator.clipboard && navigator.clipboard.writeText(ad.phrase.join(' ')).catch(function(){}); }catch(err){}
-          o.copied = true; Q.refresh(); clearTimeout(timer);
-          timer = later(function(){ o.copied = false; if(Q.route().hash==='welcome-4') Q.refresh(); }, 2000); }
-        if(act==='finish'){ if(a.getAttribute('aria-disabled')) return;
-          mode = null; Q.go('#today'); setTimeout(function(){ Q.toast('You\'re set up. Your next meeting is below.'); }, 350); }
+        if(act==='finish'){ mode = null; Q.go('#today'); setTimeout(function(){ Q.toast('You\'re set up. Your next meeting is below.'); }, 350); }
       });
       pg.addEventListener('change', function(e){
         if(e.target.name==='ob-days'){ o.days = ad.waitDays = +e.target.value; o.saved = true;
           pg.querySelector('.ob-live').innerHTML = 'We\'ll remind you <b class="num">'+o.days+' day'+(o.days>1?'s':'')+'</b> after you share.'; }
-        if(e.target.id==='ob-saved'){ mode = e.target.checked ? 'checked' : 'unchecked';
-          var f = pg.querySelector('[data-act="finish"]');
-          if(e.target.checked){ f.removeAttribute('aria-disabled'); f.removeAttribute('title'); } else { f.setAttribute('aria-disabled','true'); f.title = 'Tick the box first'; } }
       });
       if(focusSel){ var f = pg.querySelector(focusSel); focusSel = null; if(f) f.focus(); }
     }

@@ -1,5 +1,5 @@
 /* S19 Settings (#prefs). Builder A. One page, no primary button: each row saves on change with a quiet "Saved".
-   Edition section differs for web and desktop (Q.edition()). States via ?state= : disconnect | phrase | loading | error */
+   Edition section differs for web and desktop (Q.edition()). States via ?state= : disconnect | loading | error */
 (function(){
   'use strict';
   var D = Q.data, A = QD.a, ad = D.adviser;
@@ -54,10 +54,6 @@
         return '<option'+(t===ad.digestTime?' selected':'')+'>'+t+'</option>'; }).join('')+'</select></div>'+
       '<p class="small device-line">'+Q.icon('device','i-sm')+' Shown on this device only. <a href="#digest">See an example</a></p>');
 
-    var phrase = sec('rp','Recovery phrase','',
-      '<div><button class="btn btn-secondary" data-act="phrase">Show recovery phrase</button></div>'+
-      '<p class="hint">Needed to open your cases on a new device.</p>');
-
     var edition = sec('ed','Edition','',
       (web ? '<p class="pf-line">You\'re using the web app. The desktop app adds call audio.</p>'+
              '<div class="pf-dl"><button class="btn btn-secondary" data-toast="Downloading Quotient for Mac">'+Q.icon('device','i-sm')+'Download for Mac</button>'+
@@ -65,7 +61,7 @@
            : '<p class="pf-line"><b>Desktop app · version '+A.version+'</b></p><p class="hint">Call audio is available on each meeting. It starts off every time.</p>')+
       '<div class="pf-proto"><span>Prototype only · Preview as</span><div class="seg"><button data-ed="web" aria-pressed="'+web+'">Web</button><button data-ed="desktop" aria-pressed="'+!web+'">Desktop</button></div></div>');
 
-    return '<div class="page pf">'+head+banner+'<div class="pf-list">'+account+calendar+telegram+wait+digest+phrase+edition+'</div></div>';
+    return '<div class="page pf">'+head+banner+'<div class="pf-list">'+account+calendar+telegram+wait+digest+edition+'</div></div>';
   }
 
   function saved(pg, id){
@@ -81,33 +77,6 @@
       actions:[{label:'Cancel',value:'no',kind:'secondary'},{label:'Disconnect',value:'yes',kind:'danger'}], safe:'no' })
     .then(function(v){ if(v!=='yes') return; pf[kind==='ol'?'outlook':kind] = false; refreshSaved(cal?'cal':'tg'); });
   }
-  function showWords(){
-    return Q.dialog({ title:'Your recovery phrase',
-      body:'<p>Needed to open your cases on a new device. Keep these words somewhere safe.</p><ol class="pf-words" aria-label="Recovery phrase">'+
-        ad.phrase.map(function(w,i){ return '<li><small>'+(i+1)+'</small><b>'+Q.esc(w)+'</b></li>'; }).join('')+'</ol>',
-      actions:[{label:'Done',value:'done',kind:'secondary'}], safe:'done' });
-  }
-  function askPassword(){
-    var pw = QD.a.demoPassword;
-    Q.dialog({ title:'Show recovery phrase',
-      body:'<p>Type your password first.</p><div class="field" style="margin-top:var(--s-4)"><label class="label" for="pf-pw">Password</label>'+
-        '<input class="input" id="pf-pw" type="password" autocomplete="current-password" value="'+Q.esc(pw)+'" aria-describedby="pf-pw-h pf-pw-e">'+
-        '<span class="hint" id="pf-pw-h">Demo password: '+Q.esc(pw)+'</span><span class="field-error" id="pf-pw-e" role="alert" hidden></span></div>',
-      actions:[{label:'Cancel',value:'no',kind:'secondary'},{label:'Show words',value:'ok',kind:'primary'}], safe:'no',
-      mount:function(w, close){
-        var i = w.querySelector('#pf-pw'), err = w.querySelector('#pf-pw-e'), ok = w.querySelector('.btn-primary');
-        // Only the right password opens the words; the dialog stays open on a wrong or empty one.
-        function check(e){ if(e){ e.preventDefault(); e.stopPropagation(); }
-          var msg = !i.value ? 'Type your password.' : i.value!==pw ? 'That password is not right.' : '';
-          if(!msg){ close('ok'); return; }
-          err.textContent = msg; err.hidden = false; i.setAttribute('aria-invalid','true'); i.focus(); }
-        i.focus(); i.select();
-        i.addEventListener('input', function(){ err.hidden = true; i.removeAttribute('aria-invalid'); });
-        i.addEventListener('keydown', function(e){ if(e.key==='Enter') check(e); });
-        ok.addEventListener('click', check); } })
-    .then(function(v){ if(v==='ok') showWords(); });
-  }
-
   Q.screen('prefs', {
     title:'Settings', nav:'prefs',
     render:render,
@@ -127,14 +96,12 @@
         if(act==='cal-on'){ pf.cal = true; refreshSaved('cal'); }
         if(act==='ol-on'){ pf.outlook = true; refreshSaved('cal'); }
         if(act==='tg-on'){ pf.tg = true; refreshSaved('tg'); }
-        if(act==='phrase') askPassword();
       });
       pg.addEventListener('change', function(e){
         if(e.target.id==='pf-dg'){ pf.digest = e.target.checked; pg.querySelector('#pf-time').disabled = !pf.digest; saved(pg,'dg'); }
         if(e.target.id==='pf-time'){ ad.digestTime = e.target.value; saved(pg,'dg'); }
       });
       if(!autoOpened && p.state==='disconnect'){ autoOpened = true; disconnect('cal'); }
-      if(!autoOpened && p.state==='phrase'){ autoOpened = true; showWords(); }
     }
   });
 })();

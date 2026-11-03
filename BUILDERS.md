@@ -63,4 +63,3 @@ Icons: today, meetings, cases, prefs, plus, back, next, close, check, more, mic,
 ## Demo
 - Demo state chips for a screen are written inside the page as `<nav class="switcher">`; core.js moves them into the Demo panel ("States for this screen"). Never style them as part of the screen.
 - Shared case state: mutate `Q.data` (cases, writeup, mas, meetings) and it is saved to sessionStorage on every render, so Today, Cases and Case agree. `Q.status(key)` is the one short next step. `?reset` or Demo > Reset demo data starts fresh.
-- Settings > Show recovery phrase asks for the demo password `quotient` (prefilled; `QD.a.demoPassword`). Empty or wrong shows an inline error.

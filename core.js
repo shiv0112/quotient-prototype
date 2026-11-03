@@ -137,7 +137,7 @@
   /* ---------- screen inventory (ux-spec §6) for the demo jump menu ---------- */
   Q.inventory = [
     ['S01','Sign in','signin'], ['S02','Create account','signup'],
-    ['S03a','Onboarding: calendar','welcome-1'], ['S03b','Onboarding: Telegram','welcome-2'], ['S03c','Onboarding: follow-up wait','welcome-3'], ['S03d','Onboarding: recovery phrase','welcome-4'],
+    ['S03a','Onboarding: calendar','welcome-1'], ['S03b','Onboarding: Telegram','welcome-2'], ['S03c','Onboarding: follow-up wait','welcome-3'],
     ['S04','Today','today'], ['S05','Meetings','meetings'],
     ['S06','Meeting: Wei Tan, today','meeting-wei-today'], ['S06','Meeting: Daniel Lee, done','meeting-daniel-past'],
     ['S07','New case','new-case'],

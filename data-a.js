@@ -5,7 +5,6 @@ QD.a = {
   newCode: 'QX4-81M',            // invented: the fresh Telegram code after "Get a new code"
   bot: '@QuotientRemindBot',
   version: '1.0',
-  demoPassword: 'quotient',    // Settings > Show recovery phrase (P1-06); prefilled in the dialog
   digestTimes: ['7:00','7:30','8:00','8:30','9:00'],
   digestOpens: '#meeting-wei-today',   // first item that needs action (ux-spec S20)
   // Third-party sign-in marks. Brand colours are fixed by Google / Microsoft / Telegram, so they are the one place raw colours appear.

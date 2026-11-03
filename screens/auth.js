@@ -1,12 +1,12 @@
-/* S01 Sign in (#signin, incl. new-device recovery phrase) and S02 Create account (#signup). Builder A.
-   States via ?state= : signin  loading | error | cancelled | offline | oauth | phrase | phrase-error
+/* S01 Sign in (#signin) and S02 Create account (#signup). Builder A.
+   States via ?state= : signin  loading | error | cancelled | offline | oauth
                         signup  loading | inuse | weak | oauth
    Full-bleed focus layout: brand panel (wordmark, promise, gate specimen, tile motif) + form column. */
 (function(){
   'use strict';
   var D = Q.data, A = QD.a, ad = D.adviser;
   var mode = null, provider = 'Google', timer = null, focusId = null, errs = {};
-  var v = { email:ad.email, pw:'kallang-2026', name:'', semail:'', spw:'', firm:'', words:['','','',''] };
+  var v = { email:ad.email, pw:'kallang-2026', name:'', semail:'', spw:'', firm:'' };
   var last = null;
   function later(fn, ms){ var h = Q.route().hash; return setTimeout(function(){ if(Q.route().hash===h) fn(); }, ms); }
   // core renders before our own hashchange listener would run, so reset per-screen state when the route changes
@@ -58,17 +58,6 @@
     fresh();
     var s = mode || p.state;
     if(s==='oauth') return shell('', wait());
-    if(s==='phrase' || s==='phrase-error'){
-      var bad = s==='phrase-error', w = (bad && !v.words.join('')) ? ['lantern','maple','pepper','drift'] : v.words;
-      return shell('', '<form class="au-form" novalidate data-form="phrase">'+
-        '<header class="au-head rise"><p class="eyebrow">New device</p><h1 class="h1">Type your recovery phrase</h1><p class="lede">This opens your clients\' details on this device.</p></header>'+
-        '<fieldset class="au-words rise"><legend class="sr">Recovery phrase, 4 words in order</legend>'+[0,1,2,3].map(function(i){
-          return '<label class="au-word"><span class="num">'+(i+1)+'</span><input class="input" id="au-w'+i+'" aria-label="Word '+(i+1)+'" autocomplete="off" autocapitalize="none" spellcheck="false" value="'+Q.esc(w[i])+'"'+(bad?' aria-invalid="true" aria-describedby="au-we"':'')+'></label>'; }).join('')+
-        '</fieldset>'+
-        (bad ? '<p class="field-error" id="au-we" role="alert">Those words don\'t match. Check the order.</p>' : '<p class="hint">You can paste all 4 words into the first box.</p>')+
-        '<button class="btn btn-primary btn-block" type="submit">Open my cases</button>'+
-        '<p class="au-foot">Signed in as '+Q.esc(v.email||ad.email)+' · <a href="#signin" data-act="out">Not you?</a></p></form>');
-    }
     var loading = s==='loading', dis = loading?' disabled':'';
     var banner = s==='cancelled' ? '<div class="banner banner-error" role="alert">'+Q.icon('alert')+'<p>Sign-in was cancelled. Try again.</p></div>'
                : s==='offline' ? '<div class="banner banner-error" role="alert">'+Q.icon('alert')+'<p>Can\'t reach Quotient. Check your connection.</p></div>' : '';
@@ -110,25 +99,18 @@
       var pg = el.querySelector('.page'); if(!pg) return;
       pg.addEventListener('input', function(e){
         var id = e.target.id.replace('au-','');
-        if(/^w\d$/.test(id)) v.words[+id[1]] = e.target.value; else if(id in v) v[id] = e.target.value;
+        if(id in v) v[id] = e.target.value;
         if(id==='spw'){ var r = pg.querySelector('#au-rule'), met = e.target.value.length>=8;
           if(r) r.classList.toggle('met', met);
           var er = pg.querySelector('#au-spw-e');
           if(er && met){ delete errs.spw; e.target.removeAttribute('aria-invalid'); er.outerHTML = '<p class="hint au-rule met" id="au-rule"><span class="tk">'+Q.icon('check')+'</span>8 or more characters</p>'; } }
       });
-      var w0 = pg.querySelector('#au-w0');
-      if(w0) w0.addEventListener('paste', function(e){
-        var parts = (e.clipboardData||window.clipboardData).getData('text').trim().split(/[\s,]+/);
-        if(parts.length<2) return; e.preventDefault();
-        parts.slice(0,4).forEach(function(x,i){ var inp = pg.querySelector('#au-w'+i); inp.value = x; v.words[i] = x; });
-      });
       pg.addEventListener('click', function(e){
         var o = e.target.closest('[data-oauth]');
         if(o){ provider = o.dataset.oauth; mode = 'oauth'; Q.refresh();
-          timer = later(function(){ if(kind==='signin'){ mode = 'phrase'; focusId = 'au-w0'; Q.refresh(); } else { mode = null; Q.go('#welcome-1'); } }, 1800); return; }
+          timer = later(function(){ mode = null; Q.go(kind==='signin' ? '#today' : '#welcome-1'); }, 1800); return; }
         var a = e.target.closest('[data-act]');
         if(a && a.dataset.act==='cancel'){ clearTimeout(timer); mode = 'cancelled'; Q.refresh(); }
-        if(a && a.dataset.act==='out'){ e.preventDefault(); mode = null; v.words = ['','','','']; Q.refresh(); }
       });
       pg.addEventListener('submit', function(e){
         e.preventDefault();
@@ -136,11 +118,7 @@
         if(f==='signin'){
           if(!v.email.trim() || !v.pw){ mode = 'error'; focusId = 'au-pw'; Q.refresh(); return; }
           mode = 'loading'; Q.refresh();
-          timer = later(function(){ mode = 'phrase'; focusId = 'au-w0'; Q.refresh(); }, 1000);
-        } else if(f==='phrase'){
-          var ok = v.words.map(function(x){ return x.trim().toLowerCase(); }).join(' ')===ad.phrase.join(' ');
-          if(ok){ mode = null; v.words = ['','','','']; Q.go('#today'); }
-          else { mode = 'phrase-error'; focusId = 'au-w0'; Q.refresh(); }
+          timer = later(function(){ mode = null; Q.go('#today'); }, 1000);
         } else if(f==='signup'){
           errs = {};
           ['name','semail','firm'].forEach(function(k){ if(!v[k].trim()) errs[k] = 'empty'; });

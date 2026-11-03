@@ -8,8 +8,7 @@
   var today = { date:'Tue 3 Nov', long:'Tuesday 3 November', hour:9 };
 
   var adviser = { name:'Rachel Lim', first:'Rachel', initials:'RL', email:'rachel.lim@kallangadvisers.sg',
-    firm:'Kallang Advisers', signin:'Google', telegram:'@rachel_lim', waitDays:3, digestTime:'8:00',
-    phrase:['maple','lantern','pepper','drift'], telegramCode:'QX4-72K' };
+    firm:'Kallang Advisers', signin:'Google', telegram:'@rachel_lim', waitDays:3, digestTime:'8:00', telegramCode:'QX4-72K' };
 
   var insurers = {
     harbour:  { name:'Harbour Assurance', short:'Harbour',  file:'harbour-wl.pdf',  pages:14 },
