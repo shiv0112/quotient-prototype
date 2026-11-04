@@ -26,7 +26,7 @@
       [['','Needs you'],['progress','In progress'],['closed','Closed'],['noresults','No results'],['empty','Empty']].map(function(x){
         return '<button class="chip" data-go="#cases'+(x[0]?'-'+x[0]:'')+'" aria-pressed="'+((p.parts[0]||'')===x[0])+'">'+x[1]+'</button>'; }).join('')+'</div></nav>';
     var head = '<div class="page-head"><div><h1 class="h1 display">Cases</h1><p class="sub">'+D.caseOrder.length+' cases'+'<span class="dot-sep"></span>'+Q.needs().length+' need you</p></div>'+
-      '<a class="btn btn-primary" href="#new-case">'+Q.icon('plus')+'New case</a></div>';
+      '<div class="u2-dock"><a class="btn btn-primary" href="#new-case">'+Q.icon('plus')+'New case</a></div></div>';
     if(st==='empty') return '<div class="page">'+chips+'<div class="page-head"><h1 class="h1 display">Cases</h1></div>'+
       '<div class="empty"><h2>No cases yet</h2><p>Start one from a meeting or from PDFs.</p><a class="btn btn-primary" href="#new-case">'+Q.icon('plus')+'New case</a></div></div>';
     if(st==='error') return '<div class="page">'+chips+head+'<div class="banner banner-error" role="alert">'+Q.icon('alert')+'<p>Couldn\'t load your cases. Nothing was changed.</p><button class="btn-link" data-go="#cases">Try again</button></div></div>';

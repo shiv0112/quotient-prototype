@@ -6,10 +6,23 @@
 (function(){
   'use strict';
   var D = Q.data, W = D.writeup, ui = { hash:null };
+
+  /* "i" info button with a rule-reference popover (shared by write-up and MAS; first loaded copy wires the listeners) */
+  function info(t){ return '<span class="u2-i"><button type="button" class="u2-ib" aria-label="Rule reference" aria-expanded="false">'+Q.icon('info','i-sm')+'</button><span class="u2-tip" role="tooltip">'+Q.esc(t)+'</span></span>'; }
+  function rule(r){ return /^§/.test(r) ? 'MAS Notice FAA-N16 '+r : /^FAQ/.test(r) ? 'MAS '+r : r; }
+  function lnk(s){ return s.replace(/ ?\((?:§|FAQ )[^()]*(?:\([^()]*\))?[^()]*\)([.,:;])?/g, function(m, p){ return (p||'')+' '+info(rule(m.trim().replace(/[.,:;]$/,'').slice(1,-1))); }); }
+  function strip(s){ return s.replace(/ ?\((?:§|FAQ )[^()]*(?:\([^()]*\))?[^()]*\)/g, ''); }
+  if(!window.__u2tip){ window.__u2tip = 1;
+    var shut = function(except){ document.querySelectorAll('.u2-i.open').forEach(function(w){ if(w!==except){ w.classList.remove('open'); w.firstChild.setAttribute('aria-expanded','false'); } }); };
+    var place = function(w){ var t = w.lastChild, b = w.firstChild.getBoundingClientRect(), tw = t.offsetWidth, th = t.offsetHeight; t.style.left = t.style.top = '0px'; var o = t.getBoundingClientRect(); /* a transformed ancestor (dialog) moves the fixed origin */ t.style.left = Math.max(8, Math.min(b.left, window.innerWidth-8-tw))-o.left+'px'; t.style.top = (b.bottom+th+8>window.innerHeight && b.top-th-4>8 ? b.top-th-4 : b.bottom-6)-o.top+'px'; };
+    document.addEventListener('click', function(e){ var b = e.target.closest('.u2-ib'), w = b && b.parentNode; shut(w); if(!w) return; e.preventDefault(); e.stopPropagation(); var o = w.classList.toggle('open'); b.setAttribute('aria-expanded', o); place(w); });
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ var o = document.querySelector('.u2-i.open'); if(o){ shut(); o.firstChild.focus(); } } });
+    ['mouseover','focusin'].forEach(function(n){ document.addEventListener(n, function(e){ var w = e.target.closest && e.target.closest('.u2-i'); if(w) place(w); }); });
+  }
   var LIST = { needs:true, switch:true, chose:true }; // parts shown as one line per item
 
   /* sentence: [text, srcLabel, srcRef, {blank}] or [{blank}] -> {t, src, ref, blank} */
-  function norm(x){ return typeof x[0]==='object' ? { t:'', src:null, ref:null, blank:x[0].blank } : { t:x[0], src:x[1], ref:x[2], blank:x[3]?x[3].blank:null }; }
+  function norm(x){ return typeof x[0]==='object' ? { t:'', src:null, ref:null, blank:x[0].blank } : { t:strip(x[0]), src:x[1], ref:x[2], blank:x[3]?x[3].blank:null }; }
   function reset(st){
     ui.parts = W.parts.map(function(p){ return { key:p.key, title:p.title, ref:p.ref, need:p.need, s:p.s.map(norm) }; });
     ui.ticked = W.parts.map(function(p){ return !!p.ticked; });
@@ -75,8 +88,8 @@
     var why = left ? 'Fill or mark the blank first.' : 'This part is required. Write at least one point first.';
     var off = P.key==='switch' ? '<button class="btn-link" data-act="switch-off">Not replacing a policy</button>' : '';
     return '<section class="card wu-part'+(t?' ticked':'')+'" aria-labelledby="wu-h'+i+'">'+
-      '<header class="wu-ph"><span class="wu-n" aria-hidden="true">'+(t?Q.icon('check','i-sm'):n)+'</span><h2 class="h3" id="wu-h'+i+'"><span class="sr">Part '+n+': </span>'+Q.esc(P.title)+'</h2>'+
-        '<span class="proof wu-ref" title="MAS Notice FAA-N16">'+Q.esc(P.ref)+'</span>'+(P.need==='opt'?'<span class="chip chip-outline">Optional</span>':'')+status+
+      '<header class="wu-ph"><span class="wu-n" aria-hidden="true">'+(t?Q.icon('check','i-sm'):n)+'</span><h2 class="h3" id="wu-h'+i+'"><span class="sr">Part '+n+': </span>'+Q.esc(P.title)+' '+info(rule(P.ref))+'</h2>'+
+        (P.need==='opt'?'<span class="chip chip-outline">Optional</span>':'')+status+
         (editing?'':'<button class="btn btn-ghost btn-sm" data-edit="'+i+'">Edit</button>')+'</header>'+body+
       '<footer class="wu-pf"><label class="check"><input type="checkbox" data-tick="'+i+'"'+(t?' checked':'')+(blocked?' disabled aria-describedby="wu-why'+i+'"':'')+'> This part is right</label>'+
         (blocked?'<span class="hint" id="wu-why'+i+'">'+Q.icon('info','i-sm')+why+'</span>':'')+off+'</footer></section>';
@@ -84,7 +97,7 @@
   /* Replacing a policy, collapsed when the notes don't mention one. */
   function switchRow(i){
     return '<section class="card wu-cond" aria-label="Replacing an existing policy"><p><b>Not replacing a policy</b><span class="dot-sep"></span><button class="btn-link" data-act="switch-on">Change</button></p>'+
-      '<span class="proof wu-ref">'+Q.esc(ui.parts[i].ref)+'</span></section>';
+      info(rule(ui.parts[i].ref))+'</section>';
   }
 
   function aside(key, c, st){
@@ -97,7 +110,7 @@
     return '<aside class="wu-aside">'+(!drafted?'':
       '<section class="card wu-ready" aria-labelledby="wu-r"><p class="eyebrow" id="wu-r">For the firm portal</p>'+
         '<p class="big">'+n+' of '+r.length+'<small>required parts ticked</small></p><div class="wu-meter" style="grid-template-columns:repeat('+r.length+',1fr)" aria-hidden="true">'+r.map(function(i){ return '<i class="'+(ui.ticked[i]?'on':'')+'"></i>'; }).join('')+'</div>'+
-        copy+'<p class="small muted">'+(all?'Paste each part into your firm\'s portal. Nothing is sent from here.':'Tick each part when it reads right.')+'</p></section>')+
+        '<div class="u2-dock">'+copy+'</div><p class="small muted">'+(all?'Paste each part into your firm\'s portal. Nothing is sent from here.':'Tick each part when it reads right.')+'</p></section>')+
       '<section class="card wu-mas" aria-labelledby="wu-m"><p class="eyebrow" id="wu-m">Selected Client check</p>'+mas+
         '<p class="wu-dev">'+Q.icon('device','i-sm')+'<span>Checked on this device · plain rules · nothing sent</span></p>'+
         '<a href="#mas-'+key+'" class="small" style="font-weight:600">Open MAS checks</a></section>'+
@@ -113,11 +126,11 @@
     var head = '<header>'+'<a class="back" href="#case-'+key+'">'+Q.icon('back','i-sm')+'Back to '+Q.esc(c.name)+'</a>'+
       '<h1 class="h1 display">Write-up · '+Q.esc(c.name)+' <span class="case-no" style="font-family:var(--f-text);font-size:var(--t-lg);letter-spacing:0">#'+c.no+'</span></h1>'+
       '<p class="wu-sub">'+Q.esc(plan)+(st==='notdrafted'||st==='drafting'||st==='error'?'':'<span class="dot-sep"></span>drafted '+W.drafted+'<span class="dot-sep"></span><span aria-live="polite">'+n+' of '+total+' parts ticked</span>')+'</p>'+
-      '<p class="wu-note">'+Q.icon('info','i-sm')+'A draft for you to check, laid out as MAS Notice FAA-N16 §35. It is not advice and not a sign-off.</p></header>';
+      '<p class="wu-note">'+Q.icon('info','i-sm')+'A draft for you to check, laid out the way MAS expects. It is not advice and not a sign-off.'+info('MAS Notice FAA-N16 §35')+'</p></header>';
     var main;
     if(st==='notdrafted') main = '<section class="card hero wu-gate" aria-labelledby="wu-g"><div><p class="eyebrow">Next step</p><h2 id="wu-g">Draft the write-up from your notes and '+Q.esc(plan.replace('Harbour Assurance','Harbour'))+'</h2>'+
         '<p>It goes through the privacy gate first. You see exactly what leaves your device before anything is sent.</p></div>'+
-        '<div class="acts"><a class="btn btn-primary" href="#gate-'+key+'">Draft write-up'+Q.icon('arrow','i-sm')+'</a></div></section>';
+        '<div class="acts u2-dock"><a class="btn btn-primary" href="#gate-'+key+'">Draft write-up'+Q.icon('arrow','i-sm')+'</a></div></section>';
     else if(st==='drafting') main = '<section class="card" aria-busy="true" aria-labelledby="wu-d"><h2 class="h3" id="wu-d">Drafting the write-up…</h2>'+
         '<ul class="wu-steps" style="margin-top:var(--s-4)"><li>'+Q.icon('check','i-sm')+'Names replaced on this device</li><li>'+Q.icon('check','i-sm')+'Sent '+QB.view(key).charsLabel+' characters</li>'+
         '<li><span class="wu-spin" aria-hidden="true"></span>Writing each part</li><li><span class="todo-dot" aria-hidden="true"></span>Putting names back on this device</li></ul>'+
@@ -126,8 +139,8 @@
     else if(st==='error') main = '<div class="banner banner-error" role="alert">'+Q.icon('alert')+'<p>Couldn\'t draft. Nothing else was sent.</p><button class="btn-link" data-go="#gate-'+key+'">Try again</button></div>';
     else { var k = 0; main = ui.parts.map(function(P,i){ if(P.key==='switch' && !ui.on[i]) return switchRow(i); return shown(i) ? part(i, ++k) : ''; }).join('')+
       '<div class="wu-foot">'+
-        '<p>'+Q.icon('info','i-sm')+'<span>Your firm\'s form follows the LIA Minimum Standard for Life Insurance Advisory Process (§34). Paste each part into the matching section.</span></p>'+
-        '<p>'+Q.icon('info','i-sm')+'<span>Give the client a summary of their information and this recommendation before they sign (§36).</span></p></div>'; }
+        '<p>'+Q.icon('info','i-sm')+'<span>Your firm\'s form follows the LIA Minimum Standard for Life Insurance Advisory Process. Paste each part into the matching section.'+info('MAS Notice FAA-N16 §34')+'</span></p>'+
+        '<p>'+Q.icon('info','i-sm')+'<span>Give the client a summary of their information and this recommendation before they sign.'+info('MAS Notice FAA-N16 §36')+'</span></p></div>'; }
     return '<div class="page wu">'+demo(key, ui.st)+head+'<div class="wu-grid"><div class="wu-parts">'+main+'</div>'+aside(key, c, st)+'</div></div>';
   }
 

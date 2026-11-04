@@ -1,0 +1,99 @@
+/* Update 2 · u2-phone. Tokens only. See docs/design/UPDATE-2.md C (phone version). */
+
+/* Desktop: phone-only docks never show. */
+@media (min-width:480px){ .u2-ponly{display:none!important} }
+
+/* ---------- tab bar: 4 tabs (Today · Cases · Calendar · Settings). Shown wherever the rail is hidden. ---------- */
+@media (max-width:760px){
+  :root{--u2-tab:64px}
+  .tabbar{grid-template-columns:repeat(4,minmax(0,1fr));gap:0;padding:6px var(--s-2) calc(6px + env(safe-area-inset-bottom,0px));background:var(--surface);border-top:1px solid var(--line)}
+  .tabbar a{min-height:52px;gap:4px;color:var(--text-3);font-size:var(--t-xs);font-weight:var(--w-semi);letter-spacing:.01em;background:none;-webkit-tap-highlight-color:transparent}
+  .tabbar a .i{box-sizing:content-box;width:22px;height:22px;padding:3px 18px;border-radius:var(--r-pill);transition:background var(--dur-2) var(--ease-out),color var(--dur-2) var(--ease-out)}
+  .tabbar a[aria-current="page"]{color:var(--ink);background:none}
+  .tabbar a[aria-current="page"] .i{background:var(--surface-2);stroke-width:2}
+  .tabbar a:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
+  .toasts{bottom:calc(var(--u2-tab) + var(--s-4) + env(safe-area-inset-bottom,0px))}
+  body.focus .toasts{bottom:var(--s-6)}
+}
+
+/* ---------- phone (<480px) ---------- */
+@media (max-width:479px){
+  /* One main action, sticky above the tab bar, in thumb reach. */
+  .u2-dock{position:fixed;left:0;right:0;bottom:calc(var(--u2-tab) + env(safe-area-inset-bottom,0px));z-index:34;
+    display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;gap:var(--s-2);margin:0!important;
+    padding:var(--s-3) var(--gutter);background:var(--surface);border-top:1px solid var(--line);
+    box-shadow:0 -8px 24px -18px color-mix(in srgb,var(--ink) 40%,transparent)}
+  body.focus .u2-dock{bottom:0;padding-bottom:calc(var(--s-3) + env(safe-area-inset-bottom,0px))}
+  .u2-dock>.btn{flex:1 1 0;min-width:0;min-height:48px;width:auto;margin:0}
+  .u2-dock>.btn-primary{flex:1 1 0}
+  .u2-dock>.btn-secondary{flex:0 1 auto;padding:0 var(--s-4)}
+  .u2-dock>.btn-link{flex:none;min-height:48px}
+  .u2-dock .spacer{display:none}
+  .hero .u2-dock .btn-secondary{background:var(--surface);color:var(--ink);border-color:var(--line-strong)}
+  .hero .u2-dock .btn-link{color:var(--link)}
+  .s08-acts.u2-dock .btn-ghost{display:none} /* gate has its own Back link */
+  .u2-dock>.why,.u2-dock>.small{order:-1;flex:1 0 100%;margin:0;font-size:var(--t-xs);color:var(--text-3)}
+  body:has(.u2-dock) .page{padding-bottom:calc(var(--u2-tab) + 104px + env(safe-area-inset-bottom,0px))}
+  body.focus:has(.u2-dock) .page{padding-bottom:calc(104px + env(safe-area-inset-bottom,0px))}
+  body:has(.u2-dock) .toasts{bottom:calc(var(--u2-tab) + 88px + env(safe-area-inset-bottom,0px))}
+  body.focus:has(.u2-dock) .toasts{bottom:96px}
+  /* nudge and share docks stack two buttons */
+  body:has(.ng-acts) .toasts, body:has(.sh-acts) .toasts{bottom:calc(var(--u2-tab) + 150px + env(safe-area-inset-bottom,0px))}
+  /* The board's floating New case is the main action there: lift it over the tab bar. */
+  .bd{--bd-fab-lift:var(--u2-tab)}
+
+  /* Share and nudge (markup owned by the follow-up screens): same sticky treatment for their action row. */
+  .sh-acts,.ng-acts{position:fixed;left:0;right:0;bottom:calc(var(--u2-tab) + env(safe-area-inset-bottom,0px));z-index:34;
+    display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;gap:var(--s-2);margin:0!important;
+    padding:var(--s-3) var(--gutter);background:var(--surface);border-top:1px solid var(--line);
+    box-shadow:0 -8px 24px -18px color-mix(in srgb,var(--ink) 40%,transparent)}
+  body.focus .sh-acts,body.focus .ng-acts{bottom:0;padding-bottom:calc(var(--s-3) + env(safe-area-inset-bottom,0px))}
+  .sh-acts>.btn-primary,.ng-acts>.btn-primary{flex:1 1 100%;min-height:48px;width:auto}
+  .sh-acts .spacer,.ng-acts .spacer{display:none}
+  .ng-acts>.row{flex:1 1 100%;justify-content:center}
+  body:has(.sh-acts) .page,body:has(.ng-acts) .page{padding-bottom:calc(var(--u2-tab) + 150px + env(safe-area-inset-bottom,0px))}
+
+  /* Case: next-step card keeps its words; its button docks. */
+  .next-card .acts.u2-dock{flex-direction:row;align-items:center}
+  .next-card.hero:has(.u2-dock){padding-bottom:var(--s-5)}
+
+  /* Comparison card: 5 key rows, "Show all 13 rows" for the full ledger. */
+  .fx-card .u2-all{border-top:1px solid var(--line)}
+  .fx-card .u2-all summary{display:flex;align-items:center;justify-content:center;min-height:var(--target);list-style:none;cursor:pointer;color:var(--link);font-size:var(--t-sm);font-weight:var(--w-semi)}
+  .fx-card .u2-all summary::-webkit-details-marker{display:none}
+  .fx-card .u2-less,.fx-card .u2-all[open] .u2-more{display:none}
+  .fx-card .u2-all[open] .u2-less{display:inline}
+  .fx-card:has(.u2-all[open]) .u2-key{display:none}
+  .fx-card .u2-ng{margin:var(--s-2) 0 0;font-size:var(--t-xs)}
+  .fx-card li>span:first-child{min-width:0;font-size:var(--t-sm);line-height:var(--lh-snug)}
+  .fx-cards{align-items:flex-start}
+  .u2-chart-slot:empty{display:none}
+
+  /* Today: Record notes as a quiet secondary action under the greeting. */
+  .bd-head{align-items:flex-start}
+  .bd-rec{margin-top:var(--s-3);min-height:40px}
+
+  /* Cases: one card per client. */
+  .cs-card{padding:0;background:none;border:0;box-shadow:none}
+  .cs-list{display:flex;flex-direction:column;gap:var(--s-3)}
+  .cs-list>li.cs-row{padding:var(--s-4);background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);row-gap:var(--s-2)}
+  .cs-next{font-size:var(--t-base)}
+  .cs-row .btn{min-height:var(--target)}
+  .cs-filters{flex-wrap:nowrap}
+  .cs-filters .chip{min-height:var(--target)}
+
+  /* Calendar (meetings): a little more room for the date column. */
+  .s05-row,.s05-past{grid-template-columns:72px minmax(0,1fr) auto;min-height:60px}
+  .s05-past .s05-t{font-size:var(--t-sm)}
+  .s05-who{font-size:var(--t-base)}
+
+  /* Firm review: the dock carries the coral action, so the inline one goes quiet. */
+  .mas-acts .btn-primary{background:var(--surface);color:var(--ink);border-color:var(--line-strong)}
+  .mas-acts .btn{min-height:var(--target)}
+
+  /* Write-up: the copy button docks; the readiness card stays as a summary. */
+  .wu-ready .u2-dock .btn{flex:1 1 100%}
+
+  /* Small text floor: labels at least 12px, body at least 15px. */
+  .case-meta,.s05-who a,.cs-list .who b{font-size:var(--t-base)}
+}

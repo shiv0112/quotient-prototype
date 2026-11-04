@@ -7,8 +7,15 @@
 
   function stepLabel(c,i){ return i===4 && c.chosenLabel ? c.chosenLabel : D.steps[i].label; }
 
+  /* Phone (<480px): the 8-step timeline does not fit, so show one line on a 6-step scale instead. */
+  var SIX = ['Met','Compared','Shared','Chosen','Write-up','Won'], SIX_AT = [1,2,3,4,4,5,5,6];
+  function phoneStep(c){
+    var n = SIX_AT[c.now] || 1, label = c.result==='lost' ? 'Lost' : c.now===6 ? 'Firm review' : SIX[n-1];
+    return '<div class="fx-step"><p><b>Step '+n+' of 6:</b> '+Q.esc(label)+'</p><span class="fx-bar" aria-hidden="true"><i style="width:'+Math.round(n/6*100)+'%"></i></span></div>';
+  }
+
   function timeline(c){
-    return '<div class="tl-wrap"><ol class="timeline" aria-label="Case progress">'+D.steps.map(function(s,i){
+    return phoneStep(c)+'<div class="tl-wrap"><ol class="timeline" aria-label="Case progress">'+D.steps.map(function(s,i){
       var cls = 'tl', label = stepLabel(c,i), small = c.dates[s.key] || '';
       var reached = c.result==='lost' ? i<=c.lostAt : i<c.now;
       if(i===6 && !c.selected){ cls += ' skip'; small = 'Not needed'; }
@@ -22,19 +29,21 @@
 
   /* The next-step card is derived from the shared case data, so it moves on after every action (nudge, ticks, checks). */
   function nextStep(key, c){
-    var first = c.first, h, p = '', btn = '', done = false, n;
+    var first = c.first, h, p = '', btn = '', done = false, dup = false, n;
     function a(href, label, kind, icon){ return '<a class="btn btn-'+(kind||'primary')+'" href="'+href+'">'+(icon?Q.icon(icon,'i-sm'):'')+label+'</a>'; }
     if(c.result==='won'){ done = true; h='Won · policy with '+(c.chose||'the chosen insurer'); p='Closed on '+c.dates.closed+'.'; btn='<a class="btn-link" href="#sent-'+key+'">See what left your device</a>'; }
     else if(c.result==='lost'){ done = true; h='Lost · '+(c.reason||'no reason').toLowerCase(); p='Closed on '+c.dates.closed+'.'; btn='<button class="btn-link" data-act="reopen">Reopen case</button>'; }
     else switch(c.now){
-      case 0: h='Add the plans you\'re comparing'; p='Drop 2 to 4 policy illustration PDFs.'+(c.dates.met?' Your notes from '+c.dates.met+' are ready.':''); btn=a('#new-case-'+key, Q.icon('plus')+'Add PDFs'); break;
+      case 0: h='Add the plans you\'re comparing'; p='Drop 3 to 5 policy illustration PDFs (2 allowed).'+(c.dates.met?' Your notes from '+c.dates.met+' are ready.':''); btn=a('#new-case-'+key, Q.icon('plus')+'Add PDFs'); break;
       case 1: n = Q.toCheck(key);
-        if(n.length){ h='Check '+n.length+' number'+(n.length>1?'s':'')+' before you share'; p='Yellow numbers were read with low confidence or not found. Share unlocks when they are checked.';
-          btn='<button class="btn btn-primary" data-sheet="'+n[0]+'">Check first number</button>'; }
+        if(n.length){ dup = true; h='Check '+n.length+' number'+(n.length>1?'s':'')+' before you share'; p='Yellow numbers were read with low confidence or not found. Share unlocks when they are checked.';
+          btn='<button class="btn btn-primary" data-sheet="'+n[0]+'"><span class="fx-desk">Check first number</span><span class="fx-phone">Check 1st number</span></button>'+
+            '<button class="btn btn-secondary u2-ponly" aria-disabled="true" title="Check every yellow number first">'+Q.icon('share','i-sm')+'Share</button>'; }
         else { h='Ready to share with '+first; p='Every number is checked against its PDF page.'; btn=a('#share-'+key, 'Share comparison', 'primary', 'share'); }
         break;
       case 2:
-        if(c.nudged){ h='Nudge sent · next reminder '+c.nudged.next; p='You nudged '+first+' on '+c.nudged.on+'. Log it here when '+first+' replies.'; btn=a('#nudge-'+key+'-reply', 'Log a reply', 'secondary'); }
+        if(c.quiet){ h='Case quiet · '+(c.nudgesSent||2)+' nudges sent'; p='Reminders for '+first+' have stopped. Log it here if '+first+' replies.'; btn=a('#nudge-'+key+'-reply', 'Log a reply', 'secondary'); }
+        else if(c.nudged){ h='Nudge sent · next reminder '+c.nudged.next; p='You nudged '+first+' on '+c.nudged.on+'. Log it here when '+first+' replies.'; btn=a('#nudge-'+key+'-reply', 'Log a reply', 'secondary'); }
         else if(c.snoozedTo){ h='Snoozed until '+c.snoozedTo; p='We\'ll remind you on Telegram.'; btn=a('#nudge-'+key, 'Open nudge', 'secondary'); }
         else if((c.quietDays||0) >= D.adviser.waitDays){ h=first+' hasn\'t replied in '+c.quietDays+' days'; p='You shared the comparison on '+c.dates.shared+'. A short nudge is drafted.'; btn=a('#nudge-'+key, 'Send a nudge'); }
         else { h='Shared with '+first; p='We\'ll remind you on '+D.share.remindOn+' if there\'s no reply.'; btn=a('#nudge-'+key+'-reply', 'Log a reply', 'secondary'); }
@@ -54,8 +63,8 @@
         break;
       default: h='No next step';
     }
-    return '<section class="card next-card '+(done?'done':'hero')+' rise" aria-labelledby="ns-h"><div><p class="eyebrow">'+(done?'Closed':'Next step')+'</p>'+
-      '<h2 id="ns-h">'+Q.esc(h)+'</h2>'+(p?'<p>'+Q.esc(p)+'</p>':'')+'</div>'+(btn?'<div class="acts">'+btn+'</div>':'')+'</section>';
+    return '<section class="card next-card '+(done?'done':'hero')+(dup?' u2-dup':'')+' rise" aria-labelledby="ns-h"><div><p class="eyebrow">'+(done?'Closed':'Next step')+'</p>'+
+      '<h2 id="ns-h">'+Q.esc(h)+'</h2>'+(p?'<p>'+Q.esc(p)+'</p>':'')+'</div>'+(btn?'<div class="acts'+(/class="btn /.test(btn)?' u2-dock':'')+'">'+btn+'</div>':'')+'</section>';
   }
 
   function cellHtml(key, ver, t, ins, row){
@@ -87,16 +96,51 @@
     return '<div class="tbl-wrap"><table class="tbl"><colgroup><col style="width:25%">'+t.plans.map(function(){return '<col>';}).join('')+'</colgroup>'+head+'<tbody>'+body+'</tbody></table></div>';
   }
 
+  /* Phone (<480px): one card per insurer in a swipe row, same cells (page tags, yellow checks) as the table. */
+  // Compact card (UPDATE-2 Galih mock): 5 key rows plus any still-yellow cell; "Show all" opens the full ledger.
+  var KEY_ROWS = { premium:'Annual premium', sa:'Sum assured', riders:'Riders', g65:'Guaranteed at 65', b20:'Illustrated yr 20 (4.25%)' };
+  function cards(key, ver){
+    var t = D.cases[key].tables[ver], n = t.plans.length;
+    var list = t.plans.map(function(ins, i){
+      var top = D.rows.filter(function(r){ var f = t.cells[ins][r.key].flag; return KEY_ROWS[r.key] || f==='check' || f==='missing'; }).map(function(r){
+        return '<li><span>'+Q.esc(KEY_ROWS[r.key] || Q.rowLabel(r))+'</span>'+cellHtml(key, ver, t, ins, r)+'</li>'; }).join('');
+      var lastGrp = 'summary', rows = D.rows.map(function(r){
+        var g = '';
+        if(r.grp!==lastGrp){ var G = D.groups[r.grp]; lastGrp = r.grp; g = '<li class="fx-grp">'+Q.esc(G.label)+(G.ng?' <span class="chip">Not guaranteed</span>':'')+'</li>'; }
+        return g+'<li><span>'+Q.esc(r.label)+'</span>'+cellHtml(key, ver, t, ins, r)+'</li>'; }).join('');
+      return '<article class="fx-card" aria-label="'+Q.esc(D.insurers[ins].name)+', plan '+(i+1)+' of '+n+'"><header><b>'+Q.esc(D.insurers[ins].name)+'</b><span class="small muted num">'+(i+1)+' of '+n+'</span></header>'+
+        '<ul class="u2-key">'+top+'</ul><details class="u2-all"><summary><span class="u2-more">Show all '+D.rows.length+' rows</span><span class="u2-less">Show fewer rows</span></summary><ul>'+rows+'</ul></details>'+
+        '<p class="u2-ng small muted">Illustrated values are not guaranteed.</p></article>'; }).join('');
+    return '<div class="fx-cards" tabindex="0" aria-label="Plans, swipe sideways">'+list+'</div>'+
+      '<div class="fx-pager"><span class="fx-dots" aria-hidden="true">'+t.plans.map(function(_, i){ return '<i'+(i?'':' class="on"')+'></i>'; }).join('')+'</span>'+
+      '<span class="small muted fx-hint" aria-live="polite">'+(n>1?'swipe for '+Q.esc(D.insurers[t.plans[1]].short)+' →':'')+'</span></div><div class="u2-chart-slot">'+Q.u2Chart(key, ver)+'</div>';
+  }
+
+  /* Guaranteed value at 65, one bar per insurer of this version. Same cells as the table; unchecked or missing values get no bar. */
+  Q.u2Chart = function(key, ver){
+    var c = D.cases[key], t = c && c.tables[ver || Object.keys(c.tables).pop()]; if(!t) return '';
+    var rows = t.plans.map(function(ins){ var x = t.cells[ins].g65 || {}, ok = x.v!=null && !x.flag && x.by!=='na';
+      return { name:D.insurers[ins].name, short:D.insurers[ins].short, v:ok ? x.v : null, note:x.flag==='check' ? 'To check' : 'Not found' }; });
+    var max = Math.max.apply(null, rows.map(function(r){ return r.v || 0; })) || 1;
+    var label = 'Guaranteed value at 65. '+rows.map(function(r){ return r.name+': '+(r.v!=null ? Q.money(r.v) : r.note.toLowerCase()); }).join('; ')+'.';
+    return '<figure class="u2-chart" role="img" aria-label="'+Q.esc(label)+'"><figcaption>Guaranteed value at 65</figcaption>'+rows.map(function(r){
+      return '<div class="u2-bar'+(r.v!=null?'':' gap')+'"><span class="n"><span class="fx-desk">'+Q.esc(r.name)+'</span><span class="fx-phone">'+Q.esc(r.short)+'</span></span><span class="t"><i style="width:'+(r.v!=null ? Math.round(r.v/max*100) : 100)+'%"></i></span>'+
+        '<span class="v num">'+(r.v!=null ? Q.money(r.v) : r.note)+'</span></div>'; }).join('')+'</figure>';
+  };
+
   function comparison(key, c, state){
     var vers = Object.keys(c.tables);
     if(state==='loading') return '<section class="card rise" aria-busy="true"><span class="skel skel-lg" style="width:30%"></span>'+
       [1,2,3,4,5,6].map(function(){ return '<div class="skel-row"><span class="skel" style="width:22%"></span><span class="skel" style="width:14%"></span><span class="skel" style="width:14%"></span><span class="skel" style="width:14%"></span></div>'; }).join('')+'</section>';
-    if(!vers.length || state==='empty') return '<section class="empty rise"><h2>No plans yet.</h2><p>Add 2 to 4 policy illustration PDFs to build the comparison.</p></section>';
+    if(!vers.length || state==='empty') return '<section class="empty rise"><h2>No plans yet.</h2><p>Add 3 to 5 policy illustration PDFs (2 allowed) to build the comparison.</p></section>';
     var ver = verOf[key] && c.tables[verOf[key]] ? verOf[key] : vers[vers.length-1];
     var tabs = vers.length>1 ? '<div class="tabs" role="tablist" aria-label="Version">'+vers.map(function(v){
       return '<button role="tab" data-ver="'+v+'" aria-selected="'+(v===ver)+'">'+v+(c.tables[v].changed?' · '+D.insurers[c.tables[v].changed].short+' revised':'')+'</button>'; }).join('')+'</div>' : '';
-    return '<section class="card cmp rise" aria-labelledby="cmp-h"><div class="cmp-head"><h2 class="h3" id="cmp-h">Plan comparison</h2>'+
-      '<p class="small muted">Click any number to see it on its PDF page.</p></div>'+tabs+table(key, ver)+'</section>';
+    var left = Q.toCheck(key, ver).length, np = c.tables[ver].plans.length;
+    return '<section class="card cmp rise" aria-labelledby="cmp-h"><div class="cmp-head"><h2 class="h3" id="cmp-h"><span class="fx-desk">Plan comparison</span><span class="fx-phone">'+np+' plans compared</span></h2>'+
+      '<p class="small muted"><span class="fx-desk">Click</span><span class="fx-phone">Tap</span> any number to see it on its PDF page.</p></div>'+tabs+
+      (left?'<div class="banner banner-warn fx-phone" role="status">'+Q.icon('alert')+'<p>Check '+left+' yellow number'+(left>1?'s':'')+' to unlock Share</p></div>':'')+
+      table(key, ver)+cards(key, ver)+'</section>';
   }
 
   /* Meetings and notes: every calendar meeting and quick note on this case, oldest first. */
@@ -106,7 +150,7 @@
       var m = x.m, tr = D.transcripts[m.id], quick = m.kind==='notes';
       var type = quick ? 'Quick notes' : 'Calendar meeting · '+Q.esc(m.app||'');
       var lab = x.upcoming ? 'Upcoming' : !tr && !m.notesReady ? 'No notes' : (tr && tr.labels ? 'You and Client' : 'Mic only');
-      var ti = c.selected ? (m.ti ? '<span class="cm-ti">Trusted individual: '+Q.esc(m.ti)+' present</span>' : x.upcoming ? '<span class="cm-ti muted">Trusted individual needed at this meeting (§10D)</span>' : '') : '';
+      var ti = c.selected ? (m.ti ? '<span class="cm-ti">Trusted individual: '+Q.esc(m.ti)+' present</span>' : x.upcoming ? '<span class="cm-ti muted">Trusted individual needed at this meeting</span>' : '') : '';
       return '<li><span class="cm-when num"><b>'+Q.esc(x.upcoming && m.day==='Today' ? 'Today' : m.date)+'</b><small>'+Q.esc(m.time)+'</small></span>'+
         '<span class="cm-what"><span>'+(quick?Q.icon('mic','i-sm'):Q.icon(m.app==='In person'?'meetings':'video','i-sm'))+type+'</span>'+
         '<small class="muted">Meeting '+(i+1)+' of '+list.length+(m.len?'<span class="dot-sep"></span>'+Q.esc(m.len):'')+'<span class="dot-sep"></span>'+lab+'</small>'+ti+'</span>'+
@@ -158,6 +202,18 @@
       if(a.dataset.act==='delete') Q.dialog({ title:'Delete case #'+c.no+'?', body:'<p>This removes '+Q.esc(c.name)+'\'s case, PDFs and notes from this device.</p>',
         actions:[{label:'Cancel',value:null},{label:'Delete case',value:'del',kind:'danger'}], safe:null }).then(function(v){ if(v) Q.toast('Demo only: case kept'); });
     });
+    var row = el.querySelector('.fx-cards');
+    // Phone: the swipe row takes the height of the card in view, so a short card leaves no gap above the dots.
+    function fit(){ if(!row.offsetWidth) return; var k = Math.round(row.scrollLeft / row.offsetWidth), card = row.children[k] || row.children[0];
+      row.style.height = (card.offsetHeight + 2*parseFloat(getComputedStyle(row).paddingTop))+'px'; }
+    if(row){ fit(); if(document.fonts) document.fonts.ready.then(fit); row.addEventListener('toggle', function(){ row.style.height = ''; fit(); }, true); var ft; row.addEventListener('scroll', function(){ clearTimeout(ft); ft = setTimeout(fit, 140); }, { passive:true }); }
+    if(row) row.addEventListener('scroll', function(){
+      var pg = row.closest('.page'); if(!pg || !document.contains(row)) return; // a late scroll event after the screen changed
+      var dots = pg.querySelectorAll('.fx-dots i'), n = dots.length, i = Math.round(row.scrollLeft / (row.scrollWidth / n)), hint = pg.querySelector('.fx-hint');
+      dots.forEach(function(d, k){ d.classList.toggle('on', k===i); });
+      var plans = c.tables[verOf[key] && c.tables[verOf[key]] ? verOf[key] : Object.keys(c.tables).pop()].plans;
+      hint.textContent = i < n-1 ? 'swipe for '+D.insurers[plans[i+1]].short+' →' : '← swipe back for '+D.insurers[plans[0]].short;
+    }, { passive:true });
     if(p.id==='source' && shownFor!==location.hash){ shownFor = location.hash; var refs = Q.toCheck(key); Q.openSheet(refs[0] || key+'/'+Object.keys(c.tables)[0]+'/harbour/b20'); }
   }
 

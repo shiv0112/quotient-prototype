@@ -1,0 +1,112 @@
+/* Update 2 · u2-fixes. Tokens only. See docs/design/UPDATE-2.md */
+
+/* A1 · comparison as swipe cards on phone; A5 · one-line step on phone. Hidden on desktop. */
+.fx-phone,.fx-step,.fx-cards,.fx-pager{display:none}
+
+/* A2 · PDF sheet: page is zoomed to width in core.js; allow pinch zoom */
+.sheet-body{touch-action:pan-x pan-y pinch-zoom}
+.sheet-body .pdf{flex:none;max-width:none}
+
+@media (max-width:479px){
+  .fx-desk{display:none}
+  .fx-phone{display:inline}
+  .banner.fx-phone{display:flex}
+
+  /* A5 · progress: "Step 2 of 6: Compared" with a thin bar */
+  .tl-wrap{display:none}
+  .fx-step{display:flex;flex-direction:column;gap:var(--s-2);font-size:var(--t-sm);color:var(--ink)}
+  .fx-step p{margin:0}
+  .fx-bar{display:block;height:4px;border-radius:var(--r-pill);background:var(--line);overflow:hidden}
+  .fx-bar i{display:block;height:100%;border-radius:var(--r-pill);background:var(--ink)}
+
+  /* A1 · one card per insurer, swipe sideways */
+  .cmp .tbl-wrap{display:none}
+  .fx-cards{display:flex;gap:var(--s-3);overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior-x:contain;margin:0 calc(-1*var(--s-1));padding:var(--s-1)}
+  .fx-cards::-webkit-scrollbar{display:none}
+  .fx-card{flex:0 0 100%;scroll-snap-align:start;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surface);padding:var(--s-4)}
+  .fx-card header{display:flex;justify-content:space-between;align-items:baseline;gap:var(--s-3);padding-bottom:var(--s-3);border-bottom:1.5px solid var(--ink)}
+  .fx-card ul{list-style:none;margin:0;padding:0}
+  .fx-card li{display:flex;justify-content:space-between;align-items:center;gap:var(--s-3);min-height:46px;border-bottom:1px solid var(--line);font-size:var(--t-sm);color:var(--text-2)}
+  .fx-card li:last-child{border-bottom:0}
+  .fx-card li .fig{margin-right:0;min-height:44px;text-align:right}
+  .fx-card li .fig.text{white-space:normal}
+  .fx-card .fx-grp{min-height:0;padding:var(--s-4) 0 var(--s-2);color:var(--ink);font-size:var(--t-xs);font-weight:var(--w-semi);letter-spacing:var(--track-caps);text-transform:uppercase;justify-content:flex-start;flex-wrap:wrap}
+  .fx-card .fx-grp .chip{text-transform:none;letter-spacing:0}
+  .fx-pager{display:flex;align-items:center;justify-content:space-between;gap:var(--s-3)}
+  .fx-dots{display:flex;gap:6px}
+  .fx-dots i{width:8px;height:8px;border-radius:50%;background:var(--line-strong)}
+  .fx-dots i.on{background:var(--ink)}
+}
+
+/* F · Guaranteed value at 65: one bar per insurer, under the comparison (both layouts; also used by Q.u2Chart in the shared PDF). */
+.u2-chart-slot:not(:empty){margin-top:var(--s-5)}
+.u2-chart{margin:0;padding:var(--s-4) 0 0;border-top:1px solid var(--line);display:grid;gap:var(--s-3);max-width:640px}
+.u2-chart figcaption{font-size:var(--t-xs);font-weight:var(--w-semi);letter-spacing:var(--track-caps);text-transform:uppercase;color:var(--ink)}
+.u2-bar{display:grid;grid-template-columns:minmax(0,9.5em) minmax(0,1fr) 6.5em;align-items:center;gap:var(--s-3);font-size:var(--t-sm);color:var(--text-2)}
+.u2-bar .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.u2-bar .t{display:block;height:12px;border-radius:var(--r-pill);background:var(--surface-2);overflow:hidden}
+.u2-bar .t i{display:block;height:100%;border-radius:var(--r-pill);background:var(--ink)}
+.u2-bar .v{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink);font-weight:var(--w-semi)}
+/* No confirmed value: empty hatched track, never a guessed length. */
+.u2-bar.gap .t{background:repeating-linear-gradient(135deg,var(--surface-2) 0 5px,var(--confirm-bg) 5px 8px);box-shadow:inset 0 0 0 1px var(--confirm-line)}
+.u2-bar.gap .t i{display:none}
+.u2-bar.gap .v{color:var(--confirm-ink);font-weight:var(--w-med)}
+
+@media (max-width:479px){
+  .u2-bar{grid-template-columns:5.5em minmax(0,1fr) 5.5em;gap:var(--s-2)}
+  .u2-chart{padding-top:var(--s-4)}
+  /* Case: when the yellow banner carries "Check 2 numbers", the next-step card shows only its docked buttons. */
+  .next-card.u2-dup{display:contents}
+  .next-card.u2-dup>div:first-child{display:none}
+  .fx-cards{overflow-y:hidden;transition:height var(--dur-2) var(--ease-out)}
+}
+
+/* F · Privacy gate after the first case: one line, details one tap away. */
+.s08-rc.u2-gsum{padding:var(--s-6) var(--s-8) calc(var(--s-6) + var(--z))}
+.u2-gline{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s-2) var(--s-3);margin:0 0 var(--s-2);font-size:var(--t-md);color:var(--ink)}
+.u2-gline>.i{color:var(--link);flex:none}
+.u2-gline b{font-weight:var(--w-semi)}
+.u2-gline>span{flex:1 1 0;min-width:12em}
+.u2-gline .btn-link{min-height:var(--target);margin-left:auto}
+@media (max-width:479px){
+  .s08-rc.u2-gsum{padding:var(--s-5) var(--s-4) calc(var(--s-5) + var(--z))}
+  .u2-gline{font-size:var(--t-base)}
+  .u2-gline .btn-link{margin-left:calc(24px + var(--s-3))}
+}
+
+/* F · Onboarding: 5 steps, one choice per screen. */
+.ob-segs{grid-template-columns:repeat(5,28px)}
+.ob-body:has(.u2-how){max-width:880px}
+.u2-sub{margin-top:var(--s-2)}
+.u2-how{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--s-4)}
+.u2-howc{display:flex;flex-direction:column;gap:var(--s-2);padding:var(--s-5);border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surface)}
+.u2-howc .h3,.u2-howc p{margin:0}
+.u2-vis{display:flex;flex-direction:column;justify-content:center;gap:var(--s-2);min-height:132px;margin-bottom:var(--s-3);padding:var(--s-4);border-radius:var(--r-md);background:var(--surface-2)}
+.u2-file{display:flex;align-items:center;gap:var(--s-2);min-height:32px;padding:0 var(--s-3);border-radius:var(--r-sm);background:var(--surface);border:1px solid var(--line);font-size:var(--t-xs);font-weight:var(--w-semi);color:var(--ink)}
+.u2-file .i{color:var(--link)}
+.u2-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--s-1) var(--s-2)}
+.u2-row .fig{margin:0 0 0 auto;pointer-events:none;white-space:nowrap}
+.u2-vis .ob-bubble{margin:0;max-width:92%;display:flex;align-items:center;gap:var(--s-2);font-size:var(--t-xs);background:var(--surface)}
+.u2-vis .ob-bubble .logo{width:18px;height:18px;flex:none}
+.u2-vis .ob-bubble.u2-out{align-self:flex-end;border-radius:var(--r-lg) 4px var(--r-lg) var(--r-lg);background:var(--ok-bg);color:var(--ink)}
+.u2-hdots{display:none}
+.ob-choices.u2-pick{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+.u2-pick .ob-choice{position:relative;min-height:120px}
+.u2-pick .ob-choice .logo{width:28px;height:28px}
+.u2-pick .ob-choice .i.logo{stroke:currentColor;fill:none;stroke-width:1.8}
+.u2-pick .ob-choice small{overflow-wrap:anywhere}
+.u2-pick .ob-choice[aria-checked="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.u2-tick{position:absolute;top:var(--s-4);right:var(--s-4);display:none;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--ink);color:var(--bg)}
+.u2-pick .ob-choice[aria-checked="true"] .u2-tick{display:grid}
+@media (max-width:479px){
+  .ob-segs{grid-template-columns:repeat(5,10px);gap:4px}
+  .ob-choices.u2-pick{grid-template-columns:1fr;gap:var(--s-3)}
+  .u2-how{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;gap:var(--s-3);margin:0 calc(-1*var(--gutter));padding:0 var(--gutter);scroll-padding:0 var(--gutter)}
+  .u2-how::-webkit-scrollbar{display:none}
+  .u2-howc{flex:0 0 100%;scroll-snap-align:start}
+  .u2-hdots{display:flex;justify-content:center;gap:6px;margin-top:calc(-1*var(--s-3))}
+  .u2-hdots i{width:8px;height:8px;border-radius:50%;background:var(--line-strong)}
+  .u2-hdots i.on{background:var(--ink)}
+  .u2-pick .ob-choice{min-height:var(--target);padding:var(--s-4);padding-right:var(--s-10)}
+  .u2-tick{top:50%;transform:translateY(-50%)}
+}

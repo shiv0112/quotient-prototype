@@ -5,6 +5,19 @@
 (function(){
   'use strict';
   var D = Q.data, C = QD.c, ui = { hash:null };
+  /* "i" info button with a rule-reference popover (shared by write-up and MAS; first loaded copy wires the listeners) */
+  function info(t){ return '<span class="u2-i"><button type="button" class="u2-ib" aria-label="Rule reference" aria-expanded="false">'+Q.icon('info','i-sm')+'</button><span class="u2-tip" role="tooltip">'+Q.esc(t)+'</span></span>'; }
+  function rule(r){ return /^§/.test(r) ? 'MAS Notice FAA-N16 '+r : /^FAQ/.test(r) ? 'MAS '+r : r; }
+  function lnk(s){ return s.replace(/ ?\((?:§|FAQ )[^()]*(?:\([^()]*\))?[^()]*\)([.,:;])?/g, function(m, p){ return (p||'')+' '+info(rule(m.trim().replace(/[.,:;]$/,'').slice(1,-1))); }); }
+  function strip(s){ return s.replace(/ ?\((?:§|FAQ )[^()]*(?:\([^()]*\))?[^()]*\)/g, ''); }
+  if(!window.__u2tip){ window.__u2tip = 1;
+    var shut = function(except){ document.querySelectorAll('.u2-i.open').forEach(function(w){ if(w!==except){ w.classList.remove('open'); w.firstChild.setAttribute('aria-expanded','false'); } }); };
+    var place = function(w){ var t = w.lastChild, b = w.firstChild.getBoundingClientRect(), tw = t.offsetWidth, th = t.offsetHeight; t.style.left = t.style.top = '0px'; var o = t.getBoundingClientRect(); /* a transformed ancestor (dialog) moves the fixed origin */ t.style.left = Math.max(8, Math.min(b.left, window.innerWidth-8-tw))-o.left+'px'; t.style.top = (b.bottom+th+8>window.innerHeight && b.top-th-4>8 ? b.top-th-4 : b.bottom-6)-o.top+'px'; };
+    document.addEventListener('click', function(e){ var b = e.target.closest('.u2-ib'), w = b && b.parentNode; shut(w); if(!w) return; e.preventDefault(); e.stopPropagation(); var o = w.classList.toggle('open'); b.setAttribute('aria-expanded', o); place(w); });
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ var o = document.querySelector('.u2-i.open'); if(o){ shut(); o.firstChild.focus(); } } });
+    ['mouseover','focusin'].forEach(function(n){ document.addEventListener(n, function(e){ var w = e.target.closest && e.target.closest('.u2-i'); if(w) place(w); }); });
+  }
+
 
   /* FAA-N16 §10A: two or more "no" = Selected Client. Decides early when the rest can't change the result. */
   function verdict(a){
@@ -36,7 +49,7 @@
 
   function question(i, q, next, key){
     var ev = q.from ? '<p class="mas-ev">'+Q.icon('file','i-sm')+Q.esc(q.from)+'</p>' : '';
-    var note = q.note ? '<p class="mas-ev">'+Q.icon('info','i-sm')+Q.esc(q.note)+'</p>' : '';
+    var note = q.note ? '<p class="mas-ev">'+Q.icon('info','i-sm')+'<span>'+lnk(Q.esc(q.note))+'</span></p>' : '';
     var sug = '';
     if(q.suggest==='none') sug = '<div class="mas-sug"><span class="lab">No suggestion</span><p class="small">No clear quote found. Please answer from your own notes.</p></div>';
     else if(q.suggest){ var v = q.suggest.value==='no'?'No':'Yes', chose = q.answer;
@@ -53,17 +66,18 @@
 
   function readout(){
     var a = ui.q.map(function(q){ return q.answer; }), no = a.filter(function(x){ return x==='no'; }).length, v = verdict(a), h;
-    if(v==='selected' && ui.override) h = '<h2 class="h2">Not treated as a Selected Client</h2><p>'+no+' of 3 answers are "no", but you recorded why the safeguards do not apply (§10B).</p>'+
+    if(v==='selected' && ui.override) h = '<h2 class="h2">Not treated as a Selected Client</h2><p>'+no+' of 3 answers are "no", but you recorded why the safeguards do not apply.'+info('MAS Notice FAA-N16 §10B')+'</p>'+
       '<p class="mas-why">"'+Q.esc(ui.override)+'"</p><button class="btn-link" data-act="undo10b">Undo</button>';
-    else if(v==='selected') h = '<h2 class="h2">Selected Client</h2><p>'+no+' of 3 answers are "no" (§10A). The safeguards below apply before the policy starts.</p>'+
-      '<button class="btn btn-secondary btn-sm mas-10b" data-act="10b">Not treating as a Selected Client? Record why (§10B)</button>';
-    else if(v==='not') h = '<h2 class="h2">Not a Selected Client</h2><p>'+no+' of 3 answers are "no" (§10A). The Selected Client safeguards do not apply.</p>';
+    else if(v==='selected') h = '<h2 class="h2">Selected Client</h2><p>'+no+' of 3 answers are "no". '+info('MAS Notice FAA-N16 §10A')+'The safeguards below apply before the policy starts.</p>'+
+      '<span class="u2-row"><button class="btn btn-secondary btn-sm mas-10b" data-act="10b">Not treating as a Selected Client? Record why</button>'+info('MAS Notice FAA-N16 §10B')+'</span>';
+    else if(v==='not') h = '<h2 class="h2">Not a Selected Client</h2><p>'+no+' of 3 answers are "no". '+info('MAS Notice FAA-N16 §10A')+'The Selected Client safeguards do not apply.</p>';
     else h = '<h2 class="h2">Answer all 3 questions</h2><p>The result shows as soon as it is decided.</p>';
     return '<div class="mas-read" aria-live="polite"><p class="eyebrow">Result</p><div class="mas-verdict">'+h+'</div></div>';
   }
 
   /* The explanation under each safeguard, from the notice and FAQs. */
-  function detail(x, key){
+  function detail(x, key){ return lnk(detail0(x, key)); }
+  function detail0(x, key){
     if(x.id==='decl') return '<p>Signed by both of you. At the end of the fact-find, tell the client they are a Selected Client and which safeguards apply (FAQ 5).</p>';
     if(x.id==='ti'){
       var held = Q.caseMeetings(key).filter(function(z){ return !z.upcoming; }), withTi = held.filter(function(z){ return z.m.ti; }).length;
@@ -93,17 +107,17 @@
       var acts = ok ? '' : '<div class="mas-acts"><button class="btn '+(i===nextI?'btn-primary':'btn-secondary')+' btn-sm" data-tick="'+i+'">Mark done</button></div>';
       var meta = (x.id==='call' && x.sup && !x.done ? '<span>Not needed · supervisor present throughout</span>' : x.done ? '<span>Ticked '+Q.esc(x.date)+'</span><button class="btn-link" data-untick="'+i+'">Undo</button>' : '')+
         (x.note ? '<span>Note: '+Q.esc(x.note)+'</span>' : '')+(ui.noteOpen===i ? '' : '<button class="btn-link" data-note="'+i+'">'+(x.note?'Edit note':'Add note')+'</button>');
-      var note = ui.noteOpen===i ? '<div class="mas-note"><label class="sr" for="mas-n'+i+'">Note for '+x.ref+'</label><input class="input" id="mas-n'+i+'" value="'+Q.esc(x.note||'')+'" placeholder="Optional note">'+
+      var note = ui.noteOpen===i ? '<div class="mas-note"><label class="sr" for="mas-n'+i+'">Note for this check</label><input class="input" id="mas-n'+i+'" value="'+Q.esc(x.note||'')+'" placeholder="Optional note">'+
         '<button class="btn btn-secondary btn-sm" data-savenote="'+i+'">Save</button></div>' : '';
       var open = i in ui.open ? ui.open[i] : !ok;
-      return '<li class="mas-item '+cls+'"><span class="mas-ref">'+x.ref+'</span><span class="mas-dot" aria-hidden="true">'+(ok?Q.icon('check','i-sm'):'')+'</span>'+
-        '<div><p class="mas-it">'+Q.esc(title)+' <span class="sr">('+x.ref+', '+(ok?'done':'not done')+')</span></p>'+
+      return '<li class="mas-item '+cls+'"><span class="mas-dot" aria-hidden="true">'+(ok?Q.icon('check','i-sm'):'')+'</span>'+
+        '<div><p class="mas-it">'+Q.esc(title)+' '+info(rule(x.ref)+(x.faq?', '+x.faq:''))+' <span class="sr">('+(ok?'done':'not done')+')</span></p>'+
         '<details class="mas-det" data-det="'+i+'"'+(open?' open':'')+'><summary>Details</summary><div class="mas-detb">'+detail(x, key)+'</div></details>'+
         '<div class="mas-meta">'+meta+'</div>'+note+'</div>'+acts+'</li>'; }).join('');
     var all = done===total ? '<section class="card next-card done mas-done" aria-label="Firm review done"><div><p class="eyebrow">Firm review</p><h2>Firm review done · Mark won when the policy starts</h2>'+
       '<p>All '+total+' checks are ticked. Your firm decides when the policy starts.</p></div><a class="btn btn-secondary" href="#case-'+key+'">Open case</a></section>' : '';
     return all+'<section class="card mas-review" aria-labelledby="mas-rh"><div class="mas-rhead"><div><h2 class="h3" id="mas-rh">Firm review · <span class="num">'+done+' of '+total+'</span> done</h2>'+
-      '<p class="small muted" style="margin-top:2px">Selected Client safeguards (§10C, §10D) and pre-transaction checks (§41K). The checks also apply to every client of a selected representative.</p></div>'+
+      '<p class="small muted" style="margin-top:2px">Selected Client safeguards and checks before the policy starts. The checks also apply to every client of a selected representative.'+info('MAS Notice FAA-N16 §10C, §10D, §41K')+'</p></div>'+
       '<div class="mas-prog" style="grid-template-columns:repeat('+total+',28px)" aria-hidden="true">'+ui.list.map(function(x){ return '<i class="'+(Q.masDone(x)?'on':'')+'"></i>'; }).join('')+'</div></div>'+
       '<ol class="mas-rail">'+items+'</ol></section>';
   }
@@ -117,10 +131,17 @@
     return '<section class="card mas-review" aria-labelledby="mas-nh"><div class="mas-rhead"><div><h2 class="h3" id="mas-nh">Before the policy starts</h2>'+
       '<p class="small muted" style="margin-top:2px">No trusted individual needed. A call-back is not required unless you are a selected representative.</p></div></div>'+
       '<ol class="mas-rail">'+rows.map(function(r){ var ok = n[r[0]];
-        return '<li class="mas-item'+(ok?' done':'')+'"><span class="mas-ref">'+r[1]+'</span><span class="mas-dot" aria-hidden="true">'+(ok?Q.icon('check','i-sm'):'')+'</span>'+
-          '<div><p class="mas-it">'+Q.esc(r[2])+'</p><p class="small muted">'+Q.esc(r[3])+'</p></div>'+
+        return '<li class="mas-item'+(ok?' done':'')+'"><span class="mas-dot" aria-hidden="true">'+(ok?Q.icon('check','i-sm'):'')+'</span>'+
+          '<div><p class="mas-it">'+Q.esc(r[2])+' '+info(rule(r[1]))+'</p><p class="small muted">'+lnk(Q.esc(r[3]))+'</p></div>'+
           '<div class="mas-acts"><button class="btn btn-secondary btn-sm" data-ns="'+r[0]+'">'+(ok?'Undo':'Mark done')+'</button></div></li>'; }).join('')+'</ol>'+
-      '<label class="switch"><input type="checkbox" data-selrep'+(n.selrep?' checked':'')+'> I am a selected representative <span class="small muted">(balanced scorecard grade B or worse for two quarters in a row, FAQ 11)</span></label></section>';
+      '<label class="switch"><input type="checkbox" data-selrep'+(n.selrep?' checked':'')+'> I am a selected representative <span class="small muted">(balanced scorecard grade B or worse for two quarters in a row)</span>'+info('MAS FAQ 11')+'</label></section>';
+  }
+
+  /* Phone: one sticky main action. Next open firm check, else back to the case (answers save as you go). */
+  function dock(key, v){
+    var nextI = -1; if(v==='selected' && !ui.override) ui.list.some(function(x,i){ if(!Q.masDone(x)){ nextI = i; return true; } });
+    return '<div class="u2-dock u2-ponly">'+(nextI>=0 ? '<button class="btn btn-primary" data-tick="'+nextI+'">'+Q.icon('check','i-sm')+'Mark check '+(nextI+1)+' of '+ui.list.length+' done</button>'
+      : '<a class="btn btn-primary" href="#case-'+key+'">Save and back to case</a>')+'</div>';
   }
 
   function render(p){
@@ -128,7 +149,7 @@
     if(location.hash!==ui.hash || ui.key!==key){ ui.hash = location.hash; reset(key, p.parts[1]||''); }
     var head = '<header><a class="back" href="#case-'+key+'">'+Q.icon('back','i-sm')+'Back to '+Q.esc(c.name)+'</a>'+
       '<h1 class="h1 display">MAS checks · '+Q.esc(c.name)+' <span class="case-no" style="font-family:var(--f-text);font-size:var(--t-lg);letter-spacing:0">#'+c.no+'</span></h1>'+
-      '<div class="mas-sub"><p class="lede">Selected Client test (FAA-N16 §10A) · for every life policy</p>'+
+      '<div class="mas-sub"><p class="lede">Selected Client test · for every life policy'+info('MAS Notice FAA-N16 §10A')+'</p>'+
       '<span class="chip chip-device mas-badge">'+Q.icon('device','i-sm')+'Checked on this device · no AI · nothing sent</span></div></header>';
     if(p.state==='error') return '<div class="page mas">'+demo()+head+'<div class="banner banner-error" role="alert">'+Q.icon('alert')+'<p>Couldn\'t load the checks. Nothing was sent.</p><button class="btn-link" data-go="#mas-'+key+'">Try again</button></div></div>';
     if(p.state==='loading') return '<div class="page mas">'+demo()+head+'<div class="card" aria-busy="true">'+[1,2,3].map(function(){ return '<div class="skel-row"><span class="skel" style="width:60%"></span><span class="skel" style="width:120px"></span></div>'; }).join('')+'</div></div>';
@@ -141,20 +162,20 @@
         (hasSug ? '' : '<p class="small" style="margin-top:var(--s-5)"><a href="#gate-'+key+'" style="font-weight:600">Suggest answers from the meeting</a> <span class="muted">· goes through the privacy gate. You still choose every answer.</span></p>')+
       '</div>'+readout()+'</section>'+
       (v==='selected' && !ui.override ? review(key) : v==='open' ? '' : notSelected())+
-      '<p class="mas-foot">'+Q.icon('info','i-sm')+'<span>This is an aid for you and your firm. It is not a sign-off. Your firm sets the timing.</span></p></div>';
+      '<p class="mas-foot">'+Q.icon('info','i-sm')+'<span>This is an aid for you and your firm. It is not a sign-off. Your firm sets the timing.</span></p>'+dock(key, v)+'</div>';
   }
 
   function ask10b(){
     var reason = '';
     Q.dialog({ title:'Not treating as a Selected Client',
-      body:'<p class="small">You may do this only if you have reasons to conclude the client has adequate knowledge and experience in this class of product, and your recommendation is limited to it (§10B). The reason is documented with the assessment (§10C).</p>'+
+      body:'<p class="small">You may do this only if you have reasons to conclude the client has adequate knowledge and experience in this class of product, and your recommendation is limited to it. The reason is documented with the assessment.'+info('MAS Notice FAA-N16 §10B, §10C')+'</p>'+
         '<div class="field"><label class="label" for="m10b">Your reason</label><textarea class="textarea" id="m10b" rows="3"></textarea><span class="field-error" id="m10b-e" hidden>Write the reason first.</span></div>',
       actions:[{label:'Cancel',value:null},{label:'Record reason',value:'ok',kind:'primary'}], safe:null,
       mount:function(w){ var t = w.querySelector('#m10b');
         t.addEventListener('input', function(){ reason = t.value.trim(); });
         // Block the save until there is a written reason (capture runs before the dialog's own click handler).
         w.addEventListener('click', function(e){ var b = e.target.closest('[data-i="1"]'); if(b && !t.value.trim()){ e.stopPropagation(); t.setAttribute('aria-invalid','true'); w.querySelector('#m10b-e').hidden = false; t.focus(); } }, true); } })
-    .then(function(v){ if(v && reason){ ui.override = reason; Q.refresh(); Q.toast('Reason recorded (§10B)'); } });
+    .then(function(v){ if(v && reason){ ui.override = reason; Q.refresh(); Q.toast('Reason recorded'); } });
   }
 
   function mount(el, p){
@@ -162,7 +183,7 @@
     pg.addEventListener('click', function(e){
       var b = e.target.closest('[data-q]'); if(b){ var q = ui.q[+b.dataset.q]; q.answer = q.answer===b.dataset.v ? null : b.dataset.v; Q.refresh(); refocus('[data-q="'+b.dataset.q+'"][data-v="'+b.dataset.v+'"]'); return; }
       var u = e.target.closest('[data-use]'); if(u){ var qq = ui.q[+u.dataset.use]; qq.answer = qq.suggest.value; Q.refresh(); return; }
-      var t = e.target.closest('[data-tick]'); if(t){ var x = ui.list[+t.dataset.tick]; x.done = true; x.date = D.today.date; delete ui.open[+t.dataset.tick]; Q.refresh(); Q.toast(x.ref+' ticked'); return; }
+      var t = e.target.closest('[data-tick]'); if(t){ var x = ui.list[+t.dataset.tick]; x.done = true; x.date = D.today.date; delete ui.open[+t.dataset.tick]; Q.refresh(); Q.toast('Check ticked'); return; }
       var un = e.target.closest('[data-untick]'); if(un){ ui.list[+un.dataset.untick].done = false; Q.refresh(); return; }
       var pa = e.target.closest('[data-path]'); if(pa){ ui.list.filter(function(x){ return x.id==='ti'; })[0].path = pa.dataset.path; Q.refresh(); refocus('[data-path="'+pa.dataset.path+'"]'); return; }
       var ns = e.target.closest('[data-ns]'); if(ns){ ui.ns[ns.dataset.ns] = !ui.ns[ns.dataset.ns]; Q.refresh(); refocus('[data-ns="'+ns.dataset.ns+'"]'); return; }

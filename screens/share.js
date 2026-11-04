@@ -1,13 +1,16 @@
-/* S13 Share (#share-<case>[-<state>]). States: email (default), share, making, sent (did-you-send prompt), unsupported, error.
-   The PDF is made on the device and goes from the adviser to the client. Share stays blocked while yellow numbers remain. */
+/* S13 Share (#share-<case>[-<state>]). States: default channel (WhatsApp via the share sheet, from D.adviser.channel), email, making, sent (did-you-send prompt), error.
+   The PDF is made on the device and goes from the adviser to the client. Share stays blocked while yellow numbers remain.
+   The share sheet is simulated so the demo is the same everywhere; "More apps" uses navigator.share when the browser has it. */
 (function(){
   'use strict';
-  var D = Q.data, C = QD.c, ui = { hash:null, st:'', method:'email', page:0 };
+  var D = Q.data, C = QD.c, ui = { hash:null, st:'', method:'whatsapp', page:0 };
+  var CH = function(){ return D.adviser.channel==='email' ? 'email' : 'whatsapp'; };
+  var I_CHAT = '<svg class="i i-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 12a8.5 8.5 0 0 1-12.4 7.5L3.5 20.5l1.1-4.4A8.5 8.5 0 1 1 20.5 12z"/></svg>';
 
 
   function demo(key, cur){
-    if(cur===''||cur==='share') cur = ui.method==='share' ? 'share' : '';
-    var list = [['','Email'],['share','Share'],['making','Making PDF'],['sent','Did you send it?'],['unsupported','Share unsupported']];
+    if(cur===''||cur==='email') cur = ui.method==='email' ? 'email' : '';
+    var list = [['','WhatsApp'],['sheet','Share sheet'],['email','Email'],['making','Making PDF'],['sent','Did you send it?']];
     // Blocked is Wei's real state while 2 numbers are yellow; it is reached from here, never the default.
     var blocked = Q.toCheck('wei').length ? '<button class="chip" data-go="#share-wei" aria-pressed="'+(key==='wei' && !cur)+'">Blocked · Wei has numbers to check</button>' : '';
     return '<nav class="switcher" aria-label="Demo states"><span class="eyebrow">Demo states</span><div class="switcher-chips">'+list.map(function(x){
@@ -16,8 +19,9 @@
 
   function message(key, c){
     if(key==='wei') return D.share.message;
-    if(key==='alvin') return 'Hi Alvin, here\'s the revised Harbour plan next to the other two. Illustrated values are not guaranteed. Happy to go through it on a call.';
-    return 'Hi '+c.first+', here\'s the side-by-side of the plans we talked about. Illustrated values are not guaranteed. Happy to go through it on a call.';
+    if(D.share.messages && D.share.messages[key]) return D.share.messages[key];
+    return 'Hi '+c.first+'! Here are the plans we talked about, side by side. '+(c.worry && c.worry!=='Not sure yet' ? 'You said "'+c.worry+'" matters most: page 1' : 'Page 1')+
+      ' shows the cover and premium for each one. Illustrated values are not guaranteed. Happy to go through it on a call, no rush to decide.';
   }
 
   /* ---------- mock PDF pages (paper in both themes) ---------- */
@@ -31,7 +35,7 @@
   function pdfPage(key, c, i){
     var vers = Object.keys(c.tables), ver = vers[vers.length-1], t = c.tables[ver], body;
     if(i===0) body = '<h4>Plan summary</h4><table>'+head(t)+'<tbody>'+rowsOf(t,['premium','term','sa','riders'])+'</tbody></table>'+
-      '<h4>Guaranteed value</h4><table>'+head(t)+'<tbody>'+rowsOf(t,['g10','g20','g65'])+'</tbody></table>';
+      '<h4>Guaranteed value</h4><table>'+head(t)+'<tbody>'+rowsOf(t,['g10','g20','g65'])+'</tbody></table>'+(Q.u2Chart ? Q.u2Chart(key, ver) : '');
     else if(i===1) body = '<h4>Illustrated total at 3.00% a year<span class="sh-ng">Not guaranteed</span></h4><table>'+head(t)+'<tbody>'+rowsOf(t,['a10','a20','a65'])+'</tbody></table>'+
       '<h4>Illustrated total at 4.25% a year<span class="sh-ng">Not guaranteed</span></h4><table>'+head(t)+'<tbody>'+rowsOf(t,['b10','b20','b65'])+'</tbody></table>';
     else body = '<h4>How to read this</h4><p class="lead">Every figure comes from the insurer\'s own policy illustration.</p>'+
@@ -52,7 +56,7 @@
 
   function render(p){
     var key = D.cases[p.parts[0]] ? p.parts[0] : 'wei', c = D.cases[key];
-    if(location.hash!==ui.hash){ ui.hash = location.hash; ui.st = p.parts[1]||''; ui.page = 0; ui.method = (ui.st==='share'||ui.st==='unsupported')?'share':'email'; }
+    if(location.hash!==ui.hash){ ui.hash = location.hash; ui.st = p.parts[1]||''; if(ui.st==='share'||ui.st==='unsupported') ui.st = ''; ui.openSheet = ui.st==='sheet'; ui.page = 0; ui.method = ui.st==='email' ? 'email' : CH(); ui.msg = message(key, c); }
     var st = p.state==='loading' ? 'making' : p.state==='error' ? 'error' : ui.st;
     var demoSet = p.parts[1]; // explicit demo state: show as if numbers are checked
     var left = demoSet ? 0 : Q.toCheck(key).length, isWeb = p.edition!=='desktop';
@@ -64,23 +68,24 @@
     else if(left) top = '<div class="banner banner-warn">'+Q.icon('alert')+'<p>Check '+left+' number'+(left>1?'s':'')+' before you share. Yellow numbers can\'t go to a client.</p><button class="btn btn-sm" data-sheet="'+Q.toCheck(key)[0]+'">Check first number</button></div>';
 
     var form;
-    if(st==='sent') form = '<section class="card hero sh-ask" aria-labelledby="ask-h"><div><p class="eyebrow">Back from '+(ui.method==='email'?'your email':'the share menu')+'</p>'+
-        '<h2 id="ask-h">Did you send it?</h2><p>We can\'t see your email or apps, so we ask. Nothing is marked as shared until you say so.</p></div>'+
+    var wa = ui.method==='whatsapp', via = wa ? 'WhatsApp' : 'your email';
+    if(st==='sent') form = '<section class="card hero sh-ask" aria-labelledby="ask-h"><div><p class="eyebrow">Back from '+via+'</p>'+
+        '<h2 id="ask-h">Did you send it?</h2><p>We can\'t see your chats or email, so we ask. Nothing is marked as shared until you say so.</p></div>'+
         '<div class="acts"><button class="btn btn-secondary" data-act="notyet">Not yet</button><button class="btn btn-primary" data-act="yes">'+Q.icon('check','i-sm')+'Yes, sent</button></div></section>';
     else {
-      var making = st==='making', share = ui.method==='share', unsupported = share && st==='unsupported';
-      var primary = unsupported ? '<button class="btn btn-primary" data-act="download">'+Q.icon('file','i-sm')+'Download PDF</button>'
-        : making ? '<button class="btn btn-primary sh-busy" aria-disabled="true" aria-live="polite"><span class="sh-spin" aria-hidden="true"></span>Making the PDF…</button>'
-        : '<button class="btn btn-primary" data-act="send"'+(left?' aria-disabled="true" title="Check '+left+' number'+(left>1?'s':'')+' first"':'')+'>'+Q.icon(share?'share':'arrow','i-sm')+(share?'Share…':'Open email')+'</button>';
+      var making = st==='making', dis = left?' aria-disabled="true" title="Check '+left+' number'+(left>1?'s':'')+' first"':'';
+      var primary = making ? '<button class="btn btn-primary sh-busy" aria-disabled="true" aria-live="polite"><span class="sh-spin" aria-hidden="true"></span>Making the PDF…</button>'
+        : '<button class="btn btn-primary" data-act="send"'+dis+'>'+(wa?I_CHAT+'Share to WhatsApp':Q.icon('arrow','i-sm')+'Open email')+'</button>';
       form = '<section class="card sh-form" aria-label="How to send">'+
-        '<div class="field"><span class="label" id="m-l">Send with</span><div class="seg" role="group" aria-labelledby="m-l">'+
-          '<button data-method="email" aria-pressed="'+!share+'">Email</button><button data-method="share" aria-pressed="'+share+'">Share</button></div></div>'+
-        (share ? '<p class="sh-hint">'+(isWeb?'Opens your browser\'s share menu.':'Opens the system share sheet.')+' WhatsApp, Telegram and others are there.</p>'
-               : '<div class="field"><label class="label" for="sh-to">To</label><input class="input" id="sh-to" type="email" value="'+Q.esc(C.emails[key]||'')+'" autocomplete="off"></div>')+
-        (unsupported ? '<div class="banner banner-info">'+Q.icon('info')+'<p>Your browser can\'t open the share menu. Download the PDF instead and send it from any app.</p></div>' : '')+
-        '<div class="field"><label class="label" for="sh-msg">Message</label><textarea class="textarea" id="sh-msg" rows="4">'+Q.esc(message(key,c))+'</textarea></div>'+
+        '<div class="field"><span class="label" id="m-l">Send with</span><div class="seg fu-seg" role="group" aria-labelledby="m-l">'+
+          '<button data-method="whatsapp" aria-pressed="'+wa+'">'+I_CHAT+'WhatsApp</button><button data-method="email" aria-pressed="'+!wa+'">'+Q.icon('arrow','i-sm')+'Email</button></div>'+
+          (wa ? '<span class="hint">Opens the share sheet with the PDF and this message. WhatsApp is first; any other app works too.</span>' : '')+'</div>'+
+        (wa ? '' : '<div class="field"><label class="label" for="sh-to">To</label><input class="input" id="sh-to" type="email" value="'+Q.esc(C.emails[key]||'')+'" autocomplete="off"></div>')+
+        '<div class="field"><label class="label" for="sh-msg">Message</label><textarea class="textarea" id="sh-msg" rows="5">'+Q.esc(ui.msg)+'</textarea>'+
+          '<span class="hint">Keeps the line "Illustrated values are not guaranteed."</span></div>'+
         '<p class="sh-private">'+Q.icon('device','i-sm')+'<span>This PDF is made on this device and goes from you to '+Q.esc(c.first)+'. Nothing is uploaded.</span></p>'+
-        '<div class="sh-acts">'+primary+(unsupported||making?'':'<button class="btn-link" data-act="download">Download PDF</button>')+'<span class="spacer"></span><a class="btn btn-ghost" href="#case-'+key+'">Cancel</a></div></section>';
+        '<div class="sh-acts">'+primary+(making?'':(wa?'<button class="btn-link" data-act="sheet"'+dis+'>Share…</button>':'')+'<button class="btn-link" data-act="download"'+dis+'>Download PDF</button>')+
+          '<span class="spacer"></span><a class="btn btn-ghost" href="#case-'+key+'">Cancel</a></div></section>';
     }
 
     return '<div class="page sh">'+demo(key, ui.st)+
@@ -89,21 +94,60 @@
       top+'<div class="sh-grid">'+form+preview(key, c)+'</div></div>';
   }
 
+  /* Simulated system share sheet: the PDF plus the message, WhatsApp first. */
+  function shareSheet(c, done){
+    var apps = [['WhatsApp','wa',I_CHAT.replace('i-sm','')],['Telegram','tg',Q.icon('arrow')],['Mail','mail',Q.icon('file')],['Copy','copy','<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/></svg>'],['More','more',Q.icon('more')]];
+    var opener = document.activeElement, wrap = document.createElement('div');
+    wrap.className = 'fu-ss-wrap';
+    wrap.innerHTML = '<div class="fu-ss-scrim" data-x></div><div class="fu-ss" role="dialog" aria-modal="true" aria-label="Share">'+
+      '<span class="fu-ss-grab" aria-hidden="true"></span>'+
+      '<div class="fu-ss-file"><span class="fu-ss-pdf" aria-hidden="true">PDF</span><div><b>Plan comparison · '+Q.esc(c.name)+'.pdf</b><small>3 pages · with your message</small></div></div>'+
+      '<div class="fu-ss-apps">'+apps.map(function(a){ return '<button data-app="'+a[1]+'" class="fu-ss-app'+(a[1]==='wa'?' wa':'')+'"><span>'+a[2]+'</span>'+a[0]+'</button>'; }).join('')+'</div>'+
+      '<button class="btn btn-secondary btn-block" data-x>Cancel</button></div>';
+    document.body.appendChild(wrap);
+    function close(){ document.removeEventListener('keydown', esc); wrap.remove(); if(opener && document.contains(opener)) opener.focus({preventScroll:true}); }
+    function esc(e){ if(e.key==='Escape') close(); }
+    document.addEventListener('keydown', esc);
+    wrap.addEventListener('click', function(e){
+      if(e.target.closest('[data-x]')) return close();
+      var b = e.target.closest('[data-app]'); if(!b) return;
+      var app = b.dataset.app;
+      if(app==='copy'){ try{ navigator.clipboard.writeText(ui.msg).then(function(){ Q.toast('Message copied'); }, function(){ Q.toast('Couldn\'t copy. Select the text and copy it.'); }); }catch(err){ Q.toast('Couldn\'t copy. Select the text and copy it.'); } return close(); }
+      if(app==='more'){
+        close();
+        if(navigator.share) navigator.share({ title:'Plan comparison', text:ui.msg }).then(done, function(){});
+        else Q.toast('Your device\'s own share menu opens here');
+        return;
+      }
+      close(); Q.toast('Opening '+b.textContent+' · the PDF and your message are attached'); done();
+    });
+    wrap.querySelector('.fu-ss-app').focus();
+  }
+
   function mount(el, p){
     var key = D.cases[p.parts[0]] ? p.parts[0] : 'wei', c = D.cases[key], pg = el.querySelector('.page');
+    // Phone: lay the preview out at 440px and zoom it to the column width, so no column is cut off (same as the PDF sheet).
+    var pdf = pg.querySelector('.sh-scroll .pdf'), pw = pdf && pdf.parentNode.clientWidth;
+    if(pdf && pw && pw < 440){ pdf.style.minWidth = pdf.style.width = '440px'; pdf.style.zoom = pw/440; }
+    var msg = pg.querySelector('#sh-msg'); if(msg) msg.addEventListener('input', function(){ ui.msg = msg.value; });
+    function sent(){ if(ui.hash===location.hash){ ui.st='sent'; Q.refresh(); } }
+    if(ui.openSheet){ ui.openSheet = false; shareSheet(c, sent); } // demo state: open the sheet straight away
     pg.addEventListener('click', function(e){
-      var m = e.target.closest('[data-method]'); if(m){ ui.method = m.dataset.method; if(ui.st==='unsupported'&&ui.method==='email') ui.st=''; Q.refresh(); return; }
+      var m = e.target.closest('[data-method]'); if(m){ ui.method = m.dataset.method; Q.refresh(); return; }
       var t = e.target.closest('[data-page]'); if(t){ ui.page = +t.dataset.page; Q.refresh(); return; }
       var a = e.target.closest('[data-act]'); if(!a || a.getAttribute('aria-disabled')==='true') return;
       var act = a.dataset.act;
+      if(act==='sheet') return shareSheet(c, sent);
       if(act==='send'){
-        if(ui.method==='share' && p.edition!=='desktop' && !navigator.share){ ui.st='unsupported'; Q.refresh(); return; }
-        ui.st='making'; Q.refresh(); setTimeout(function(){ if(ui.hash===location.hash){ ui.st='sent'; Q.refresh(); } }, 1400);
+        ui.st='making'; Q.refresh();
+        setTimeout(function(){ if(ui.hash!==location.hash) return;
+          if(ui.method==='whatsapp'){ ui.st=''; Q.refresh(); shareSheet(c, sent); } else sent(); }, 1200);
       }
       if(act==='download'){ Q.toast('PDF saved to Downloads'); ui.st='sent'; Q.refresh(); }
       if(act==='retry'){ Q.state('normal'); }
       if(act==='notyet'){ ui.st=''; Q.refresh(); }
       if(act==='yes'){
+        c.sharedVia = ui.method;
         if(c.now<2){ c.now = 2; c.dates.shared = D.today.date; }
         else c.shareSent = D.today.date; // e.g. Alvin's revised plan: the case moves on to shared, waiting for a reply
         Q.toast('Shared with '+c.first+' · we\'ll remind you on '+D.share.remindOn+' if there\'s no reply');

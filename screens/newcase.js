@@ -1,10 +1,10 @@
-/* S07 New case (#new-case, #new-case-<case>). Drop 2 to 4 policy illustration PDFs, pick notes, Compare plans. */
+/* S07 New case (#new-case, #new-case-<case>). Drop 3 to 5 policy illustration PDFs (2 allowed), pick notes, Compare plans. */
 (function(){
   'use strict';
   var D = Q.data, F = QD.b.files, st = null;
 
 
-  var PRESET = { empty:[], one:['harbour'], three:['harbour','meridian','orchid'], many:['harbour','meridian','orchid','harbour2','fifth'],
+  var PRESET = { empty:[], one:['harbour'], three:['harbour','meridian','orchid'], many:['harbour','meridian','orchid','harbour2','fifth','sixth'],
     notpdf:['harbour','meridian','notpdf'], scanned:['harbour','meridian','scanned'], ilp:['harbour','orchid','ilp'] };
   var STATES = [['empty','Empty'],['one','1 PDF'],['three','3 PDFs'],['many','Too many'],['notpdf','Not a PDF'],['scanned','Scanned'],['ilp','ILP']];
 
@@ -21,22 +21,22 @@
     if(s.fresh || !st){ var pf = prefill(key); st = { name:pf.name, notes:pf.notes, files:(s.s!=='none' ? PRESET[s.s] : pf.files).map(function(k){ return F[k]; }), over:false, tooMany: false }; if(s.s==='three' && !key) st.name = 'Wei Tan'; }
     var cur = s.s==='none' ? '' : s.s;
     var good = st.files.filter(function(f){ return !f.err; }), bad = st.files.filter(function(f){ return f.err; });
-    var tooMany = st.files.length>4;
-    var ok = good.length>=2 && good.length<=4 && !bad.length && !tooMany;
-    var why = tooMany ? 'Up to 4 plans at a time.' : bad.length ? 'Remove the files marked in red.' : good.length===1 ? 'Add at least one more PDF to compare.' : good.length===0 ? 'Add 2 to 4 PDFs to compare.' : '';
+    var tooMany = st.files.length>5;
+    var ok = good.length>=2 && good.length<=5 && !bad.length && !tooMany;
+    var why = tooMany ? 'Up to 5 plans at a time.' : bad.length ? 'Remove the files marked in red.' : good.length===1 ? 'Add at least one more PDF to compare.' : good.length===0 ? 'Add 3 to 5 PDFs to compare (2 allowed).' : '';
     var title = c ? 'Add plans · '+c.name+' #'+c.no : 'New case';
     var drop = '<div class="s07-drop'+(st.files.length?' small':'')+(st.over?' over':'')+'" data-drop>'+
       '<span class="ic">'+Q.icon('file')+'</span>'+
-      '<span class="big">'+(st.files.length?'Add another PDF':'Drop 2 to 4 policy illustration PDFs')+'</span>'+
+      '<span class="big">'+(st.files.length?'Add another PDF':'Drop 3 to 5 policy illustration PDFs (2 allowed)')+'</span>'+
       '<span class="small muted"><label>or choose files<input class="sr" type="file" accept="application/pdf,.pdf" multiple data-pick></label></span>'+
       (st.files.length?'':'<button class="btn-link s07-sample" data-act="sample">Use the 3 sample PDFs</button>')+'</div>';
     var files = st.files.length ? '<ul class="s07-files" aria-label="Files">'+st.files.map(function(f,i){
-      var over = i>=4;
-      if(f.err || over) return '<li class="bad"><span class="ic">'+Q.icon('alert')+'</span><span><b>'+Q.esc(f.name)+'</b><small>'+Q.esc(f.err || 'Up to 4 plans at a time.')+'</small></span><span></span>'+
+      var over = i>=5;
+      if(f.err || over) return '<li class="bad"><span class="ic">'+Q.icon('alert')+'</span><span><b>'+Q.esc(f.name)+'</b><small>'+Q.esc(f.err || 'Up to 5 plans at a time.')+'</small></span><span></span>'+
         '<button class="icon-btn" data-rm="'+i+'" aria-label="Remove '+Q.esc(f.name)+'">'+Q.icon('close')+'</button></li>';
       return '<li><span class="ic">'+Q.icon('file')+'</span><span><b>'+Q.esc(f.ins)+'</b><small>'+Q.esc(f.plan)+' · '+Q.esc(f.name)+'</small></span><span class="pg">'+f.pages+' pages</span>'+
         '<button class="icon-btn" data-rm="'+i+'" aria-label="Remove '+Q.esc(f.name)+'">'+Q.icon('close')+'</button></li>'; }).join('')+'</ul>' : '';
-    var banner = tooMany ? '<div class="banner banner-error" role="alert">'+Q.icon('alert')+'<p>Up to 4 plans at a time. Remove one to continue.</p></div>' : '';
+    var banner = tooMany ? '<div class="banner banner-error" role="alert">'+Q.icon('alert')+'<p>Up to 5 plans at a time. Remove one to continue.</p></div>' : '';
     return '<div class="page s07">'+QB.demo(STATES, cur)+
       (c?'<a class="back" href="#case-'+key+'">'+Q.icon('back','i-sm')+'Back to '+Q.esc(c.name)+'</a>':'')+
       '<header class="page-head rise"><div><h1 class="h1">'+Q.esc(title)+'</h1><p class="sub">Your PDFs are read on this device. Nothing is sent until you see exactly what goes.</p></div></header>'+
@@ -44,7 +44,7 @@
         (c?'':'<div class="field s07-name"><label class="label" for="nc-name">Client name</label><input class="input" id="nc-name" autocomplete="off" value="'+Q.esc(st.name)+'"></div>')+
         '<div class="field"><span class="label" id="pdf-l">Policy illustrations</span>'+drop+'</div>'+banner+files+
         notesPicker(key)+
-        '<div class="s07-acts"><button class="btn btn-primary" data-act="compare"'+(ok?'':' aria-disabled="true" title="'+Q.esc(why)+'"')+'>Compare plans</button>'+
+        '<div class="s07-acts u2-dock"><button class="btn btn-primary" data-act="compare"'+(ok?'':' aria-disabled="true" title="'+Q.esc(why)+'"')+'>Compare plans</button>'+
         '<a class="btn btn-ghost" href="'+(c?'#case-'+key:'#today')+'">Cancel</a>'+(why?'<span class="why" aria-live="polite">'+Q.esc(why)+'</span>':'')+'</div>'+
       '</form></div>';
     // keep dest for mount

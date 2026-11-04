@@ -18,7 +18,7 @@
         { src:'Other plans', text:'Meridian Life: premium term 25 years. Orchid Mutual: no riders. [CLIENT] asked to keep the critical illness rider. [CLIENT] compared all three on Mon 19 Oct.' } ] },
     'compare-daniel': { map:[ ['Daniel Lee','[CLIENT]','Name'] ], known: D.gate.compare.known,
       cards:[ { src:'Your notes · Mon 2 Nov meeting', mid:'daniel-past', text:'[CLIENT], age 31. Group cover from work only. Hoping to start a family in two years. Budget about S$3,000 a year.' } ] },
-    nudge: { map:[ ['Priya Krishnan','[CLIENT]','Name'] ], cards: D.gate.nudge.cards },
+    nudge: { map:[ ['Priya Krishnan','[CLIENT]','Name'], ['Aarav','[CHILD 1]','Child\'s name'], ['Meera','[CHILD 2]','Child\'s name'] ], cards: D.gate.nudge.cards },
     'mas-suggest': { map:[ ['Marcus Raj','[CLIENT]','Name'], ['8 Jul 1962','age 64','Date of birth'] ],
       cards:[ { src:'Your notes · Tue 27 Oct meeting', mid:'marcus-oct', text:'[CLIENT], age 64. 02:15 "Can we go through it in Mandarin?" 04:02 "My daughter will help me read the English papers." [CLIENT] did not mention schooling.' },
               { src:'Your notes · Thu 29 Oct meeting', mid:'marcus-oct29', text:'[CLIENT]\'s daughter went through the three plans with [CLIENT] in Mandarin. [CLIENT] prefers Harbour for the shorter premium term.' },
@@ -37,8 +37,8 @@
       steps:['Reading your notes and Harbour v2 on this device','Sending {n} characters','Drafting the four parts','Putting names back on this device','Linking each sentence to its source'],
       lift:'[CLIENT] needs cover until age 65 while her children are young.' },
     nudge: { back:'#nudge-priya', done:'#nudge-priya', title:'Drafting a nudge for Priya', doneBtn:'Open nudge',
-      steps:['Choosing one talking point on this device','Sending {n} characters','Drafting the nudge','Putting names back on this device'],
-      lift:'Hi [CLIENT], just checking in on the comparison I sent on Saturday.' },
+      steps:['Choosing her worry and one page on this device','Sending {n} characters','Drafting the nudge','Putting names back on this device'],
+      lift:'Hi [CLIENT]! You said your biggest worry is [CHILD 1] and [CHILD 2]\'s uni fund if you ever can\'t work.' },
     'mas-suggest': { back:'#mas-marcus', done:'#mas-marcus', title:'Suggesting answers for Marcus', doneBtn:'Open MAS checks',
       steps:['Finding quotes in the meeting on this device','Sending {n} characters','Suggesting answers','Putting names back on this device'],
       lift:'[CLIENT] asked: "Can we go through it in Mandarin?"' }
@@ -74,7 +74,8 @@
     notpdf:   { name:'wei-notes.docx', err:'This isn\'t a PDF.' },
     scanned:  { name:'orchid-scan.pdf', err:'We can\'t read this PDF yet. Ask the insurer for a digital copy.' },
     ilp:      { name:'meridian-invest.pdf', err:'ILP plans aren\'t supported.' },
-    fifth:    { name:'lumen-wl.pdf', ins:'Lumen Life', plan:'Lumen Whole Life', pages:10 }
+    fifth:    { name:'lumen-wl.pdf', ins:'Lumen Life', plan:'Lumen Whole Life', pages:10 },
+    sixth:    { name:'kestrel-wl.pdf', ins:'Kestrel Life', plan:'Kestrel Whole Life', pages:11 }
   };
 
   /* S06 live transcript script while recording Wei (speaker used only with call audio). */
@@ -142,7 +143,7 @@
     var s = st[id];
     if(!s || s.hash!==location.hash){
       var map = { error:'error', loading:'loading', empty:'empty' };
-      var want = valid.indexOf(p.state)>=0 ? p.state : (map[p.state] && valid.indexOf(map[p.state])>=0 ? map[p.state] : def);
+      var want = p.state!=='normal' && valid.indexOf(p.state)>=0 ? p.state : (map[p.state] && valid.indexOf(map[p.state])>=0 ? map[p.state] : def);
       s = st[id] = { hash:location.hash, s:want, fresh:true };
     } else s.fresh = false;
     return s;

@@ -1,0 +1,15 @@
+/* Update 2 · u2-titles. Tokens only. See docs/design/UPDATE-2.md */
+.u2-i{position:relative;display:inline-flex;vertical-align:middle;flex:none}
+.u2-ib{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;margin:-14px -10px;padding:0;background:none;border:0;border-radius:var(--r-pill);color:var(--text-3,var(--text-2));cursor:pointer}
+.u2-ib:hover{color:var(--text)}
+.u2-ib:focus-visible{outline:2px solid var(--focus,var(--text));outline-offset:-6px}
+.u2-tip{display:none;position:fixed;top:0;left:0;z-index:30;width:max-content;max-width:min(260px,calc(100vw - 32px));padding:var(--s-2) var(--s-3);background:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:var(--r-md,8px);box-shadow:var(--shadow-pop);font:var(--w-medium,500) var(--t-sm)/1.4 var(--f-text);letter-spacing:0;text-transform:none;white-space:normal;text-align:left}
+.u2-i:hover>.u2-tip,.u2-i:focus-within>.u2-tip,.u2-i.open>.u2-tip{display:block}
+.mas-ref{display:none}
+.mas-item{grid-template-columns:28px minmax(0,1fr) auto}.mas-item::before{left:13px}
+.mas-it .u2-i{margin-left:var(--s-1)}
+.u2-row{display:flex;align-items:center;gap:var(--s-2);align-self:flex-start;margin-top:var(--s-2)}
+.u2-row .mas-10b{margin-top:0;min-width:0}
+.u2-row:has(> .mas-10b){flex-wrap:nowrap} /* keep the "i" beside "Record why" on a phone */
+@media (max-width:760px){.mas-item{grid-template-columns:28px minmax(0,1fr)}.mas-item::before{left:13px}.mas-acts{grid-column:2}}
+.mas-rhead .u2-ib,.mas-sub .u2-ib,.wu-note .u2-ib,.wu-foot .u2-ib,.mas-readout .u2-ib{margin:-14px -8px}

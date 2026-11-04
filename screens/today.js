@@ -1,69 +1,149 @@
-/* S04 Today (#today). Reference screen: one primary (Open meeting), everything else secondary. */
+/* S04 Today (#today) = the case board (docs/design/UPDATE-2.md B). One card per client:
+   who · their worry · where (6 dots) · one next step · when. Tabs: Needs you · In progress · Won. */
 (function(){
   'use strict';
-  var D = Q.data;
+  var D = Q.data, tab = 'needs';
+  var DOT = [0,1,2,2,3,4,4,5]; // D.steps index -> board dot (met, compared, shared, chosen, write-up, won)
+  var AV = [2,0,1,3]; // avatar tint by case order: Wei green, Priya coral, Alvin blue (as in the mock)
+  var DOTS = ['Met','Compared','Shared','Chosen','Write-up','Won'];
+  var SVG = { // small icons not in Q.icon
+    heart:'<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>',
+    moon:'<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
+    chat:'<path d="M4 20l1.3-3.9A8 8 0 1 1 8 19z"/>' };
+  function svg(n){ return '<svg class="i i-sm" viewBox="0 0 24 24" aria-hidden="true">'+SVG[n]+'</svg>'; }
 
-  function head(sub){
-    return '<header class="today-head tiled rise">'+
-      '<p class="eyebrow">'+D.today.long+'</p>'+
-      '<h1 class="h1 display">Good morning, '+Q.esc(D.adviser.first)+'</h1>'+
-      (sub?'<p class="lede">'+sub+'</p>':'')+
-      '<a class="btn btn-secondary phone-only" href="#new-case">'+Q.icon('plus')+'New case</a>'+
+  // Saved session state from before Update 2 lacks the people fields: fill them from data.js.
+  function backfill(){ Object.keys(D.caseExtra||{}).forEach(function(k){ var c = D.cases[k], x = D.caseExtra[k]; if(c) Object.keys(x).forEach(function(f){ if(c[f]==null) c[f] = x[f]; }); }); }
+
+  function initials(n){ return n.split(' ').map(function(w){ return w[0]; }).slice(0,2).join(''); }
+  function mins(t){ var a = String(t).split(':'); return +a[0]*60 + +(a[1]||0); }
+  function meetingFor(k){ return D.meetings.upcoming.filter(function(m){ return m.c===k && !m.internal; })[0]; }
+
+  function where(k){
+    var c = D.cases[k], n;
+    if(c.result==='won') return 'Won';
+    if(c.result==='lost') return 'Closed';
+    switch(c.now){
+      case 0: return 'No plans yet';
+      case 1: n = Q.toCheck(k).length; return n ? n+' to check' : 'Ready to share';
+      case 2: return c.quiet ? 'Quiet' : c.nudged ? 'Nudge sent' : (c.quietDays||0) >= D.adviser.waitDays ? c.quietDays+' quiet days' : 'Shared';
+      case 3: return 'Replied';
+      case 4: return c.shareSent ? 'v2 shared' : 'v2 ready';
+      case 5: n = Q.writeupProgress(k); return n.done+' of '+n.total+' done';
+      case 6: n = Q.masProgress(k); n = n.total - n.done; return n ? n+' check'+(n>1?'s':'')+' left' : 'Checks done';
+    }
+    return '';
+  }
+
+  function dots(k){
+    var c = D.cases[k], cur = c.result==='lost' ? DOT[c.lostAt||0] : DOT[c.now] || 0, won = c.result==='won';
+    var html = DOTS.map(function(l, i){
+      var s = won || i < cur ? 'done' : i===cur && !c.result ? 'now' : c.result==='lost' && i===cur ? 'done' : '';
+      return '<i class="'+s+'"></i>'; }).join('');
+    return '<span class="bd-dots" role="img" aria-label="Step '+(cur+1)+' of 6: '+DOTS[cur]+'">'+html+'</span>';
+  }
+
+  function action(k){
+    var c = D.cases[k], st = Q.status(k), label = st.btn, cls = 'btn-secondary';
+    if(label==='Continue') label = 'Finish write-up';
+    else if(label==='Add plans') label = 'Add illustrations';
+    else if(c.now===6 && !c.result && st.go.indexOf('#mas')===0) label = 'Firm review';
+    if(label==='Nudge') cls = 'btn-wa';
+    else if(label==='Check') cls = 'btn-primary'; // numbers must be confirmed first: the one coral action
+    return '<a class="btn btn-sm '+cls+' bd-act" href="'+st.go+'" aria-label="'+Q.esc(label+' · '+c.name)+'">'+(label==='Nudge'?svg('chat'):'')+Q.esc(label)+'</a>';
+  }
+
+  function when(k){
+    var c = D.cases[k], m = meetingFor(k);
+    if(c.result) return c.dates && c.dates.closed ? '<span class="bd-when">'+Q.esc(c.dates.closed.replace(/^\w+ /,''))+'</span>' : '';
+    if(c.timing) return '<span class="bd-when" title="Your note">'+svg('moon')+Q.esc(c.timing)+'</span>';
+    if(!m) return '';
+    var d = m.day==='Today' ? '' : (m.date||m.day).split(' ')[0]+' ';
+    return '<span class="bd-when num" title="Meeting">'+Q.esc(d)+m.time+'</span>';
+  }
+
+  function card(k){
+    var c = D.cases[k];
+    return '<li class="bd-card'+(c.result?' closed':'')+'">'+
+      '<div class="bd-top">'+
+        '<span class="bd-av av'+AV[D.caseOrder.indexOf(k)%4]+'" aria-hidden="true">'+initials(c.name)+'</span>'+
+        '<div class="bd-who"><a class="bd-name" href="#case-'+k+'">'+Q.esc(c.name)+'</a>'+
+          '<span class="bd-line"><span class="num">#'+c.no+'</span>'+(c.line?' · '+Q.esc(c.line):'')+'</span></div>'+
+        when(k)+
+      '</div>'+
+      ((c.worry && !c.result) || c.selected ? '<div class="bd-tags">'+
+        (c.worry && !c.result ? '<span class="bd-worry">'+svg('heart')+'<span><span class="sr-only">Their worry: </span>'+Q.esc(c.worry)+'</span></span>' : '')+
+        (c.selected ? '<span class="chip chip-outline">Selected Client</span>' : '')+'</div>' : '')+
+      '<div class="bd-foot">'+dots(k)+'<span class="bd-where">'+Q.esc(where(k))+'</span>'+(c.result?'':action(k))+'</div>'+
+    '</li>';
+  }
+
+  function list(keys){ return '<ul class="bd-list">'+keys.map(function(k){ return card(k); }).join('')+'</ul>'; }
+
+  function groups(){
+    var needs = Q.needs(), won = [], lost = [], prog = [];
+    D.caseOrder.forEach(function(k){ var c = D.cases[k];
+      if(c.result==='won') won.push(k); else if(c.result==='lost') lost.push(k); else if(needs.indexOf(k)<0) prog.push(k); });
+    return { needs:needs, prog:prog, won:won, lost:lost };
+  }
+
+  function meetLine(){ // only when a client meeting starts within 2 hours of the demo clock
+    var now = (D.today.hour||9)*60, m = D.meetings.upcoming.filter(function(x){
+      var d = mins(x.time) - now; return x.day==='Today' && !x.internal && d>=0 && d<=120; })[0];
+    if(!m) return '';
+    return '<p class="bd-meet">'+Q.icon('video','i-sm')+'<span><b>'+Q.esc(m.who)+'</b> at <span class="num">'+m.time+'</span> · '+Q.esc(m.app)+'</span>'+
+      '<a href="#meeting-'+m.id+'">Open meeting'+Q.icon('arrow','i-sm')+'</a></p>';
+  }
+
+  function head(n){
+    return '<header class="today-head bd-head tiled">'+
+      '<div><p class="eyebrow">'+D.today.long+'</p>'+
+      '<h1 class="h1 display">Morning, '+Q.esc(D.adviser.first)+'</h1>'+
+      (n==null?'':'<p class="lede">'+(n ? n+' client'+(n===1?' needs':'s need')+' you today' : 'No one needs you right now')+'</p>')+
+      '<button class="btn btn-secondary btn-sm bd-rec phone-only" type="button" data-quick-notes>'+Q.icon('mic','i-sm')+'Record notes</button></div>'+
+      '<a class="btn btn-secondary bd-new" href="#new-case">'+Q.icon('plus')+'New case</a>'+
     '</header>';
   }
 
-  function nextMeeting(){
-    var m = D.meetings.upcoming[0], c = D.cases[m.c];
-    return '<section class="card hero meet rise" aria-labelledby="nm-h">'+
-      '<div class="meet-top"><p class="eyebrow">Next meeting · today</p><span class="meet-time num">'+m.time+'</span></div>'+
-      '<h2 class="h2" id="nm-h">'+Q.esc(m.who)+'</h2>'+
-      '<p class="meet-line">'+m.time+' to '+m.end+'<span class="dot-sep"></span>'+Q.icon('video','i-sm')+' '+m.app+'<span class="dot-sep"></span>Case #'+c.no+' · '+D.steps[c.now].label+'</p>'+
-      '<div class="meet-acts">'+
-        '<label class="switch"><input type="checkbox" id="nm-notes"'+(m.notes?' checked':'')+'> Take notes</label>'+
-        '<span class="meet-hint">We\'ll remind you before it starts. You still press Record.</span>'+
-        '<a class="btn btn-primary" href="#meeting-'+m.id+'">Open meeting'+Q.icon('arrow','i-sm')+'</a>'+
-      '</div></section>';
+  var fab = '<a class="bd-fab" href="#new-case">'+Q.icon('plus')+'New case</a>';
+
+  function tabs(g){
+    function t(id, label, n){ return '<button class="chip" type="button" data-tab="'+id+'" aria-pressed="'+(tab===id)+'" aria-controls="bd-'+id+'">'+label+' <span class="num">'+n+'</span></button>'; }
+    return '<div class="bd-tabs" role="group" aria-label="Show cases">'+t('needs','Needs you',g.needs.length)+t('prog','In progress',g.prog.length)+t('won','Won',g.won.length)+'</div>';
   }
 
-  function needs(){
-    var list = Q.needs(), rows = list.slice(0,5).map(function(k){ var c = D.cases[k], st = Q.status(k);
-      return '<li><div class="who"><a class="who-link" href="#case-'+k+'"><b>'+Q.esc(c.name)+'</b> <span class="case-no">#'+c.no+'</span></a><small>'+Q.esc(st.why)+'</small></div>'+
-        '<a class="btn btn-secondary btn-sm need-btn" href="'+st.go+'">'+Q.esc(st.btn)+'</a></li>'; }).join('');
-    return '<section class="card rise" aria-labelledby="ny-h"><div class="card-head"><h2 class="h3" id="ny-h">Needs you</h2><span class="small muted num">'+list.length+' case'+(list.length===1?'':'s')+'</span></div>'+
-      (rows ? '<ul class="list">'+rows+'</ul>' : '<p class="muted" style="padding:var(--s-4) 0">Nothing needs you right now.</p>')+
-      '<div class="card-foot"><a href="#cases">See all cases ('+D.caseOrder.length+')</a></div></section>';
-  }
-
-  function digest(){
-    return '<section class="card digest rise" aria-labelledby="dg-h">'+
-      '<p class="eyebrow" id="dg-h">This morning\'s digest</p>'+
-      '<ul class="digest-list">'+D.digest.items.map(function(i){ return '<li><a href="'+i.go+'">'+Q.esc(i.text)+'</a></li>'; }).join('')+'</ul>'+
-      '<p class="small device-line">'+Q.icon('device','i-sm')+' Sent to this device at '+D.digest.sent+'. Names never leave it.</p></section>';
-  }
+  function panel(id, body){ return '<section class="bd-panel" id="bd-'+id+'"'+(tab===id?'':' hidden')+'>'+body+'</section>'; }
+  function none(t){ return '<p class="bd-none">'+t+'</p>'; }
 
   Q.screen('today', {
     title:'Today', nav:'today',
     render:function(p){
-      var clientMeetings = D.meetings.upcoming.filter(function(m){ return m.day==='Today' && !m.internal; }).length;
-      var n = Q.needs().length, sub = clientMeetings+' meeting today<span class="dot-sep"></span>'+n+' case'+(n===1?' needs':'s need')+' you';
-      if(p.state==='empty') return '<div class="page">'+head('')+
-        '<div class="empty rise"><h2>Nothing needs you yet</h2><p>Your next meeting will show here. You can also start a case from PDFs.</p>'+
-        '<a class="btn btn-primary" href="#new-case">'+Q.icon('plus')+'New case</a><a href="#welcome-1">Connect your calendar</a></div></div>';
-      if(p.state==='loading') return '<div class="page">'+head('')+'<div class="today-grid"><div class="stack">'+
-        '<div class="card" aria-busy="true"><span class="skel" style="width:30%"></span><span class="skel skel-lg" style="width:45%;margin-top:16px"></span><span class="skel" style="width:70%;margin-top:14px"></span></div>'+
-        '<div class="card">'+[1,2,3,4].map(function(){ return '<div style="padding:14px 0;border-bottom:1px solid var(--line)"><span class="skel" style="width:40%"></span><span class="skel" style="width:25%;margin-top:8px"></span></div>'; }).join('')+'</div>'+
-        '</div><aside class="stack"><div class="card"><span class="skel" style="width:60%"></span><span class="skel" style="width:90%;margin-top:12px"></span></div></aside></div></div>';
-      var top = p.state==='error'
-        ? '<div class="banner banner-error rise" role="alert">'+Q.icon('alert')+'<p>Calendar didn\'t sync. Your cases are still here.</p><button class="btn-link" data-toast="Calendar synced">Try again</button></div>'
-        : nextMeeting();
-      return '<div class="page">'+head(sub)+
-        '<div class="today-grid"><div class="stack">'+top+needs()+'</div>'+
-        '<aside class="stack">'+digest()+'</aside></div></div>';
+      backfill();
+      if(/^(needs|prog|won)$/.test(p.arg)) tab = p.arg; // deep link #today-won
+      if(p.state==='empty') return '<div class="page bd">'+head(null)+
+        '<div class="empty"><h2>Nothing needs you yet</h2><p>Your next meeting will show here. You can also start a case from PDFs.</p>'+
+        '<a class="btn btn-primary" href="#new-case">'+Q.icon('plus')+'New case</a><a href="#welcome-4">Connect your calendar</a></div></div>';
+      if(p.state==='loading') return '<div class="page bd">'+head(null)+'<ul class="bd-list" aria-busy="true">'+[1,2,3,4].map(function(){
+        return '<li class="bd-card"><div class="bd-top"><span class="bd-av skel"></span><div class="bd-who"><span class="skel" style="width:50%"></span><span class="skel" style="width:35%;margin-top:8px"></span></div></div>'+
+          '<span class="skel" style="width:70%"></span><span class="skel" style="width:40%;margin-top:14px"></span></li>'; }).join('')+'</ul></div>';
+      var g = groups(), top = p.state==='error'
+        ? '<div class="banner banner-error" role="alert">'+Q.icon('alert')+'<p>Calendar didn\'t sync. Your cases are still here.</p><button class="btn-link" data-toast="Calendar synced">Try again</button></div>'
+        : meetLine();
+      return '<div class="page bd">'+head(g.needs.length)+top+tabs(g)+
+        panel('needs', g.needs.length ? list(g.needs) : none('Nothing needs you right now.'))+
+        panel('prog', g.prog.length ? list(g.prog) : none('No other open cases.'))+
+        panel('won', (g.won.length ? list(g.won) : none('No won cases yet.'))+
+          (g.lost.length ? '<h2 class="bd-sub">Closed</h2>'+list(g.lost) : ''))+
+        fab+'</div>';
     },
     mount:function(el){
-      var sw = el.querySelector('#nm-notes');
-      if(sw) sw.addEventListener('change', function(){ D.meetings.upcoming[0].notes = sw.checked;
-        Q.toast(sw.checked ? 'We\'ll remind you at '+QB.remindAt(D.meetings.upcoming[0].time) : 'No reminder for this meeting'); });
+      var page = el.querySelector('.page');
+      page.addEventListener('click', function(e){
+        var b = e.target.closest('[data-tab]'); if(!b) return;
+        tab = b.dataset.tab;
+        page.querySelectorAll('[data-tab]').forEach(function(x){ x.setAttribute('aria-pressed', x===b); });
+        page.querySelectorAll('.bd-panel').forEach(function(s){ s.hidden = s.id!=='bd-'+tab; });
+      });
     }
   });
 })();

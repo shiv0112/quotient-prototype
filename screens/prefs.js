@@ -38,15 +38,26 @@
                   : conn(A.logo.microsoft,'Microsoft Outlook','Not connected','','<button class="btn btn-secondary btn-sm" data-act="ol-on">Connect Microsoft Outlook</button>'))+
       '</div>');
 
-    var telegram = sec('tg','Telegram','Reminders show case numbers only, never client names.',
+    var telegram = sec('tg','Telegram','Reminders show case numbers and initials, never full client names.',
       (pf.tg ? conn(A.logo.telegram,'Connected · '+Q.esc(ad.telegram),'Reminders from '+A.bot,'','<button class="btn btn-secondary btn-sm" data-act="tg-off">Disconnect</button>')
              : conn(A.logo.telegram,'Not connected','Get follow-up reminders on your phone','','<button class="btn btn-secondary btn-sm" data-act="tg-on">Connect Telegram</button>'))+
-      '<p class="hint phone-only">Reminders show case numbers only, never client names.</p>');
+      '<p class="hint phone-only">Reminders show case numbers and initials, never full client names.</p>');
 
-    var wait = sec('wait','Follow-up wait','How long after you share before we remind you.',
-      '<div class="pf-days" role="group" aria-label="Days to wait">'+[1,2,3,4,5,6,7].map(function(i){
-        return '<button aria-pressed="'+(i===ad.waitDays)+'" data-day="'+i+'" aria-label="'+i+' day'+(i>1?'s':'')+'">'+i+'</button>'; }).join('')+'</div>'+
-      '<p class="pf-line" id="pf-dayline" aria-live="polite">'+dayLine(ad.waitDays)+'</p>');
+    function sw(id, on, text){ return '<label class="switch"><input type="checkbox" id="'+id+'"'+(on?' checked':'')+'> '+text+'</label>'; }
+    var wait = sec('wait','Gentle timing','When we remind you to follow up. Never pushy, never late at night.',
+      '<div class="fu-tm">'+
+      '<div class="fu-tm-row"><span class="label" id="pf-wait-l">Wait after sharing</span><div>'+
+        '<div class="pf-days" role="group" aria-labelledby="pf-wait-l">'+[1,2,3,4,5,6,7].map(function(i){
+          return '<button aria-pressed="'+(i===ad.waitDays)+'" data-day="'+i+'" aria-label="'+i+' day'+(i>1?'s':'')+'">'+i+'</button>'; }).join('')+'</div>'+
+        '<p class="pf-line" id="pf-dayline" aria-live="polite">'+dayLine(ad.waitDays)+'</p></div></div>'+
+      '<div class="fu-tm-row"><label class="label" for="pf-rt">Reminder time</label><div class="fu-tm-ctl">'+
+        '<select class="select" id="pf-rt">'+['8:00','8:30','9:00','9:30','10:00'].map(function(t){ return '<option'+(t===ad.remindTime?' selected':'')+'>'+t+'</option>'; }).join('')+'</select>'+
+        sw('pf-wd', ad.weekdaysOnly, 'Weekdays only')+'</div></div>'+
+      '<div class="fu-tm-row"><span class="label">Quiet hours</span><div class="fu-tm-ctl">'+sw('pf-q21', ad.quietAfter21, 'Never after 21:00')+sw('pf-qsun', ad.quietSunday, 'Never on Sunday')+'</div></div>'+
+      '<div class="fu-tm-row"><label class="label" for="pf-max">Nudges per client</label><div class="fu-tm-ctl"><select class="select" id="pf-max">'+[1,2,3].map(function(n){
+          return '<option value="'+n+'"'+(n===(ad.nudgeMax||2)?' selected':'')+'>'+n+'</option>'; }).join('')+'</select>'+
+        '<span class="pf-line">at most, then mark the case quiet and stop.</span></div></div>'+
+      '</div><p class="hint">'+Q.icon('info','i-sm')+' Per-client timing notes are set on each case.</p>');
 
     var digest = sec('dg','Morning digest','Today\'s meetings and who needs you, in one notification.',
       '<label class="switch"><input type="checkbox" id="pf-dg"'+(pf.digest?' checked':'')+'> Send me a morning digest</label>'+
@@ -100,6 +111,8 @@
       pg.addEventListener('change', function(e){
         if(e.target.id==='pf-dg'){ pf.digest = e.target.checked; pg.querySelector('#pf-time').disabled = !pf.digest; saved(pg,'dg'); }
         if(e.target.id==='pf-time'){ ad.digestTime = e.target.value; saved(pg,'dg'); }
+        var tm = { 'pf-rt':'remindTime', 'pf-wd':'weekdaysOnly', 'pf-q21':'quietAfter21', 'pf-qsun':'quietSunday', 'pf-max':'nudgeMax' }[e.target.id];
+        if(tm){ ad[tm] = e.target.type==='checkbox' ? e.target.checked : tm==='nudgeMax' ? +e.target.value : e.target.value; saved(pg,'wait'); }
       });
       if(!autoOpened && p.state==='disconnect'){ autoOpened = true; disconnect('cal'); }
     }

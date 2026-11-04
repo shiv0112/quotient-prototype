@@ -1,0 +1,114 @@
+/* Update 2 · u2-followup. Tokens only. See docs/design/UPDATE-2.md D (follow-up loop).
+   Screens: nudge.js (client card, draft, sent, quiet, Telegram), share.js (WhatsApp share sheet), prefs.js (Gentle timing). */
+
+/* ---------- nudge: client card ---------- */
+.fu-client{display:flex;flex-direction:column;gap:var(--s-5);padding:var(--s-6)}
+.fu-who{display:flex;align-items:center;gap:var(--s-4);min-width:0}
+.fu-ava{flex:none;display:grid;place-items:center;width:52px;height:52px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-family:var(--f-display);font-weight:var(--w-bold);font-size:var(--t-md);letter-spacing:.02em}
+.fu-id{min-width:0}
+.fu-id h2{font-family:var(--f-display);font-size:var(--t-xl);font-weight:var(--w-bold);letter-spacing:var(--track-display);line-height:var(--lh-tight);color:var(--ink)}
+.fu-no{font-family:var(--f-text);font-size:var(--t-sm);font-weight:var(--w-semi);color:var(--text-3);letter-spacing:0;margin-left:4px;white-space:nowrap}
+.fu-id p{margin-top:6px;color:var(--text-2);font-size:var(--t-base);display:flex;flex-wrap:wrap;align-items:center}
+.fu-facts{margin:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;background:var(--line);gap:1px}
+.fu-facts>div{background:var(--surface);padding:var(--s-3) var(--s-4);display:flex;flex-direction:column;gap:4px;min-width:0}
+.fu-facts dt{font-size:var(--t-xs);font-weight:var(--w-semi);letter-spacing:var(--track-caps);text-transform:uppercase;color:var(--text-3)}
+.fu-facts dd{margin:0;font-size:var(--t-base);font-weight:var(--w-med);color:var(--ink);display:flex;align-items:flex-start;gap:6px;overflow-wrap:anywhere}
+.fu-facts dd .i{margin-top:3px;flex:none;color:var(--link)}
+.fu-facts .fu-worry{background:var(--surface-2)}
+.fu-worry q{quotes:"\201C" "\201D";font-style:italic}
+.fu-q{color:var(--text-3);font-weight:var(--w-reg)}
+.fu-foot{display:flex;align-items:center;justify-content:space-between;gap:var(--s-3);flex-wrap:wrap}
+.fu-count{display:inline-flex;align-items:center;gap:var(--s-2);font-size:var(--t-sm);font-weight:var(--w-semi);color:var(--text-2)}
+.fu-dots{display:inline-flex;gap:4px}
+.fu-dots i{width:18px;height:6px;border-radius:var(--r-pill);background:var(--line-strong)}
+.fu-dots i.done{background:var(--ink)}
+.fu-dots i.now{background:var(--accent)}
+.fu-open{display:inline-flex;align-items:center;gap:4px;min-height:var(--target);font-weight:var(--w-semi);color:var(--link);text-decoration:none}
+.fu-open:hover{text-decoration:underline;text-underline-offset:3px}
+
+/* ---------- nudge: draft + actions ---------- */
+.fu-dhead{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s-3)}
+.fu .ng-draft .textarea{line-height:1.6;field-sizing:content;min-height:150px}
+.fu-ask{display:flex;align-items:center;justify-content:space-between;gap:var(--s-3);flex-wrap:wrap;padding:var(--s-3) var(--s-4);border-radius:var(--r-md);background:var(--ok-bg);color:var(--ink);font-size:var(--t-sm)}
+.fu-ask[hidden]{display:none}
+.fu-ask p{flex:1 1 240px}
+.fu-ask .row{gap:var(--s-2)}
+.fu .ng-acts{flex-direction:row;flex-wrap:wrap;align-items:center}
+.fu-more{display:flex;flex-wrap:wrap;gap:var(--s-2);align-items:center}
+.fu-more .menu-pop{left:0;right:auto}
+
+/* ---------- nudge: sent + calendar + quiet ---------- */
+.fu-cal{display:flex;align-items:center;gap:var(--s-4);flex-wrap:wrap}
+.fu-cal>div{flex:1 1 240px;min-width:0}
+.fu-cal p{margin-top:2px;color:var(--text-2);font-size:var(--t-sm)}
+.fu-cal-ico{flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:var(--r-md);background:var(--ph-bg);color:var(--ph-ink)}
+.fu-quiet{display:flex;flex-direction:column;gap:var(--s-3)}
+.fu-quiet p:not(.eyebrow){color:var(--text-2)}
+.fu-quiet .row{gap:var(--s-2);flex-wrap:wrap;margin-top:var(--s-2)}
+
+/* ---------- Telegram mock ---------- */
+.tg-link{display:block;margin-top:6px;color:var(--link);font-weight:var(--w-semi);text-decoration:underline;text-underline-offset:2px;overflow-wrap:anywhere}
+
+/* ---------- share: channel + simulated share sheet ---------- */
+.fu-seg button{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 var(--s-4)}
+.fu-ss-wrap{position:fixed;inset:0;z-index:60;display:flex;align-items:flex-end;justify-content:center}
+.fu-ss-scrim{position:absolute;inset:0;background:var(--scrim);animation:fu-fade var(--dur-2) var(--ease-out)}
+.fu-ss{position:relative;width:min(440px,100%);background:var(--surface);border-radius:var(--r-xl) var(--r-xl) 0 0;padding:var(--s-3) var(--s-5) calc(var(--s-5) + env(safe-area-inset-bottom,0px));
+  display:flex;flex-direction:column;gap:var(--s-5);box-shadow:var(--shadow-pop);animation:fu-up var(--dur-3) var(--ease-out)}
+.fu-ss-grab{align-self:center;width:40px;height:5px;border-radius:var(--r-pill);background:var(--line-strong)}
+.fu-ss-file{display:flex;align-items:center;gap:var(--s-3);padding:var(--s-3);border-radius:var(--r-md);background:var(--surface-2)}
+.fu-ss-file b{display:block;font-size:var(--t-base);font-weight:var(--w-semi);overflow-wrap:anywhere}
+.fu-ss-file small{display:block;color:var(--text-3);font-size:var(--t-sm)}
+.fu-ss-pdf{flex:none;display:grid;place-items:center;width:40px;height:50px;border-radius:4px;background:var(--paper);box-shadow:0 0 0 1px var(--paper-line);color:var(--paper-mark);font-size:10px;font-weight:var(--w-bold);letter-spacing:.06em}
+.fu-ss-apps{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:var(--s-2)}
+.fu-ss-app{display:flex;flex-direction:column;align-items:center;gap:6px;border:0;background:none;padding:var(--s-1) 0;border-radius:var(--r-md);font-size:var(--t-xs);font-weight:var(--w-semi);color:var(--text-2);min-height:var(--target)}
+.fu-ss-app>span{display:grid;place-items:center;width:52px;height:52px;border-radius:16px;background:var(--surface-2);color:var(--ink);transition:transform var(--dur-1) var(--ease-out)}
+.fu-ss-app>span .i{width:24px;height:24px}
+.fu-ss-app.wa>span{background:var(--ok);color:var(--surface)}
+.fu-ss-app:hover>span{transform:translateY(-2px)}
+.fu-ss-app:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+@keyframes fu-up{from{transform:translateY(24px)}to{transform:none}}
+@keyframes fu-fade{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion: reduce){.fu-ss,.fu-ss-scrim{animation:none}}
+
+/* ---------- Settings: Gentle timing ---------- */
+.fu-tm{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface);overflow:hidden}
+.fu-tm-row{display:grid;grid-template-columns:170px minmax(0,1fr);gap:var(--s-4);align-items:center;padding:var(--s-4);border-bottom:1px solid var(--line)}
+.fu-tm-row:last-child{border-bottom:0}
+.fu-tm-row>.label{align-self:start;padding-top:12px}
+.fu-tm-row .pf-days{margin-bottom:var(--s-2)}
+.fu-tm-ctl{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s-2) var(--s-5)}
+.fu-tm-ctl .select{width:104px}
+.pf .hint .i{vertical-align:-3px}
+
+/* ---------- phone ---------- */
+@media (max-width:760px){
+  .fu-client{padding:var(--s-5);gap:var(--s-4)}
+  .fu-facts{grid-template-columns:minmax(0,1fr)}
+  .fu-id h2{font-size:var(--t-lg)}
+  .fu-more>.btn,.fu-more>.menu{flex:1 1 0}
+  .fu-more>.menu>.btn{width:100%}
+  .fu-more>.menu:last-child{flex:none}
+  .fu-more>.menu:last-child>.btn{width:var(--target);padding:0}
+  .fu-cal .btn{width:100%}
+  .fu-tm-row{grid-template-columns:minmax(0,1fr);gap:var(--s-2)}
+  .fu-tm-row>.label{padding-top:0}
+  .fu-ss-wrap{padding-bottom:0}
+}
+@media (max-width:479px){
+  .fu-id p,.fu-facts dd,.fu .ng-draft .textarea,.fu-ask,.fu-cal p,.tg-b{font-size:var(--t-base)}
+  .fu-ask .row{width:100%}
+  .fu-ask .row .btn{flex:1;min-height:var(--target)}
+  .fu-seg{display:flex;width:100%}
+  .fu-seg button{flex:1;justify-content:center;min-height:44px}
+}
+.fu-nw{white-space:nowrap}
+.sh .sh-form .textarea{field-sizing:content;min-height:120px}
+/* Share actions stay on one line on desktop (Cancel was wrapping). */
+@media (min-width:761px){
+  .sh-form .sh-acts{flex-wrap:nowrap;gap:var(--s-2)}
+  .sh-form .sh-acts>.btn-primary{padding:0 var(--s-4)}
+  .sh-form .sh-acts .btn-link{white-space:nowrap;padding:0 var(--s-1)}
+  .sh-form .sh-acts .btn-ghost{padding:0 var(--s-3)}
+  .sh-form .sh-acts .spacer{min-width:0}
+}

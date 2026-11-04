@@ -28,7 +28,7 @@
     var done = s.s==='done' || at>=x.fl.steps.length;
     var title = done ? 'Done' : x.fl.title;
     var lift = (at<3 || s.s==='error' || s.s==='offline') ? '' : '<div class="s10-lift" aria-live="polite"><span class="eyebrow">Answer back · names going in on this device</span><p>'+liftLine(x, at>=4)+'</p></div>';
-    var foot = done ? '<a class="btn btn-primary" href="'+x.fl.done+'">'+Q.esc(x.fl.doneBtn)+'</a>'
+    var foot = done ? '<div class="u2-dock"><a class="btn btn-primary" href="'+x.fl.done+'">'+Q.esc(x.fl.doneBtn)+'</a></div>'
       : '<a class="btn-link" href="'+x.fl.back+'">Cancel</a>';
     return '<div class="page s10">'+QB.demo([['running','Running'],['done','Done'],['error','Error'],['offline','Offline']], s.s)+
       '<header class="s10-head rise"><p class="eyebrow">'+Q.esc(x.c.name)+' · Case #'+x.c.no+'</p><h1 class="h1" aria-live="polite">'+Q.esc(title)+'</h1>'+

@@ -318,9 +318,9 @@ button.proof,a.proof{border:0;cursor:pointer;text-decoration:none}
 .todo{max-width:520px;margin:12vh auto;text-align:center;display:flex;flex-direction:column;gap:var(--s-3);align-items:center}
 
 /* ---------- motion on route change ---------- */
-.enter .rise{animation:rise var(--dur-4) var(--ease-out) both}
-.enter .rise:nth-child(2){animation-delay:40ms}.enter .rise:nth-child(3){animation-delay:80ms}.enter .rise:nth-child(4){animation-delay:120ms}.enter .rise:nth-child(5){animation-delay:160ms}
-@keyframes rise{from{opacity:0;transform:translateY(6px)}}
+/* Content is visible at once: short, tiny lift, never from opacity 0 (UPDATE-2 A4) */
+.enter .rise{animation:rise var(--dur-1) var(--ease-out)}
+@keyframes rise{from{opacity:.85;transform:translateY(4px)}}
 
 /* ---------- responsive ---------- */
 @media (max-width:1100px){

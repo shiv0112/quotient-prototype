@@ -23,7 +23,7 @@ Read first: `docs/design/BRIEF.md` (wins on facts), `docs/design/ux-spec.md` (sc
 })();
 ```
 2. Add `<script src="screens/<name>.js"></script>` at the end of `index.html`. Do not edit `core.js`.
-3. Route ids already listed in the demo jump menu (`Q.inventory` in core.js): `signin`, `signup`, `welcome-1..4`, `meetings`, `meeting-<meetingId>`, `new-case[-<case>]`, `gate-<case>` (feature comes from `Q.data.gate[*].c`), `gate-edit-<case>`, `processing-<case>`, `share-<case>`, `writeup-<case>`, `mas-<case>`, `nudge-<case>`, `telegram`, `sent-<case>`, `cases`, `prefs` (Settings; never `#settings`), `digest`. Longest id wins, so `gate-edit` beats `gate`.
+3. Route ids already listed in the demo jump menu (`Q.inventory` in core.js): `signin`, `signup`, `welcome-1..5`, `meetings`, `meeting-<meetingId>`, `new-case[-<case>]`, `gate-<case>` (feature comes from `Q.data.gate[*].c`), `gate-edit-<case>`, `processing-<case>`, `share-<case>`, `writeup-<case>`, `mas-<case>`, `nudge-<case>`, `telegram`, `sent-<case>`, `cases`, `prefs` (Settings; never `#settings`), `digest`. Longest id wins, so `gate-edit` beats `gate`.
 4. Layout CSS for your screen goes at the end of `components.css` under "Screen layouts", using tokens only.
 
 ## Core API (full list at the top of core.js)

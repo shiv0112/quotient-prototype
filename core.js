@@ -45,7 +45,7 @@
   var qs = new URLSearchParams(location.search);
 
   /* ---------- shared case state (one store, all screens) ---------- */
-  var SAVED = ['cases','writeup','mas','meetings','transcripts'], VER = 2; // bump VER when the data shape changes
+  var SAVED = ['cases','writeup','mas','meetings','transcripts','adviser'], VER = 4; // bump VER when the data shape changes
   try{
     if(qs.has('reset')) sessionStorage.removeItem('q-data');
     var saved = JSON.parse(sessionStorage.getItem('q-data') || 'null');
@@ -72,6 +72,7 @@
       case 1: n = Q.toCheck(k).length;
         return n ? s(n+' number'+(n>1?'s':'')+' to check', 'Check', '#case-'+k, true) : s('Ready to share', 'Share', '#share-'+k, true);
       case 2:
+        if(c.quiet) return s('Quiet · '+(c.nudgesSent||c.nudgeNo||2)+' nudges sent, reminders stopped', 'Open', '#case-'+k);
         if(c.nudged) return s('Nudge sent · next reminder '+c.nudged.next, 'Log reply', '#nudge-'+k+'-reply');
         if(c.snoozedTo) return s('Snoozed until '+c.snoozedTo, 'Open', '#nudge-'+k);
         if((c.quietDays||0) >= D.adviser.waitDays) return s('No reply for '+c.quietDays+' days', 'Nudge', '#nudge-'+k, true);
@@ -137,7 +138,8 @@
   /* ---------- screen inventory (ux-spec §6) for the demo jump menu ---------- */
   Q.inventory = [
     ['S01','Sign in','signin'], ['S02','Create account','signup'],
-    ['S03a','Onboarding: calendar','welcome-1'], ['S03b','Onboarding: Telegram','welcome-2'], ['S03c','Onboarding: follow-up wait','welcome-3'],
+    ['S03a','Onboarding: how it works','welcome-1'], ['S03b','Onboarding: client channel','welcome-2'], ['S03c','Onboarding: reminders','welcome-3'],
+    ['S03d','Onboarding: calendar','welcome-4'], ['S03e','Onboarding: follow-up wait','welcome-5'],
     ['S04','Today','today'], ['S05','Meetings','meetings'],
     ['S06','Meeting: Wei Tan, today','meeting-wei-today'], ['S06','Meeting: Daniel Lee, done','meeting-daniel-past'],
     ['S07','New case','new-case'],
@@ -282,6 +284,11 @@
     Q.sheet({ title: x.insurer.name+' · page '+x.cell.p+' of '+x.insurer.pages, ref:ref,
       body: pdfPage(x) + read + ask, foot: foot + nav,
       mount: function(sh){
+        // Phone: lay the page out at 440px and zoom it down to the sheet width, so no column is cut off (pinch to zoom in).
+        // shortcut: fitted once on open, not on rotate; reopen the sheet after rotating.
+        var pdf = sh.querySelector('.sheet-body .pdf');
+        if(pdf){ var bd = pdf.parentNode, cs = getComputedStyle(bd), w = bd.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+          if(w < 440){ pdf.style.width = '440px'; pdf.style.zoom = w/440; } }
         var inp = sh.querySelector('#fixv'); if(inp){ inp.focus(); inp.select && inp.select(); inp.addEventListener('keydown',function(e){ if(e.key==='Enter') act('save'); }); }
         sh.querySelector('.sheet-foot').addEventListener('click', function(e){ var b=e.target.closest('[data-act]'); if(b) act(b.dataset.act); });
       } });
@@ -306,7 +313,7 @@
   /* ---------- generic sheet ---------- */
   var sheetEl, scrimEl, sheetOpener, sheetRef, sheetClose;
   Q.sheet = function(o){
-    var reuse = !!(sheetEl && sheetEl.classList.contains('open'));
+    var reuse = !!sheetEl; // closeSheet nulls it, so a sheet still opening (class not yet added) is reused, not doubled
     if(!reuse){
       sheetOpener = document.activeElement;
       scrimEl = document.createElement('div'); scrimEl.className = 'scrim'; scrimEl.addEventListener('click', Q.closeSheet);
@@ -318,7 +325,7 @@
     sheetEl.innerHTML = '<div class="sheet-head"><h2>'+Q.esc(o.title)+'</h2><button class="icon-btn" data-close aria-label="Close">'+Q.icon('close')+'</button></div>'+
       '<div class="sheet-body">'+o.body+'</div>'+(o.foot?'<div class="sheet-foot">'+o.foot+'</div>':'');
     sheetEl.querySelectorAll('[data-close]').forEach(function(b){ b.addEventListener('click', Q.closeSheet); });
-    if(!reuse) requestAnimationFrame(function(){ scrimEl.classList.add('open'); sheetEl.classList.add('open'); });
+    if(!reuse){ var s0 = sheetEl, c0 = scrimEl; requestAnimationFrame(function(){ if(sheetEl===s0){ c0.classList.add('open'); s0.classList.add('open'); } }); }
     if(o.mount) o.mount(sheetEl);
     if(!sheetEl.contains(document.activeElement)) (sheetEl.querySelector('.sheet-foot .btn') || sheetEl.querySelector('[data-close]')).focus({preventScroll:true});
   };
@@ -422,6 +429,10 @@
   var th = Q.theme(); if(th!=='system') document.documentElement.setAttribute('data-theme', th);
   document.addEventListener('DOMContentLoaded', function(){
     booted = true; paintUser(); buildJump(); syncDemo();
+    // Phone tab bar (UPDATE-2 C): 4 tabs. Calendar = #meetings. Record notes lives on Today and in each case.
+    var tb = document.querySelector('.tabbar');
+    if(tb) tb.innerHTML = [['today','today','Today'],['cases','cases','Cases'],['meetings','meetings','Calendar'],['prefs','prefs','Settings']].map(function(t){
+      return '<a href="#'+t[0]+'" data-nav="'+t[0]+'">'+Q.icon(t[1])+'<span>'+t[2]+'</span></a>'; }).join('');
     var j = document.getElementById('demo-jump'); if(j) j.addEventListener('change', function(){ Q.go('#'+j.value); });
     render(true);
   });

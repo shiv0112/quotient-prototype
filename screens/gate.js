@@ -25,9 +25,10 @@
 
   function renderGate(p){
     var x = ctx(p), v = QB.view(x.key), fl = B.flow[x.f], b = backTo(x);
-    var states = [['normal','Ready to send'],['loading','Finding details'],['error','Error']];
-    if(/^compare/.test(x.f)) states.splice(1,0,['nothing','Nothing to send']);
-    var s = QB.local('gate', states.map(function(z){return z[0];}), 'normal', p);
+    // First case: the full receipt. After the first Send (D.adviser.gateSeen): a one-line summary, details one tap away.
+    var states = [['normal','First time · full'],['summary','Later · one line'],['loading','Finding details'],['error','Error']];
+    if(/^compare/.test(x.f)) states.splice(2,0,['nothing','Nothing to send']);
+    var s = QB.local('gate', states.map(function(z){return z[0];}), D.adviser.gateSeen ? 'summary' : 'normal', p);
     var head = QB.demo(states, s.s)+'<a class="back" href="'+b.href+'">'+Q.icon('back','i-sm')+Q.esc(b.label)+'</a>'+
       '<header class="s08-head rise"><p class="eyebrow">Before anything is sent · Case #'+x.c.no+'</p><h1 class="h1">What leaves your device</h1><p class="sub">'+Q.esc(D.gate[x.f].sub)+'</p></header>';
     if(s.s==='loading') return '<div class="page s08">'+head+'<div class="s08-rc" aria-busy="true"><p class="s08-sec">Finding personal details on this device…</p>'+
@@ -38,7 +39,12 @@
     if(s.s==='nothing') return '<div class="page s08">'+head+'<div class="s08-rc rise"><div class="s08-nothing">'+
       '<span class="chip chip-device">'+Q.icon('device','i-sm')+'0 characters</span><p class="big">Nothing leaves your device for this comparison.</p>'+
       '<p class="muted">Harbour Assurance, Meridian Life and Orchid Mutual are all read on this device.</p></div></div>'+
-      '<div class="s08-acts"><button class="btn btn-primary" data-act="build">Build comparison</button><span class="spacer"></span><a class="btn btn-ghost" href="'+fl.back+'">Cancel</a></div></div>';
+      '<div class="s08-acts u2-dock"><button class="btn btn-primary" data-act="build">Build comparison</button><span class="spacer"></span><a class="btn btn-ghost" href="'+fl.back+'">Cancel</a></div></div>';
+    if(s.s==='summary') return '<div class="page s08">'+head+picker(x, v)+
+      '<section class="s08-rc u2-gsum rise" aria-label="Outgoing text summary"><p class="u2-gline">'+Q.icon('device')+'<span><b class="num">'+v.charsLabel+'</b> characters<span class="dot-sep"></span><b class="num">'+v.count+'</b> details replaced on this device</span>'+
+        '<button class="btn-link" data-bstate="normal">See details</button></p>'+
+        '<p class="small muted">Kept on this device: the PDFs, names, NRIC, phone, email, address.</p></section>'+
+      '<div class="s08-acts u2-dock"><button class="btn btn-primary" data-act="send">Send this text</button><span class="spacer"></span><a class="btn btn-ghost" href="'+fl.back+'">Cancel</a></div></div>';
     return '<div class="page s08">'+head+picker(x, v)+
       '<article class="s08-rc rise" aria-label="Outgoing text">'+
         '<div class="s08-rc-top"><span class="s08-sec" style="margin:0">Outgoing text · '+Q.esc(B.featureName[x.f])+'</span><span class="s08-sec r" style="margin:0">Case #'+x.c.no+'</span>'+
@@ -49,7 +55,7 @@
         '<span class="l">Characters sent</span><span class="v big num" data-count="'+v.chars+'">'+v.charsLabel+'</span></div>'+
         '<p class="s08-kept">'+Q.icon('device','i-sm')+'<span>Kept on this device: the PDFs, names, NRIC, phone, email, address. Names go back in when the answer returns.</span></p>'+
       '</article>'+
-      '<div class="s08-acts"><button class="btn btn-primary" data-act="send">Send this text</button><a class="btn btn-secondary" href="#gate-edit-'+x.key+'">Edit what is sent</a>'+
+      '<div class="s08-acts u2-dock"><button class="btn btn-primary" data-act="send">Send this text</button><a class="btn btn-secondary" href="#gate-edit-'+x.key+'">Edit what is sent</a>'+
       '<span class="spacer"></span><a class="btn btn-ghost" href="'+fl.back+'">Cancel</a></div></div>';
   }
 
@@ -62,11 +68,6 @@
       (pick.length ? '' : '<span class="small muted">No notes selected. Only the other text below is sent.</span>')+'</div>';
   }
 
-  function countUp(el, to, ms, fmt){
-    var n = 14, k = 0;
-    var t = setInterval(function(){ k++; var e = 1-Math.pow(1-k/n,3);
-      el.textContent = fmt(k>=n ? to : Math.round(to*e)); if(k>=n || !document.contains(el)) clearInterval(t); }, ms/n);
-  }
 
 
   function mountGate(el, p){
@@ -78,7 +79,7 @@
       var v = QB.view(x.key);
       if(a.dataset.act==='send'){
         (B.sends[x.key] = B.sends[x.key] || []).unshift({ feature:B.featureName[x.f], when:D.today.date+', 10:12', text:v.cards.map(function(c){ return c.text; }).join('\n\n'), fresh:true });
-        B.nothing = false; Q.go('#processing-'+x.key);
+        B.nothing = false; D.adviser.gateSeen = true; Q.go('#processing-'+x.key);
       }
       if(a.dataset.act==='build'){ B.nothing = true; Q.go('#processing-'+x.key); }
     });
@@ -86,15 +87,15 @@
     if(!phs.length || lifted[location.hash] || QB.reduced()) return;
     lifted[location.hash] = true;
     // Show the originals first, then fold each into its placeholder, left to right, once.
-    var cnt = pg.querySelector('[data-count]'), big = pg.querySelector('.big[data-count]'), n = 0;
+    // The characters-sent total always shows the real count of the text above; only the details count ticks with the fold.
+    var cnt = pg.querySelector('[data-count]'), n = 0;
     phs.forEach(function(s){ s.classList.add('pre'); });
-    cnt.textContent = '0'; big.textContent = '0';
+    cnt.textContent = '0';
     phs.forEach(function(s, i){
       setTimeout(function(){ s.classList.remove('pre'); s.classList.add('lift'); n++; cnt.textContent = n;
         setTimeout(function(){ s.classList.add('done'); s.classList.remove('lift'); }, 340); }, 700 + i*110);
     });
-    setTimeout(function(){ cnt.textContent = cnt.dataset.count;
-      countUp(big, +big.dataset.count, 700, function(v){ return v.toLocaleString('en-SG'); }); }, 700 + phs.length*110);
+    setTimeout(function(){ cnt.textContent = cnt.dataset.count; }, 700 + phs.length*110);
   }
 
   Q.screen('gate', { title:'What leaves your device', rail:false, nav:'', render:renderGate, mount:mountGate });
@@ -126,7 +127,7 @@
       '<aside class="card s09-side" aria-labelledby="s09-h"><div class="card-head" style="margin-bottom:0"><h2 class="h3" id="s09-h">Hidden on this device</h2>'+undo+'</div>'+
         '<div class="s09-count" aria-live="polite"><div><b class="num'+t+'">'+v.count+'</b><span>details replaced</span></div><div><b class="num">'+v.charsLabel+'</b><span>characters sent</span></div></div>'+
         '<hr class="s08-cut" style="margin:var(--s-4) 0 var(--s-2)">'+side+
-        '<a class="btn btn-primary btn-block" style="margin-top:var(--s-5)" href="#gate-'+x.key+'">Done</a></aside></div></div>';
+        '<div class="u2-dock" style="margin-top:var(--s-5)"><a class="btn btn-primary btn-block" href="#gate-'+x.key+'">Done</a></div></aside></div></div>';
   }
   function mountEdit(el, p){
     var x = ctx(p), e = QB.edits(x.key);

@@ -8,7 +8,9 @@
   var today = { date:'Tue 3 Nov', long:'Tuesday 3 November', hour:9 };
 
   var adviser = { name:'Rachel Lim', first:'Rachel', initials:'RL', email:'rachel.lim@kallangadvisers.sg',
-    firm:'Kallang Advisers', signin:'Google', telegram:'@rachel_lim', waitDays:3, digestTime:'8:00', telegramCode:'QX4-72K' };
+    firm:'Kallang Advisers', signin:'Google', telegram:'@rachel_lim', waitDays:3, digestTime:'8:00', telegramCode:'QX4-72K',
+    /* Update 2 follow-up loop. channel = where clients talk to the rep (onboarding may set it). Gentle timing lives in Settings. */
+    channel:'whatsapp', remindTime:'9:00', weekdaysOnly:true, quietAfter21:true, quietSunday:true, nudgeMax:2 };
 
   var insurers = {
     harbour:  { name:'Harbour Assurance', short:'Harbour',  file:'harbour-wl.pdf',  pages:14 },
@@ -102,6 +104,21 @@
   };
   var caseOrder = ['wei','priya','alvin','siti','marcus','daniel','kevin','jasmine'];
 
+  /* Update 2 people fields (synthetic, docs/design/UPDATE-2.md). line = the short line on the case board card.
+     worry/goal are in the client's words from notes. timing = the rep's own typed note, never a guess.
+     nudgeNo = which nudge is next (max 2, Settings "Gentle timing"). Merged into cases below. */
+  var caseExtra = {
+    wei:     { job:'Logistics manager', family:'2 kids (8 and 11)', line:'BTO keys Nov 2027', worry:'Cover to 65 for the new home', goal:'Whole life cover' },
+    priya:   { job:'Nurse', family:'2 kids, Aarav and Meera', line:'nurse, 2 kids', worry:'Kids\' uni fund if she can\'t work', goal:'Uni fund by 2038', timing:'Evenings', nudgeNo:1 },
+    alvin:   { line:'baby due in March', family:'Baby due in March', worry:'Lower budget, same cover' },
+    siti:    { job:'Nurse', family:'2 kids', line:'home loan, 2 kids', worry:'Cover that lasts past retirement' },
+    marcus:  { family:'Daughter Mei helps', line:'64 · daughter Mei helps', worry:'Leave something for Mei' },
+    daniel:  { line:'met yesterday', worry:'Not sure yet' },
+    kevin:   { line:'Meridian Life' },
+    jasmine: { line:'budget changed' }
+  };
+  Object.keys(caseExtra).forEach(function(k){ var x = caseExtra[k]; Object.keys(x).forEach(function(f){ cases[k][f] = x[f]; }); });
+
   /* Today's "Needs you" is computed from the cases by Q.needs() / Q.status() in core.js. */
 
   var digest = { sent:'8:00', items:[
@@ -182,8 +199,9 @@
         { src:'Your notes', text:'[CLIENT], age 35, project manager at [EMPLOYER]. Married with two children, [CHILD 1] (8) and [CHILD 2] (11). Wants life cover to age 65 and a fund for the children\'s university. Budget about S$4,000 a year. Prefers a whole life participating plan. [CLIENT] asked how illustrated values differ from guaranteed ones.' },
         { src:'Orchid Mutual PDF · page 3 to 5', text:'Life assured: [CLIENT], age next birthday 36. Plan: Orchid Whole Life Par. Annual premium S$3,150, premium term 20 years, sum assured S$155,000. Benefit illustration at 3.00% and 4.25% a year, policy years 1 to 20. [CLIENT] is a non-smoker.' } ] },
     writeup: { c:'siti', sub:'To draft the write-up for Siti Nur #401.' },
-    nudge:   { c:'priya', sub:'To draft a nudge for Priya Krishnan #398. Only one talking point and [CLIENT] are sent.',
-      cards:[ { src:'Talking point', text:'[CLIENT] wanted to know which plan keeps the premium under S$4,500 a year.' } ] },
+    nudge:   { c:'priya', sub:'To draft a nudge for Priya Krishnan #398. Only her worry, one page of the comparison and placeholders are sent.',
+      cards:[ { src:'Her worry · your notes', text:'[CLIENT]\'s biggest worry: the uni fund for [CHILD 1] and [CHILD 2] if she ever can\'t work.' },
+              { src:'Comparison PDF · page 1', text:'Which plans keep paying after an early critical illness.' } ] },
     'compare-daniel': { c:'daniel', sub:'To build the comparison. Your PDFs stay here; only this text is sent.' },
     'mas-suggest': { c:'marcus', sub:'To suggest answers to the 3 questions. You choose every answer.' }
   };
@@ -193,8 +211,8 @@
     wei: [
       { feature:'Answer suggestions', when:'Mon 2 Nov, 16:52', text:'[CLIENT], age 35. Meeting in English. Quote: "I did my degree here and work in English every day."' },
       { feature:'Comparison', when:'Mon 2 Nov, 16:40', text:'[CLIENT], age 35, project manager at [EMPLOYER]. Married with two children, [CHILD 1] (8) and [CHILD 2] (11). Wants life cover to age 65 and a fund for the children\'s university. Budget about S$4,000 a year.' } ],
-    priya: [ { feature:'Nudge', when:'Tue 3 Nov, 08:05', text:'[CLIENT] wanted to know which plan keeps the premium under S$4,500 a year.' },
-             { feature:'Comparison', when:'Tue 27 Oct, 15:20', text:'[CLIENT], age 41, teacher. Wants cover to age 65.' } ],
+    priya: [ { feature:'Nudge', when:'Tue 3 Nov, 08:05', text:'[CLIENT]\'s biggest worry: the uni fund for [CHILD 1] and [CHILD 2] if she ever can\'t work.\n\nComparison PDF, page 1: which plans keep paying after an early critical illness.' },
+             { feature:'Comparison', when:'Tue 27 Oct, 15:20', text:'[CLIENT], age 41, nurse. Wants cover to age 65.' } ],
     fixed:[ 'MAS checks: plain rules on this device. Nothing sent.', 'Shares: the PDF went from you to the client. Nothing uploaded.', 'Recordings and transcripts stay on this device.' ]
   };
 
@@ -245,13 +263,21 @@
       { id:'call', t:'Call-back, audio-recorded', ref:'§41K(b) · §41S', done:false, sup:false, summary:false },
       { id:'eff', t:'Both checks done before the policy\'s effective date', ref:'§41K', done:false } ] };
 
-  var nudge = { c:'priya', shared:'Sat 31 Oct', draft:'Hi Priya, just checking in on the comparison I sent on Saturday. Happy to walk through the plans whenever suits you.',
-    next:'Fri 6 Nov',
-    telegram:'Quotient · Case #398 has had no reply for 3 days. A draft nudge is ready.' };
+  /* Nudge drafts (UPDATE-2 style): start from the client's own words, point to one page of what was sent,
+     never pick a plan or promise returns, no pressure, end with an easy next step. Others fall back to a template in nudge.js. */
+  var nudge = { c:'priya', shared:'Sat 31 Oct', draft:'Hi Priya! You said your biggest worry is Aarav and Meera\'s uni fund if you ever can\'t work. Page 1 of the comparison shows which plans keep paying after an early critical illness. Happy to go through it over coffee, no pressure to decide. I just want you to feel sure the kids are covered.',
+    drafts:{
+      alvin:'Hi Alvin! You wanted a lower budget with the same cover. Page 1 of the revised comparison shows the new Harbour premium next to the other two. Happy to talk it through on a call whenever suits you, no rush at all.'
+    },
+    next:'Fri 6 Nov', link:'quotient.app/case/',
+    telegram:'Case #398 · P.K. · no reply for 3 days since you shared. A draft nudge is ready.' };
 
-  var share = { message:'Hi Wei, here\'s the side-by-side of the 3 plans we talked about. Illustrated values are not guaranteed. Happy to go through it on a call.', remindOn:'Fri 6 Nov' };
+  var share = { message:'Hi Wei! Here are the 3 plans we talked about, side by side. You wanted cover to 65 for the new home: page 1 shows the cover and the guaranteed value at 65 for each one. Illustrated values are not guaranteed. Happy to go through it on a call, no rush to decide.', remindOn:'Fri 6 Nov',
+    messages:{
+      alvin:'Hi Alvin! Here\'s the revised Harbour plan next to the other two. You wanted a lower budget with the same cover: page 1 shows the new premium and the cover side by side. Illustrated values are not guaranteed. Happy to talk it through whenever suits you, no rush.'
+    } };
 
   window.QDATA = { today:today, adviser:adviser, insurers:insurers, rows:rows, groups:groups, steps:steps,
-    cases:cases, caseOrder:caseOrder, digest:digest, meetings:meetings,
+    cases:cases, caseOrder:caseOrder, caseExtra:caseExtra, digest:digest, meetings:meetings,
     transcripts:transcripts, gate:gate, log:log, writeup:writeup, mas:mas, nudge:nudge, share:share };
 })();
