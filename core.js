@@ -414,7 +414,8 @@
   var SYS = '<svg viewBox="0 0 18 12" aria-hidden="true"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>'+
     '<svg viewBox="0 0 16 12" aria-hidden="true"><path d="M8 2.6c2.3 0 4.4.9 6 2.4l1.3-1.4A10.6 10.6 0 0 0 8 .7 10.6 10.6 0 0 0 .7 3.6L2 5c1.6-1.5 3.7-2.4 6-2.4zm0 3.8c1.3 0 2.5.5 3.4 1.3l1.3-1.4A6.8 6.8 0 0 0 8 4.5c-1.8 0-3.5.7-4.7 1.8l1.3 1.4C5.5 6.9 6.7 6.4 8 6.4zm0 3.8L10.2 8a3.2 3.2 0 0 0-4.4 0z"/></svg>'+
     '<svg viewBox="0 0 27 12" aria-hidden="true"><rect x=".5" y=".5" width="22" height="11" rx="3.5" fill="none" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="19" height="8" rx="2"/><path d="M24.5 4v4c.8-.3 1.3-1.1 1.3-2s-.5-1.7-1.3-2z" opacity=".5"/></svg>';
-  function fitPhone(){ if(ppEl) ppEl.style.setProperty('--pp-scale', Math.min(1, (window.innerHeight - 96) / 868, (window.innerWidth - 32) / 414).toFixed(3)); }
+  function fitPhone(){ if(!ppEl) return; var st = ppEl.querySelector('.pp-stage'), h = st ? st.clientHeight : window.innerHeight - 96, w = st ? st.clientWidth : window.innerWidth;
+    ppEl.style.setProperty('--pp-scale', Math.min(1, (h - 24) / 868, (w - 32) / 414).toFixed(3)); } // device box is 390x844 + 12px bezel each side
   function openPhone(){
     if(ppEl || framed) return;
     ppEl = document.createElement('div'); ppEl.className = 'pp'; ppEl.setAttribute('role','dialog'); ppEl.setAttribute('aria-modal','true'); ppEl.setAttribute('aria-label','Phone preview');
