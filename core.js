@@ -422,10 +422,28 @@
     ppEl.style.setProperty('--pp-scale', Math.min(1, (h - 24) / 868, (w - 32) / 414).toFixed(3)); } // device box is 390x844 + 12px bezel each side
   // The phone frame carries the parent's demo params (state, edition, theme, reset), never preview itself.
   function frameSrc(){ var q = new URLSearchParams(location.search); q.delete('preview'); q.set('frame','phone'); return location.pathname+'?'+q.toString()+location.hash; }
-  // Demo pill drives the phone: keep parent and frame on the same screen, both ways (equality guard stops loops).
+  // Parent and phone frame talk by postMessage (direct access is blocked on file:// in Chrome).
+  // Frame -> parent: its screen (hash) and the colour at the top, so the device status bar matches the screen under it.
+  // Parent -> frame: the Demo pill's screen jumps. Equality guards stop loops.
+  function isDark(c){ var m = String(c).match(/\d+(\.\d+)?/g); if(!m) return false; return (0.299*m[0] + 0.587*m[1] + 0.114*m[2]) < 140; }
+  function topColour(){
+    var el = document.elementFromPoint(Math.round(window.innerWidth/2), 1), bg = '';
+    while(el){ bg = getComputedStyle(el).backgroundColor; if(bg && bg!=='transparent' && !/rgba\([^)]*,\s*0\)/.test(bg)) break; el = el.parentElement; }
+    return el ? bg : getComputedStyle(document.body).backgroundColor;
+  }
+  var postT = 0;
+  function postTop(){ if(!framed) return; clearTimeout(postT); postT = setTimeout(function(){ try{ parent.postMessage({ q:'top', bg:topColour(), hash:location.hash }, '*'); }catch(e){} }, 40); }
+  if(framed){ Q.on('render', postTop); window.addEventListener('scroll', postTop, { passive:true }); window.addEventListener('load', postTop); }
+  window.addEventListener('message', function(e){
+    var d = e.data; if(!d || typeof d!=='object') return;
+    if(framed && d.q==='go' && d.hash && d.hash!==location.hash) location.hash = d.hash;
+    if(!framed && ppEl && d.q==='top'){
+      var st = ppEl.querySelector('.pp-status'); if(st && d.bg){ st.style.background = d.bg; st.style.color = isDark(d.bg) ? 'var(--hero-ink)' : ''; }
+      if(d.hash && d.hash!==location.hash) location.hash = d.hash;
+    }
+  });
   window.addEventListener('hashchange', function(){
-    if(ppEl){ var f = ppEl.querySelector('iframe'); try{ if(f.contentWindow.location.hash!==location.hash) f.contentWindow.location.hash = location.hash; }catch(e){ f.src = frameSrc(); } }
-    if(framed){ try{ if(parent.location.hash!==location.hash) parent.location.hash = location.hash; }catch(e){} }
+    if(ppEl){ var f = ppEl.querySelector('iframe'); try{ f.contentWindow.postMessage({ q:'go', hash:location.hash }, '*'); }catch(e){} }
   });
   function openPhone(){
     if(ppEl || framed) return;

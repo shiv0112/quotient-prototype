@@ -28,19 +28,19 @@
   /* After Send: processing copy and where each flow lands. lift = the returning line where names go back in. */
   var flow = {
     compare: { back:'#case-wei', done:'#case-wei', title:'Building Wei\'s comparison', doneBtn:'Open comparison',
-      steps:['Reading 3 PDFs on this device','Sending {n} characters','Reading the numbers','Putting names back on this device','Checking every number against its page'],
+      steps:['Reading 3 PDFs','Sending {n} characters','Reading the numbers','Putting names back','Checking every number against its page'],
       lift:'[CLIENT] · Orchid Mutual · annual premium S$3,150 · sum assured S$155,000' },
     'compare-daniel': { back:'#new-case-daniel', done:'#case-daniel', title:'Building Daniel\'s comparison', doneBtn:'Open comparison',
-      steps:['Reading 3 PDFs on this device','Sending {n} characters','Reading the numbers','Putting names back on this device','Checking every number against its page'],
+      steps:['Reading 3 PDFs','Sending {n} characters','Reading the numbers','Putting names back','Checking every number against its page'],
       lift:'[CLIENT] · Meridian Life · annual premium S$2,700 · sum assured S$150,000' },
     writeup: { back:'#writeup-siti', done:'#writeup-siti', title:'Drafting Siti\'s write-up', doneBtn:'Open write-up',
-      steps:['Reading your notes and Harbour v2 on this device','Sending {n} characters','Drafting the four parts','Putting names back on this device','Linking each sentence to its source'],
+      steps:['Reading your notes and Harbour v2','Sending {n} characters','Drafting the four parts','Putting names back','Linking each sentence to its source'],
       lift:'[CLIENT] needs cover until age 65 while her children are young.' },
     nudge: { back:'#nudge-priya', done:'#nudge-priya', title:'Drafting a nudge for Priya', doneBtn:'Open nudge',
-      steps:['Choosing her worry and one page on this device','Sending {n} characters','Drafting the nudge','Putting names back on this device'],
+      steps:['Choosing her worry and one page','Sending {n} characters','Drafting the nudge','Putting names back'],
       lift:'Hi [CLIENT]! You said your biggest worry is [CHILD 1] and [CHILD 2]\'s uni fund if you ever can\'t work.' },
     'mas-suggest': { back:'#mas-marcus', done:'#mas-marcus', title:'Suggesting answers for Marcus', doneBtn:'Open MAS checks',
-      steps:['Finding quotes in the meeting on this device','Sending {n} characters','Suggesting answers','Putting names back on this device'],
+      steps:['Finding quotes in the meeting','Sending {n} characters','Suggesting answers','Putting names back'],
       lift:'[CLIENT] asked: "Can we go through it in Mandarin?"' }
   };
   var featureName = { compare:'Comparison', 'compare-daniel':'Comparison', writeup:'Write-up', nudge:'Nudge', 'mas-suggest':'Answer suggestions' };

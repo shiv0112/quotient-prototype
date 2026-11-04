@@ -132,8 +132,8 @@
         '<p>It goes through the privacy gate first. You see exactly what leaves your device before anything is sent.</p></div>'+
         '<div class="acts u2-dock"><a class="btn btn-primary" href="#gate-'+key+'">Draft write-up'+Q.icon('arrow','i-sm')+'</a></div></section>';
     else if(st==='drafting') main = '<section class="card" aria-busy="true" aria-labelledby="wu-d"><h2 class="h3" id="wu-d">Drafting the write-up…</h2>'+
-        '<ul class="wu-steps" style="margin-top:var(--s-4)"><li>'+Q.icon('check','i-sm')+'Names replaced on this device</li><li>'+Q.icon('check','i-sm')+'Sent '+QB.view(key).charsLabel+' characters</li>'+
-        '<li><span class="wu-spin" aria-hidden="true"></span>Writing each part</li><li><span class="todo-dot" aria-hidden="true"></span>Putting names back on this device</li></ul>'+
+        '<ul class="wu-steps" style="margin-top:var(--s-4)"><li>'+Q.icon('check','i-sm')+'Names replaced</li><li>'+Q.icon('check','i-sm')+'Sent '+QB.view(key).charsLabel+' characters</li>'+
+        '<li><span class="wu-spin" aria-hidden="true"></span>Writing each part</li><li><span class="todo-dot" aria-hidden="true"></span>Putting names back</li></ul>'+
         '<p class="small" style="margin-top:var(--s-4)"><a href="#sent-'+key+'">See what was sent</a></p></section>'+
         [1,2].map(function(){ return '<div class="card"><span class="skel" style="width:35%"></span><span class="skel" style="width:92%;margin-top:16px"></span><span class="skel" style="width:70%;margin-top:10px"></span></div>'; }).join('');
     else if(st==='error') main = '<div class="banner banner-error" role="alert">'+Q.icon('alert')+'<p>Couldn\'t draft. Nothing else was sent.</p><button class="btn-link" data-go="#gate-'+key+'">Try again</button></div>';

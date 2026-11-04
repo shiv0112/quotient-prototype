@@ -20,19 +20,18 @@
       var label = t.replace('{n}', v.charsLabel), right = '';
       if(i===1 && nothing){ cls = 'skip'; label = 'Nothing sent'; }
       if(i===1 && !nothing) right = '<a class="small" href="#sent-'+x.key+'">See exact text</a>';
-      else if(/on this device/.test(t)) right = '<span class="chip chip-device">'+Q.icon('device','i-sm')+'On device</span>';
       return '<li class="'+cls+'" data-i="'+i+'"><span class="s10-dot">'+Q.icon('check')+'</span><span>'+Q.esc(label)+'</span>'+right+'</li>'; }).join('');
     var top = s.s==='error'
       ? '<div class="banner banner-error" role="alert">'+Q.icon('alert')+'<p>Something went wrong after sending. Nothing else was sent.</p><button class="btn-link" data-act="retry">Try again</button></div>'
       : s.s==='offline' ? '<div class="banner banner-info" role="status">'+Q.icon('info')+'<p>You\'re offline. We\'ll continue when you\'re back.</p></div>' : '';
     var done = s.s==='done' || at>=x.fl.steps.length;
     var title = done ? 'Done' : x.fl.title;
-    var lift = (at<3 || s.s==='error' || s.s==='offline') ? '' : '<div class="s10-lift" aria-live="polite"><span class="eyebrow">Answer back · names going in on this device</span><p>'+liftLine(x, at>=4)+'</p></div>';
+    var lift = (at<3 || s.s==='error' || s.s==='offline') ? '' : '<div class="s10-lift" aria-live="polite"><span class="eyebrow">Answer back · putting names back</span><p>'+liftLine(x, at>=4)+'</p></div>';
     var foot = done ? '<div class="u2-dock"><a class="btn btn-primary" href="'+x.fl.done+'">'+Q.esc(x.fl.doneBtn)+'</a></div>'
       : '<a class="btn-link" href="'+x.fl.back+'">Cancel</a>';
     return '<div class="page s10">'+QB.demo([['running','Running'],['done','Done'],['error','Error'],['offline','Offline']], s.s)+
       '<header class="s10-head rise"><p class="eyebrow">'+Q.esc(x.c.name)+' · Case #'+x.c.no+'</p><h1 class="h1" aria-live="polite">'+Q.esc(title)+'</h1>'+
-      '<p class="sub">'+(done?'Names put back on this device.':'This takes a few seconds. You can leave this screen.')+'</p></header>'+
+      '<p class="sub">'+(done?'Names put back.':'This takes a few seconds. You can leave this screen.')+'</p></header>'+
       (top?'<div style="margin-bottom:var(--s-5)">'+top+'</div>':'')+
       '<section class="card card-flush rise"><ol class="s10-steps" aria-label="Progress">'+steps+'</ol></section>'+lift+
       '<div class="s10-foot"><p class="s10-safe">'+Q.icon('device','i-sm')+Q.aiRule+'</p>'+foot+'</div></div>';
