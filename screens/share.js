@@ -78,7 +78,7 @@
       var making = st==='making', dis = left?' aria-disabled="true" title="Check '+left+' number'+(left>1?'s':'')+' first"':'';
       var phone = isPhone(), deskWa = wa && !phone;
       var primary = making ? '<button class="btn btn-primary sh-busy" aria-disabled="true" aria-live="polite"><span class="sh-spin" aria-hidden="true"></span>Making the PDF…</button>'
-        : deskWa ? '<a class="btn btn-primary" data-act="dlwa" href="'+Q.esc(Q.waLink(c, ui.msg))+'" target="_blank" rel="noopener"'+dis+'>'+I_CHAT+'Download PDF and open WhatsApp</a>'
+        : deskWa ? '<button type="button" class="btn btn-primary" data-act="dlwa"'+dis+'>'+I_CHAT+'Download PDF and open WhatsApp</button>'
         : '<button class="btn btn-primary" data-act="send"'+dis+'>'+(wa?I_CHAT+'Share to WhatsApp':Q.icon('arrow','i-sm')+'Open email')+'</button>';
       var hint = !wa ? '' : phone ? 'Opens the share sheet with the PDF and this message. Pick WhatsApp, then '+Q.esc(c.first)+'\'s chat.'
         : 'Saves the PDF and opens '+(c.mobile ? Q.esc(c.first)+'\'s WhatsApp chat' : 'WhatsApp (pick the chat)')+' with this message typed. Drag the PDF into the chat, then press Send.';
@@ -121,11 +121,12 @@
       if(app==='copy'){ try{ navigator.clipboard.writeText(ui.msg).then(function(){ Q.toast('Message copied'); }, function(){ Q.toast('Couldn\'t copy. Select the text and copy it.'); }); }catch(err){ Q.toast('Couldn\'t copy. Select the text and copy it.'); } return close(); }
       if(app==='more'){
         close();
-        if(navigator.share) navigator.share({ title:'Plan comparison', text:ui.msg }).then(done, function(){});
-        else Q.toast('Your device\'s own share menu opens here');
+        Q.toast('Your device\'s own share menu opens here');
         return;
       }
-      close(); Q.toast('Opening '+b.textContent+' · the PDF and your message are attached'); done();
+      close();
+      if(app==='wa') Q.waDemo({ c:c, text:ui.msg, file:'Plan comparison · '+c.name+'.pdf', pick:true, onSent:done }); // a share sheet always asks for the chat
+      else { Q.toast('Your email app opens with the PDF and message attached'); done(); }
     });
     wrap.querySelector('.fu-ss-app').focus();
   }
@@ -136,7 +137,7 @@
     var pdf = pg.querySelector('.sh-scroll .pdf'), pw = pdf && pdf.parentNode.clientWidth;
     if(pdf && pw && pw < 440){ pdf.style.minWidth = pdf.style.width = '440px'; pdf.style.zoom = pw/440; }
     var msg = pg.querySelector('#sh-msg'), dl = pg.querySelector('[data-act="dlwa"]');
-    if(msg) msg.addEventListener('input', function(){ ui.msg = msg.value; if(dl) dl.href = Q.waLink(c, ui.msg); }); // the link always carries the edited message
+    if(msg) msg.addEventListener('input', function(){ ui.msg = msg.value; });
     function sent(){ if(ui.hash===location.hash){ ui.st='sent'; Q.refresh(); } }
     if(ui.openSheet){ ui.openSheet = false; shareSheet(c, sent); } // demo state: open the sheet straight away
     pg.addEventListener('click', function(e){
@@ -146,7 +147,8 @@
       if(a.getAttribute('aria-disabled')==='true'){ e.preventDefault(); return; }
       var act = a.dataset.act;
       // Desktop: the real link opens WhatsApp in a new tab; the PDF download is simulated. Then ask, as with the share sheet.
-      if(act==='dlwa'){ Q.toast('PDF saved to Downloads · drag it into the WhatsApp chat'); setTimeout(sent, 600); return; }
+      // Demo: the PDF download is simulated and WhatsApp is shown by Q.waDemo; the real app opens Q.waLink(c, ui.msg).
+      if(act==='dlwa'){ Q.toast('PDF saved to Downloads'); Q.waDemo({ c:c, text:ui.msg, file:'Plan comparison · '+c.name+'.pdf', onSent:sent }); return; }
       if(act==='sheet') return shareSheet(c, sent);
       if(act==='send'){
         ui.st='making'; Q.refresh();

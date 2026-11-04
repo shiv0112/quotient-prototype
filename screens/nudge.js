@@ -93,8 +93,8 @@
           '<button type="button" class="btn-link" data-act="copy">'+I_COPY+'Copy</button></p>'+
         '<div class="fu-ask" role="status"'+(ui.asked?'':' hidden')+'><p><b>Sent it on WhatsApp?</b> We can\'t see your chats, so tell us once it\'s sent.</p>'+
           '<div class="row"><button class="btn btn-secondary btn-sm" data-act="sent">'+Q.icon('check','i-sm')+'Yes, sent</button><button class="btn btn-ghost btn-sm" data-act="notyet">Not yet</button></div></div></section>'+
-        '<div class="ng-acts"><a class="btn btn-primary" data-act="wa" href="'+Q.esc(Q.waLink(c, ui.draft))+'" target="_blank" rel="noopener">'+I_CHAT+'Send on WhatsApp</a>'+
-          '<a class="btn-link ng-email" data-act="email" href="'+Q.esc(mailto(key, c, ui.draft))+'">Email instead</a></div>'+
+        '<div class="ng-acts"><button type="button" class="btn btn-primary" data-act="wa">'+I_CHAT+'Send on WhatsApp</button>'+
+          '<button type="button" class="btn-link ng-email" data-act="email">Email instead</button></div>'+
         '<div class="fu-more"><button class="btn btn-secondary" data-act="replied">Already replied</button>'+
           '<div class="menu"><button class="btn btn-secondary" data-menu aria-haspopup="true" aria-expanded="false">'+Q.icon('bell','i-sm')+'Snooze</button><div class="menu-pop" role="menu">'+
             '<button role="menuitem" data-snooze="1">1 day · until '+SNOOZE['1']+'</button><button role="menuitem" data-snooze="3">3 days · until '+SNOOZE['3']+'</button></div></div>'+
@@ -112,10 +112,6 @@
     c.nudged = { on:D.today.date, next: c.quiet ? 'none · case quiet' : N.next };
   }
 
-  function mailto(key, c, text){
-    var to = (QD.c && QD.c.emails && QD.c.emails[key]) || '';
-    return 'mailto:'+to+'?subject='+encodeURIComponent('Following up · '+c.first)+'&body='+encodeURIComponent(text);
-  }
 
   // Copy synchronously first (works on file:// and keeps the click's user activation); the async API is the backup.
   function copyText(text, ta){
@@ -127,9 +123,9 @@
 
   function mount(el, p){
     var key = D.cases[p.parts[0]] ? p.parts[0] : 'priya', c = D.cases[key], pg = el.querySelector('.page');
-    var ta = pg.querySelector('#ng-txt'), wa = pg.querySelector('[data-act="wa"]'), em = pg.querySelector('[data-act="email"]');
+    var ta = pg.querySelector('#ng-txt');
     if(ta) ta.addEventListener('input', function(){ ui.draft = ta.value; ta.removeAttribute('aria-invalid');
-      if(wa) wa.href = Q.waLink(c, ui.draft); if(em) em.href = mailto(key, c, ui.draft); }); // links always carry the edited draft
+      }); // demo: Send on WhatsApp shows Q.waDemo (screens/wademo.js); the real app opens Q.waLink(c, ui.draft)
     function ask(by){ ui.asked = true; var a = pg.querySelector('.fu-ask'); if(a){ a.hidden = false; a.querySelector('b').textContent = 'Sent it '+(by==='email'?'by email':'on WhatsApp')+'?'; } }
     pg.addEventListener('click', function(e){
       var sz = e.target.closest('[data-snooze]'); if(sz){ ui.snooze = sz.dataset.snooze; ui.st = 'snoozed'; c.snoozedTo = SNOOZE[ui.snooze]; delete c.nudged; Q.refresh(); Q.toast('Snoozed until '+SNOOZE[ui.snooze]); return; }
@@ -137,8 +133,9 @@
       var act = a.dataset.act;
       if(act==='copy' || act==='wa' || act==='email'){
         if(!ui.draft.trim()){ e.preventDefault(); ta.setAttribute('aria-invalid','true'); ta.focus(); return; }
-        if(act==='copy') copyText(ui.draft, ta); // wa / email: the real link opens; we only ask afterwards
-        ask(act); return;
+        if(act==='copy'){ copyText(ui.draft, ta); return; }
+        if(act==='wa'){ Q.waDemo({ c:c, text:ui.draft, onSent:function(){ ask('wa'); } }); return; }
+        Q.toast('Your email app opens with the message typed'); ask('email'); return;
       }
       if(act==='notyet'){ ui.asked = false; pg.querySelector('.fu-ask').hidden = true; return; }
       if(act==='sent'){ markSent(c); ui.st = 'sent'; Q.refresh(); Q.toast(c.quiet ? 'Nudge sent · case #'+c.no+' is now quiet' : 'Nudge sent · next reminder '+N.next); }

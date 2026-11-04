@@ -108,3 +108,40 @@
   .sh-form .sh-acts .btn-ghost{padding:0 var(--s-3)}
   .sh-form .sh-acts .spacer{min-width:0}
 }
+
+/* Demo WhatsApp (screens/wademo.js): stands in for the real app, so the prototype never leaves the page.
+   WhatsApp's own look is suggested, not copied: our tokens, a green header from --wa. */
+.wa-wrap{position:fixed;inset:0;z-index:95;display:grid;place-items:center}
+.wa-scrim{position:absolute;inset:0;background:color-mix(in srgb,var(--ink) 45%,transparent)}
+.wa-win{position:relative;display:flex;flex-direction:column;width:100%;height:100%;background:var(--surface);overflow:hidden}
+.wa-win.desk{width:min(760px,calc(100vw - 48px));height:min(560px,calc(100vh - 48px));border-radius:var(--r-lg);border:1px solid var(--line-strong);box-shadow:0 30px 80px -30px color-mix(in srgb,var(--ink) 50%,transparent)}
+.wa-title{display:flex;align-items:center;gap:var(--s-3);padding:var(--s-2) var(--s-4);background:var(--surface-2);font-size:var(--t-xs);font-weight:var(--w-semi);color:var(--text-2);border-bottom:1px solid var(--line)}
+.wa-dots{display:inline-flex;gap:6px}.wa-dots i{width:10px;height:10px;border-radius:50%;background:var(--line-strong)}
+.wa-demo{margin:0;padding:6px var(--s-4);font-size:var(--t-xs);color:var(--text-2);background:var(--confirm-bg,var(--surface-2));text-align:center}
+.wa-pane{flex:1;min-height:0;display:flex;flex-direction:column}
+.wa-head{display:flex;align-items:center;gap:var(--s-3);padding:var(--s-3) var(--s-4);padding-top:calc(var(--s-3) + env(safe-area-inset-top,0px));background:var(--wa);color:var(--on-wa)}
+.wa-head b{display:block;font-size:var(--t-md)}.wa-head small{font-size:var(--t-xs);opacity:.85}
+.wa-ib{display:grid;place-items:center;width:var(--target);height:var(--target);margin-left:-10px;border:0;background:none;color:inherit;cursor:pointer;border-radius:50%}
+.wa-ib svg{width:22px;height:22px}
+.wa-ib:focus-visible,.wa-send:focus-visible,.wa-list button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wa-av{flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:var(--surface-2);color:var(--ink);font-size:var(--t-sm);font-weight:var(--w-bold)}
+.wa-head .wa-av{background:color-mix(in srgb,var(--on-wa) 22%,transparent);color:var(--on-wa)}
+.wa-body{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:var(--s-2);padding:var(--s-4);background:var(--bg)}
+.wa-msg{align-self:flex-end;max-width:85%;padding:var(--s-2) var(--s-3);border-radius:12px 12px 4px 12px;background:color-mix(in srgb,var(--wa) 16%,var(--surface));color:var(--ink);font-size:var(--t-sm);line-height:1.45}
+.wa-msg p{margin:0}.wa-msg time{display:block;text-align:right;font-size:11px;color:var(--text-3);margin-top:2px}
+.wa-compose{display:flex;flex-direction:column;gap:var(--s-2);padding:var(--s-3);padding-bottom:calc(var(--s-3) + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);background:var(--surface)}
+.wa-row{display:flex;align-items:flex-end;gap:var(--s-2)}
+.wa-input{flex:1;min-width:0;resize:none;border:1px solid var(--line-strong);border-radius:18px;padding:var(--s-2) var(--s-3);font:inherit;font-size:var(--t-base);line-height:1.4;background:var(--surface);color:var(--ink)}
+.wa-send{flex:none;display:grid;place-items:center;width:48px;height:48px;border:0;border-radius:50%;background:var(--wa);color:var(--on-wa);cursor:pointer}
+.wa-send svg{width:20px;height:20px;fill:currentColor}
+.wa-file{display:flex;align-items:center;gap:var(--s-3);padding:var(--s-2) var(--s-3);border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface)}
+.wa-file.in{border:0;padding:var(--s-1) 0;background:none}
+.wa-file b{display:block;font-size:var(--t-sm)}.wa-file small{font-size:var(--t-xs);color:var(--text-3)}
+.wa-pdf{flex:none;display:grid;place-items:center;width:34px;height:40px;border-radius:6px;background:var(--accent-soft);color:var(--accent-hover);font-size:10px;font-weight:var(--w-bold)}
+.wa-search{margin:var(--s-3) var(--s-4) 0;padding:var(--s-2) var(--s-3);border-radius:var(--r-pill);background:var(--surface-2);font-size:var(--t-sm);color:var(--text-3)}
+.wa-sec{margin:var(--s-4) var(--s-4) var(--s-1);font-size:var(--t-xs);font-weight:var(--w-semi);letter-spacing:var(--track-caps);text-transform:uppercase;color:var(--text-3)}
+.wa-list{list-style:none;margin:0;padding:0;overflow:auto}
+.wa-list button{display:flex;align-items:center;gap:var(--s-3);width:100%;min-height:60px;padding:var(--s-2) var(--s-4);border:0;border-bottom:1px solid var(--line);background:none;text-align:left;font:inherit;color:var(--ink);cursor:pointer}
+.wa-list button:hover{background:var(--surface-2)}
+.wa-list b{display:block;font-size:var(--t-base);font-weight:var(--w-semi)}.wa-list small{font-size:var(--t-xs);color:var(--text-3)}
+@media (prefers-reduced-motion:no-preference){ .wa-win{animation:wa-in var(--dur-2) var(--ease-out)} @keyframes wa-in{from{transform:translateY(12px)}to{transform:none}} }
