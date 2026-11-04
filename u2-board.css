@@ -109,3 +109,9 @@
   .bd-act{min-height:var(--target)}
   .bd-meet a{margin-left:0}
 }
+
+/* Whole card opens the case (click handler in core.js); buttons and links inside keep their own action. */
+.bd-card,.cs-list>li.cs-row{position:relative}
+.bd-card,.cs-list>li.cs-row:not(.cs-headrow){cursor:pointer}
+.bd-card:hover,.cs-list>li.cs-row:hover{border-color:var(--line-strong)}
+.bd-card:has(.bd-name:focus-visible),.cs-row:has(.who-link:focus-visible){outline:2px solid var(--accent);outline-offset:2px}

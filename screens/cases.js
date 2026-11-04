@@ -3,7 +3,7 @@
 (function(){
   'use strict';
   var D = Q.data, C = QD.c, ui = { hash:null };
-  var TABS = [['needs','Needs you'],['progress','In progress'],['closed','Closed']];
+  var TABS = [['all','All'],['needs','Needs you'],['progress','In progress'],['closed','Closed']];
 
 
   function stage(c){ return c.result ? (c.result==='won'?'Won':'Lost') : (c.now===4 && c.chosenLabel ? c.chosenLabel : D.steps[c.now].label); }
@@ -20,20 +20,20 @@
 
   function render(p){
     if(location.hash!==ui.hash){ ui.hash = location.hash; var a = p.parts[0]||'';
-      ui.tab = a==='progress'||a==='closed' ? a : 'needs'; ui.q = a==='noresults' ? 'Goh' : ''; ui.empty = a==='empty'; }
+      ui.tab = a==='progress'||a==='closed'||a==='needs' ? a : 'all'; ui.q = a==='noresults' ? 'Goh' : ''; ui.empty = a==='empty'; }
     var st = p.state==='empty' || ui.empty ? 'empty' : p.state;
     var chips = '<nav class="switcher" aria-label="Demo states"><span class="eyebrow">Demo states</span><div class="switcher-chips">'+
-      [['','Needs you'],['progress','In progress'],['closed','Closed'],['noresults','No results'],['empty','Empty']].map(function(x){
+      [['','All'],['needs','Needs you'],['progress','In progress'],['closed','Closed'],['noresults','No results'],['empty','Empty']].map(function(x){
         return '<button class="chip" data-go="#cases'+(x[0]?'-'+x[0]:'')+'" aria-pressed="'+((p.parts[0]||'')===x[0])+'">'+x[1]+'</button>'; }).join('')+'</div></nav>';
     var head = '<div class="page-head"><div><h1 class="h1 display">Cases</h1><p class="sub">'+D.caseOrder.length+' cases'+'<span class="dot-sep"></span>'+Q.needs().length+' need you</p></div>'+
-      '<div class="u2-dock"><a class="btn btn-primary" href="#new-case">'+Q.icon('plus')+'New case</a></div></div>';
+      '</div>';
     if(st==='empty') return '<div class="page">'+chips+'<div class="page-head"><h1 class="h1 display">Cases</h1></div>'+
       '<div class="empty"><h2>No cases yet</h2><p>Start one from a meeting or from PDFs.</p><a class="btn btn-primary" href="#new-case">'+Q.icon('plus')+'New case</a></div></div>';
     if(st==='error') return '<div class="page">'+chips+head+'<div class="banner banner-error" role="alert">'+Q.icon('alert')+'<p>Couldn\'t load your cases. Nothing was changed.</p><button class="btn-link" data-go="#cases">Try again</button></div></div>';
     var q = ui.q.trim().toLowerCase();
     var keys = q ? D.caseOrder.filter(function(k){ var c = D.cases[k]; return c.name.toLowerCase().indexOf(q)>=0 || String(c.no).indexOf(q.replace('#',''))>=0; })
-                 : Q.needs().concat(D.caseOrder.filter(function(k){ return Q.needs().indexOf(k)<0; })).filter(function(k){ return tabOf(k)===ui.tab; });
-    var counts = {}; TABS.forEach(function(t){ counts[t[0]] = D.caseOrder.filter(function(k){ return tabOf(k)===t[0]; }).length; });
+                 : Q.needs().concat(D.caseOrder.filter(function(k){ return Q.needs().indexOf(k)<0; })).filter(function(k){ return ui.tab==='all' || tabOf(k)===ui.tab; });
+    var counts = {}; TABS.forEach(function(t){ counts[t[0]] = D.caseOrder.filter(function(k){ return t[0]==='all' || tabOf(k)===t[0]; }).length; });
     var tools = '<div class="cs-tools"><div class="cs-search">'+Q.icon('search')+'<label class="sr" for="cs-q">Search cases</label>'+
       '<input class="input" id="cs-q" type="search" placeholder="Search by name or case number" value="'+Q.esc(ui.q)+'" autocomplete="off"><kbd aria-hidden="true">/</kbd></div>'+
       '<div class="cs-filters" role="group" aria-label="Filter">'+TABS.map(function(t){

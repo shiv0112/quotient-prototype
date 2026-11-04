@@ -444,6 +444,11 @@
     if(on) openPhone(); else closePhone();
   };
   window.addEventListener('resize', fitPhone);
+  // Board cards and case rows: a tap anywhere that isn't a control opens the case (the name link holds the href).
+  document.addEventListener('click', function(e){
+    var card = e.target.closest('.bd-card, .cs-row'); if(!card || e.target.closest('a,button,input,select,textarea,label')) return;
+    var link = card.querySelector('.bd-name, .who-link'); if(link) Q.go(link.getAttribute('href'));
+  });
   // Theme picked inside the phone frame: keep the device status bar in step.
   window.addEventListener('storage', function(e){ if(e.key==='q-theme'){ if(e.newValue) document.documentElement.setAttribute('data-theme', e.newValue); else document.documentElement.removeAttribute('data-theme'); } });
 

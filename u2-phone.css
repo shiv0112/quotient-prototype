@@ -86,7 +86,9 @@
   .cs-list>li.cs-row{padding:var(--s-4);background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);row-gap:var(--s-2)}
   .cs-next{font-size:var(--t-base)}
   .cs-row .btn{min-height:var(--target)}
-  .cs-filters{flex-wrap:nowrap}
+  .cs-filters{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-inline:calc(-1 * var(--gutter));padding-inline:var(--gutter);scroll-padding-inline:var(--gutter)}
+  .cs-filters::-webkit-scrollbar{display:none}
+  .cs-filters .chip{flex:none}
   .cs-filters .chip{min-height:var(--target)}
 
   /* Calendar (meetings): a little more room for the date column. */
