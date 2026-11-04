@@ -3,7 +3,7 @@
 (function(){
   'use strict';
   var D = Q.data, A = QD.a, ad = D.adviser;
-  var pf = { cal:true, outlook:false, tg:true, digest:true };
+  var pf = { cal:true, outlook:false, digest:true };
   var autoOpened = false;
   Q.on('render', function(r){ if(r.id!=='prefs') autoOpened = false; });
 
@@ -38,10 +38,10 @@
                   : conn(A.logo.microsoft,'Microsoft Outlook','Not connected','','<button class="btn btn-secondary btn-sm" data-act="ol-on">Connect Microsoft Outlook</button>'))+
       '</div>');
 
-    var telegram = sec('tg','Telegram','Reminders show case numbers and initials, never full client names.',
-      (pf.tg ? conn(A.logo.telegram,'Connected · '+Q.esc(ad.telegram),'Reminders from '+A.bot,'','<button class="btn btn-secondary btn-sm" data-act="tg-off">Disconnect</button>')
-             : conn(A.logo.telegram,'Not connected','Get follow-up reminders on your phone','','<button class="btn btn-secondary btn-sm" data-act="tg-on">Connect Telegram</button>'))+
-      '<p class="hint phone-only">Reminders show case numbers and initials, never full client names.</p>');
+    var reminders = sec('rm','Reminders','Quotient tells you when a client goes quiet. Case numbers only, never client names.',
+      '<label class="switch"><input type="checkbox" id="pf-notify"'+(ad.notify!==false?' checked':'')+'> Phone notifications</label>'+
+      '<p class="hint">'+Q.icon('info','i-sm')+' '+(web ? 'On iPhone, add Quotient to your home screen to get notifications.' : 'Notifications come from the desktop app.')+'</p>'+
+      '<p class="small"><a href="#reminder">See an example</a></p>');
 
     function sw(id, on, text){ return '<label class="switch"><input type="checkbox" id="'+id+'"'+(on?' checked':'')+'> '+text+'</label>'; }
     var wait = sec('wait','Gentle timing','When we remind you to follow up. Never pushy, never late at night.',
@@ -72,7 +72,7 @@
            : '<p class="pf-line"><b>Desktop app · version '+A.version+'</b></p><p class="hint">Call audio is available on each meeting. It starts off every time.</p>')+
       '<div class="pf-proto"><span>Prototype only · Preview as</span><div class="seg"><button data-ed="web" aria-pressed="'+web+'">Web</button><button data-ed="desktop" aria-pressed="'+!web+'">Desktop</button><button data-phone type="button" aria-pressed="false">Phone</button></div></div>');
 
-    return '<div class="page pf">'+head+banner+'<div class="pf-list">'+account+calendar+telegram+wait+digest+edition+'</div></div>';
+    return '<div class="page pf">'+head+banner+'<div class="pf-list">'+account+calendar+reminders+wait+digest+edition+'</div></div>';
   }
 
   function saved(pg, id){
@@ -82,11 +82,11 @@
   function refreshSaved(id){ Q.refresh(); var pg = document.querySelector('#screen .page'); if(pg) saved(pg, id); }
 
   function disconnect(kind){
-    var cal = kind==='cal' || kind==='ol', name = kind==='cal' ? 'Google Calendar' : kind==='ol' ? 'Microsoft Outlook' : 'Telegram';
+    var name = kind==='cal' ? 'Google Calendar' : 'Microsoft Outlook';
     return Q.dialog({ title:'Disconnect '+name+'?',
-      body:'<p>'+(cal?'Meetings will stop updating. Your cases stay.':'Reminders will stop. Your cases stay.')+'</p>',
+      body:'<p>Meetings will stop updating. Your cases stay.</p>',
       actions:[{label:'Cancel',value:'no',kind:'secondary'},{label:'Disconnect',value:'yes',kind:'danger'}], safe:'no' })
-    .then(function(v){ if(v!=='yes') return; pf[kind==='ol'?'outlook':kind] = false; refreshSaved(cal?'cal':'tg'); });
+    .then(function(v){ if(v!=='yes') return; pf[kind==='ol'?'outlook':kind] = false; refreshSaved('cal'); });
   }
   Q.screen('prefs', {
     title:'Settings', nav:'prefs',
@@ -103,13 +103,12 @@
         var act = a.dataset.act;
         if(act==='cal-off') disconnect('cal');
         if(act==='ol-off') disconnect('ol');
-        if(act==='tg-off') disconnect('tg');
         if(act==='cal-on'){ pf.cal = true; refreshSaved('cal'); }
         if(act==='ol-on'){ pf.outlook = true; refreshSaved('cal'); }
-        if(act==='tg-on'){ pf.tg = true; refreshSaved('tg'); }
       });
       pg.addEventListener('change', function(e){
         if(e.target.id==='pf-dg'){ pf.digest = e.target.checked; pg.querySelector('#pf-time').disabled = !pf.digest; saved(pg,'dg'); }
+        if(e.target.id==='pf-notify'){ ad.notify = e.target.checked; saved(pg,'rm'); }
         if(e.target.id==='pf-time'){ ad.digestTime = e.target.value; saved(pg,'dg'); }
         var tm = { 'pf-rt':'remindTime', 'pf-wd':'weekdaysOnly', 'pf-q21':'quietAfter21', 'pf-qsun':'quietSunday', 'pf-max':'nudgeMax' }[e.target.id];
         if(tm){ ad[tm] = e.target.type==='checkbox' ? e.target.checked : tm==='nudgeMax' ? +e.target.value : e.target.value; saved(pg,'wait'); }

@@ -8,9 +8,9 @@
   var today = { date:'Tue 3 Nov', long:'Tuesday 3 November', hour:9 };
 
   var adviser = { name:'Rachel Lim', first:'Rachel', initials:'RL', email:'rachel.lim@kallangadvisers.sg',
-    firm:'Kallang Advisers', signin:'Google', telegram:'@rachel_lim', waitDays:3, digestTime:'8:00', telegramCode:'QX4-72K',
-    /* Update 2 follow-up loop. channel = where clients talk to the rep (onboarding may set it). Gentle timing lives in Settings. */
-    channel:'whatsapp', remindTime:'9:00', weekdaysOnly:true, quietAfter21:true, quietSunday:true, nudgeMax:2 };
+    firm:'Kallang Advisers', signin:'Google', waitDays:3, digestTime:'8:00',
+    /* Update 2 follow-up loop. notify = Quotient's own phone notifications (Update 2e). Clients get WhatsApp by default, no channel setting. Gentle timing lives in Settings. */
+    notify:true, remindTime:'9:00', weekdaysOnly:true, quietAfter21:true, quietSunday:true, nudgeMax:2 };
 
   var insurers = {
     harbour:  { name:'Harbour Assurance', short:'Harbour',  file:'harbour-wl.pdf',  pages:14 },
@@ -106,20 +106,21 @@
 
   /* Update 2 people fields (synthetic, docs/design/UPDATE-2.md). line = the short line on the case board card.
      goal is in the client's words. worry = { text, quote, from:'<date> · <time in meeting>', meeting:<id>, kept } (UPDATE-2 2b): AI-suggested until the rep keeps it. timing = the rep's own typed note, never a guess.
-     nudgeNo = which nudge is next (max 2, Settings "Gentle timing"). Merged into cases below. */
+     nudgeNo = which nudge is next (max 2, Settings "Gentle timing").
+     mobile = optional, synthetic SG numbers (Update 2e); Daniel and Jasmine have none, to demo the WhatsApp chat picker. Merged into cases below. */
   var caseExtra = {
-    wei:     { job:'Logistics manager', family:'2 kids (8 and 11)', line:'BTO keys Nov 2027', goal:'Whole life cover',
+    wei:     { mobile:'+65 9123 4501', job:'Logistics manager', family:'2 kids (8 and 11)', line:'BTO keys Nov 2027', goal:'Whole life cover',
                worry:{ text:'Cover to 65 and a uni fund for the kids', quote:'Cover to 65, and something for the kids\' university.', from:'Wed 28 Oct · 00:41', meeting:'wei-oct', kept:true } },
-    priya:   { job:'Nurse', family:'2 kids, Aarav and Meera', line:'nurse, 2 kids', goal:'Uni fund by 2038', timing:'Evenings', nudgeNo:1,
+    priya:   { mobile:'+65 9123 4567', job:'Nurse', family:'2 kids, Aarav and Meera', line:'nurse, 2 kids', goal:'Uni fund by 2038', timing:'Evenings', nudgeNo:1,
                worry:{ text:'Kids\' uni fund if she can\'t work', quote:'If I ever can\'t work, my worry is the uni fund for Aarav and Meera.', from:'Thu 22 Oct · 06:12', meeting:'priya-oct22', kept:true } },
-    alvin:   { line:'baby due in March', family:'Baby due in March',
+    alvin:   { mobile:'+65 8234 5612', line:'baby due in March', family:'Baby due in March',
                worry:{ text:'Lower budget, same cover', quote:'With the baby coming, can we bring the premium down but keep the same cover?', from:'Mon 26 Oct · 03:05', meeting:'alvin-oct26', kept:true } },
-    siti:    { job:'Nurse', family:'2 kids', line:'home loan, 2 kids',
+    siti:    { mobile:'+65 9345 6723', job:'Nurse', family:'2 kids', line:'home loan, 2 kids',
                worry:{ text:'Cover to 65 while the kids are young', quote:'I want cover until 65, while the kids are still young.', from:'Tue 13 Oct · 03:12', meeting:'siti-oct13', kept:false } },
-    marcus:  { family:'Daughter Mei helps', line:'64 · daughter Mei helps',
+    marcus:  { mobile:'+65 8456 7834', family:'Daughter Mei helps', line:'64 · daughter Mei helps',
                worry:{ text:'Leave something for Mei', quote:'Most of all, I want to leave something for Mei.', from:'Tue 27 Oct · 05:20', meeting:'marcus-oct', kept:true } },
     daniel:  { line:'met yesterday' }, // no worry yet: the board offers "Add their main worry"
-    kevin:   { line:'Meridian Life' },
+    kevin:   { mobile:'+65 9567 8945', line:'Meridian Life' },
     jasmine: { line:'budget changed' }
   };
   Object.keys(caseExtra).forEach(function(k){ var x = caseExtra[k]; Object.keys(x).forEach(function(f){ cases[k][f] = x[f]; }); });
@@ -286,8 +287,7 @@
     drafts:{
       alvin:'Hi Alvin! You wanted a lower budget with the same cover. Page 1 of the revised comparison shows the new Harbour premium next to the other two. Happy to talk it through on a call whenever suits you, no rush at all.'
     },
-    next:'Fri 6 Nov', link:'quotient.app/case/',
-    telegram:'Case #398 · P.K. · no reply for 3 days since you shared. A draft nudge is ready.' };
+    next:'Fri 6 Nov' };
 
   var share = { message:'Hi Wei! Here are the 3 plans we talked about, side by side. You wanted cover to 65 for the new home: page 1 shows the cover and the guaranteed value at 65 for each one. Illustrated values are not guaranteed. Happy to go through it on a call, no rush to decide.', remindOn:'Fri 6 Nov',
     messages:{

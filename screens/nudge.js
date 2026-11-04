@@ -1,11 +1,11 @@
-/* S16 Follow-up nudge (#nudge-<case>[-<state>]) and S16t Telegram reminder mock (#telegram[-<state>]). Phone-first.
+/* S16 Follow-up nudge (#nudge-<case>[-<state>]) and S16t reminder notification mock (#reminder[-<state>]). Phone-first.
    Nudge states: nodraft, default (client card + draft), sent, snoozed, reply (log a reply), quiet (max nudges reached).
-   The rep copies the draft and sends it from their own WhatsApp. No bot. Telegram text: case number and initials only. */
+   "Send on WhatsApp" opens a click-to-chat link (Q.waLink) with the draft typed in; the rep presses Send. Quotient never sends.
+   Reminders are Quotient's own notifications: case number only. */
 (function(){
   'use strict';
-  var D = Q.data, N = D.nudge, ui = { hash:null }, tg = { hash:null };
+  var D = Q.data, N = D.nudge, ui = { hash:null }, rm = { hash:null };
   var SNOOZE = { '1':'Wed 4 Nov', '3':'Fri 6 Nov' }; // today is Tue 3 Nov
-  var BOT = (QD.a && QD.a.bot) || '@QuotientRemindBot';
   var SVG = function(d){ return '<svg class="i i-sm" viewBox="0 0 24 24" aria-hidden="true">'+d+'</svg>'; };
   var I_COPY = SVG('<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/>');
   var I_CHAT = SVG('<path d="M20.5 12a8.5 8.5 0 0 1-12.4 7.5L3.5 20.5l1.1-4.4A8.5 8.5 0 1 1 20.5 12z"/>');
@@ -15,7 +15,6 @@
       return '<button class="chip" data-go="#'+base+(x[0]?'-'+x[0]:'')+'" aria-pressed="'+(x[0]===cur)+'">'+x[1]+'</button>'; }).join('')+'</div></nav>';
   }
   function letters(name){ return name.split(' ').map(function(w){ return w.charAt(0).toUpperCase(); }).join(''); }
-  function initials(name){ return letters(name).split('').join('.')+'.'; } // "P.K.": Telegram never carries a full name
   function maxN(){ return D.adviser.nudgeMax || 2; }
   function sentWhat(c){
     var d = c.shareSent || c.dates.shared;
@@ -51,14 +50,14 @@
   function render(p){
     var key = D.cases[p.parts[0]] ? p.parts[0] : 'priya', c = D.cases[key];
     if(location.hash!==ui.hash){ ui.hash = location.hash; var s0 = p.parts[1]==='three' ? 'quiet' : p.parts[1];
-      ui.st = s0==='draft' ? '' : s0 || (c.quiet ? 'quiet' : c.nudged ? 'sent' : c.snoozedTo ? 'snoozed' : ''); ui.snooze = '1'; ui.draft = draftFor(key, c); ui.copied = false; ui.cal = false; }
+      ui.st = s0==='draft' ? '' : s0 || (c.quiet ? 'quiet' : c.nudged ? 'sent' : c.snoozedTo ? 'snoozed' : ''); ui.snooze = '1'; ui.draft = draftFor(key, c); ui.asked = false; ui.cal = false; }
     var st = p.state==='empty' ? 'nodraft' : p.state==='error' ? 'error' : p.state==='loading' ? 'loading' : ui.st;
     var chips = demo('nudge-'+key, [['nodraft','No draft yet'],['draft','Draft'],['sent','Sent'],['snoozed','Snoozed'],['reply','Log a reply'],['quiet','Case quiet']], ui.st || 'draft');
     var head = '<header><a class="back" href="#case-'+key+'">'+Q.icon('back','i-sm')+'Back to '+Q.esc(c.name)+'</a>'+
       '<h1 class="h1 display">Follow up with '+Q.esc(c.first)+'</h1>'+
       '<p class="ng-sub"><span class="num">#'+c.no+'</span><span class="dot-sep"></span>no reply for '+(c.quietDays||3)+' days</p></header>';
     var top = '', body, card = clientCard(key, c, st==='quiet');
-    if(st==='snoozed') top = '<div class="banner" role="status">'+Q.icon('bell')+'<p>Snoozed until '+(c.snoozedTo||SNOOZE[ui.snooze])+'. We\'ll remind you on Telegram.</p><button class="btn-link" data-act="unsnooze">Undo</button></div>';
+    if(st==='snoozed') top = '<div class="banner" role="status">'+Q.icon('bell')+'<p>Snoozed until '+(c.snoozedTo||SNOOZE[ui.snooze])+'. We\'ll remind you then.</p><button class="btn-link" data-act="unsnooze">Undo</button></div>';
     if(st==='error') top = '<div class="banner banner-error" role="alert">'+Q.icon('alert')+'<p>Couldn\'t draft the nudge. Nothing else was sent.</p><button class="btn-link" data-go="#gate-'+key+'">Try again</button></div>';
 
     if(st==='nodraft' || st==='error') body = card+'<section class="card hero ng-hero" aria-labelledby="ng-d"><p class="eyebrow">Follow-up</p><h2 id="ng-d">Draft a short nudge for '+Q.esc(c.first)+'</h2>'+
@@ -90,9 +89,12 @@
       body = card+'<section class="card ng-draft" aria-labelledby="ng-l"><div class="fu-dhead"><label class="h3" id="ng-l" for="ng-txt">Your message</label><span class="small muted">Edit anything</span></div>'+
         '<textarea class="textarea" id="ng-txt" rows="6">'+Q.esc(ui.draft)+'</textarea>'+
         '<p class="ng-from"><span class="chip chip-device">'+Q.icon('device','i-sm')+'<span>Drafted from '+Q.esc(c.first)+'\'s worry + one page of what you sent, with <b>[CLIENT]</b> · names added on this device</span></span><a href="#sent-'+key+'">See what was sent</a></p>'+
-        '<div class="fu-ask" role="status"'+(ui.copied?'':' hidden')+'><p><b>Sent it in WhatsApp?</b> We can\'t see your chats, so tell us once it\'s sent.</p>'+
+        '<p class="ng-route">'+I_CHAT+'<span>'+(c.mobile ? 'Opens '+Q.esc(c.first)+'\'s WhatsApp chat' : 'WhatsApp will ask you to pick the chat')+'</span>'+
+          '<button type="button" class="btn-link" data-act="copy">'+I_COPY+'Copy</button></p>'+
+        '<div class="fu-ask" role="status"'+(ui.asked?'':' hidden')+'><p><b>Sent it on WhatsApp?</b> We can\'t see your chats, so tell us once it\'s sent.</p>'+
           '<div class="row"><button class="btn btn-secondary btn-sm" data-act="sent">'+Q.icon('check','i-sm')+'Yes, sent</button><button class="btn btn-ghost btn-sm" data-act="notyet">Not yet</button></div></div></section>'+
-        '<div class="ng-acts"><button class="btn btn-primary" data-act="copy">'+I_COPY+'Copy message</button><button class="btn btn-secondary" data-act="wa">'+I_CHAT+'Open WhatsApp chat</button></div>'+
+        '<div class="ng-acts"><a class="btn btn-primary" data-act="wa" href="'+Q.esc(Q.waLink(c, ui.draft))+'" target="_blank" rel="noopener">'+I_CHAT+'Send on WhatsApp</a>'+
+          '<a class="btn-link ng-email" data-act="email" href="'+Q.esc(mailto(key, c, ui.draft))+'">Email instead</a></div>'+
         '<div class="fu-more"><button class="btn btn-secondary" data-act="replied">Already replied</button>'+
           '<div class="menu"><button class="btn btn-secondary" data-menu aria-haspopup="true" aria-expanded="false">'+Q.icon('bell','i-sm')+'Snooze</button><div class="menu-pop" role="menu">'+
             '<button role="menuitem" data-snooze="1">1 day · until '+SNOOZE['1']+'</button><button role="menuitem" data-snooze="3">3 days · until '+SNOOZE['3']+'</button></div></div>'+
@@ -110,6 +112,11 @@
     c.nudged = { on:D.today.date, next: c.quiet ? 'none · case quiet' : N.next };
   }
 
+  function mailto(key, c, text){
+    var to = (QD.c && QD.c.emails && QD.c.emails[key]) || '';
+    return 'mailto:'+to+'?subject='+encodeURIComponent('Following up · '+c.first)+'&body='+encodeURIComponent(text);
+  }
+
   // Copy synchronously first (works on file:// and keeps the click's user activation); the async API is the backup.
   function copyText(text, ta){
     var done = function(){ Q.toast('Copied. Paste it in WhatsApp.'); }, fail = function(){ Q.toast('Couldn\'t copy. Select the text and copy it.'); };
@@ -120,19 +127,20 @@
 
   function mount(el, p){
     var key = D.cases[p.parts[0]] ? p.parts[0] : 'priya', c = D.cases[key], pg = el.querySelector('.page');
-    var ta = pg.querySelector('#ng-txt'); if(ta) ta.addEventListener('input', function(){ ui.draft = ta.value; ta.removeAttribute('aria-invalid'); });
-    function ask(){ ui.copied = true; var a = pg.querySelector('.fu-ask'); if(a) a.hidden = false; }
+    var ta = pg.querySelector('#ng-txt'), wa = pg.querySelector('[data-act="wa"]'), em = pg.querySelector('[data-act="email"]');
+    if(ta) ta.addEventListener('input', function(){ ui.draft = ta.value; ta.removeAttribute('aria-invalid');
+      if(wa) wa.href = Q.waLink(c, ui.draft); if(em) em.href = mailto(key, c, ui.draft); }); // links always carry the edited draft
+    function ask(by){ ui.asked = true; var a = pg.querySelector('.fu-ask'); if(a){ a.hidden = false; a.querySelector('b').textContent = 'Sent it '+(by==='email'?'by email':'on WhatsApp')+'?'; } }
     pg.addEventListener('click', function(e){
       var sz = e.target.closest('[data-snooze]'); if(sz){ ui.snooze = sz.dataset.snooze; ui.st = 'snoozed'; c.snoozedTo = SNOOZE[ui.snooze]; delete c.nudged; Q.refresh(); Q.toast('Snoozed until '+SNOOZE[ui.snooze]); return; }
       var a = e.target.closest('[data-act]'); if(!a) return;
       var act = a.dataset.act;
-      if(act==='copy' || act==='wa'){
-        if(!ui.draft.trim()){ ta.setAttribute('aria-invalid','true'); ta.focus(); return; }
-        if(act==='copy') copyText(ui.draft, ta);
-        else Q.toast('Opening your WhatsApp chat with '+c.first+'. Paste the message there.');
-        ask(); return;
+      if(act==='copy' || act==='wa' || act==='email'){
+        if(!ui.draft.trim()){ e.preventDefault(); ta.setAttribute('aria-invalid','true'); ta.focus(); return; }
+        if(act==='copy') copyText(ui.draft, ta); // wa / email: the real link opens; we only ask afterwards
+        ask(act); return;
       }
-      if(act==='notyet'){ ui.copied = false; pg.querySelector('.fu-ask').hidden = true; return; }
+      if(act==='notyet'){ ui.asked = false; pg.querySelector('.fu-ask').hidden = true; return; }
       if(act==='sent'){ markSent(c); ui.st = 'sent'; Q.refresh(); Q.toast(c.quiet ? 'Nudge sent · case #'+c.no+' is now quiet' : 'Nudge sent · next reminder '+N.next); }
       if(act==='cal'){ ui.cal = true; Q.refresh(); Q.toast('Added to Google Calendar · links back to case #'+c.no); }
       if(act==='wake'){ c.quiet = false; c.nudgeNo = maxN(); delete c.nudged; ui.st = ''; Q.refresh(); }
@@ -153,42 +161,32 @@
 
   Q.screen('nudge', { title:function(p){ var c = D.cases[p.parts[0]]; return 'Nudge'+(c?' '+c.name:''); }, nav:'cases', render:render, mount:mount });
 
-  /* ---------- S16t Telegram reminder (mock of the adviser's phone) ---------- */
-  function bubble(text, me, time, kb){
-    return '<div class="tg-msg'+(me?' me':'')+'"><div class="tg-b">'+text+'<time>'+(time||'09:00')+'</time></div>'+(kb||'')+'</div>';
-  }
-  function kb(btns, used){ return '<div class="tg-kb">'+btns.map(function(b){ return '<button data-tg="'+b[0]+'"'+(used?' disabled':'')+'>'+b[1]+'</button>'; }).join('')+'</div>'; }
-
-  function renderTg(p){
-    if(location.hash!==tg.hash){ tg.hash = location.hash; tg.st = p.parts[0]||''; tg.days = '3'; }
-    var c = D.cases[N.c], ad = D.adviser, st = tg.st;
-    var text = '<b>Case #'+c.no+' · '+initials(c.name)+'</b><br>No reply for '+(c.quietDays||3)+' days since you shared. A draft nudge is ready.'+
-      '<a class="tg-link" href="#nudge-'+N.c+'">'+Q.esc(N.link+c.no)+'</a>';
-    var msgs = '<span class="tg-day">Today</span>'+bubble(text, false, '09:00', kb([['open','Open case'],['replied','Replied'],['snooze','Snooze']], !!st));
-    if(st==='replied') msgs += bubble('Replied', true, '09:02')+bubble('Got it. No more reminders for case #'+c.no+'. Add what they said when you open the case.', false, '09:02', kb([['log','Open case #'+c.no]]));
-    if(st==='snooze' || st==='snoozed') msgs += bubble('Snooze', true, '09:02')+bubble('Snooze case #'+c.no+' for how long?', false, '09:02', kb([['d1','1 day'],['d3','3 days']], st==='snoozed'));
-    if(st==='snoozed') msgs += bubble(tg.days==='1'?'1 day':'3 days', true, '09:03')+bubble('Snoozed. We\'ll remind you on '+SNOOZE[tg.days]+'.', false, '09:03');
-    var logo = (QD.a && QD.a.logo && QD.a.logo.telegram) || '<span class="tg-ava">'+Q.icon('bell')+'</span>';
-    var phone = '<div class="tg-phone" role="region" aria-label="Telegram chat mock"><div class="tg-top">'+Q.icon('back')+logo+'<div><b>Quotient reminders</b><small>bot · '+Q.esc(BOT)+'</small></div></div>'+
-      '<div class="tg-chat" aria-live="polite">'+msgs+'</div><div class="tg-bar"><span>Message</span>'+Q.icon('mic')+'</div></div>';
+  /* ---------- S16t Reminder: Quotient's own phone notification (Update 2e). Case numbers only. ---------- */
+  function renderRm(p){
+    if(location.hash!==rm.hash){ rm.hash = location.hash; rm.st = p.parts[0]||''; rm.days = '3'; }
+    var c = D.cases[N.c], ad = D.adviser, st = rm.st, after = '';
+    if(st==='snooze') after = '<div class="rm-pick" role="group" aria-label="Snooze for how long?"><button type="button" class="btn btn-secondary btn-sm" data-rn="d1">1 day</button><button type="button" class="btn btn-secondary btn-sm" data-rn="d3">3 days</button></div>';
+    if(st==='snoozed') after = '<p class="rm-done" role="status">'+Q.icon('bell','i-sm')+'Snoozed. We\'ll remind you on '+SNOOZE[rm.days]+'.</p>';
+    if(st==='replied') after = '<p class="rm-done" role="status">'+Q.icon('check','i-sm')+'Got it. No more reminders for case #'+c.no+'.</p>';
+    var phone = '<div class="rm-phone" role="region" aria-label="Phone lock screen mock"><div class="rm-lock"><span class="rm-day">'+Q.esc(D.today.long)+'</span><span class="rm-time num">09:00</span></div>'+
+      '<div class="rm-stack" aria-live="polite">'+Q.notice(c, { live:true, used:!!st, time:'09:00' })+after+'</div></div>';
     var when = ad.remindTime+(ad.weekdaysOnly?' on weekdays':'')+(ad.quietAfter21?', never after 21:00':'')+(ad.quietSunday?' or on Sunday':'');
-    return '<div class="page">'+demo('telegram', [['','Reminder'],['snooze','Snooze: how long?'],['snoozed','Snoozed'],['replied','Replied']], st)+
-      '<div class="tg fu-tg" style="margin-top:var(--s-6)"><div class="tg-copy"><p class="eyebrow">Telegram reminder · on your phone</p><h1 class="h1 display">A reminder with no names</h1>'+
-      '<p class="lede">After the follow-up wait, Quotient reminds you on Telegram. The message carries the case number and initials only.</p>'+
-      '<ul><li>Case numbers only, plus initials. Never a full name, phone number or plan detail in Telegram.</li><li><b>Open case</b> opens the client card and the drafted message in Quotient, after you sign in.</li><li><b>Replied</b> and <b>Snooze</b> answer right in the chat.</li></ul>'+
+    return '<div class="page">'+demo('reminder', [['','Reminder'],['snooze','Snooze: how long?'],['snoozed','Snoozed'],['replied','Already replied']], st)+
+      '<div class="rm" style="margin-top:var(--s-6)"><div class="rm-copy"><p class="eyebrow">Reminder · on your phone</p><h1 class="h1 display">A reminder with no names</h1>'+
+      '<p class="lede">After the follow-up wait, Quotient sends you its own notification. It carries the case number only.</p>'+
+      '<ul><li>Case numbers only. Never a client name, phone number or plan detail.</li><li><b>Open</b> opens the client card and the drafted message, after you sign in.</li><li><b>Already replied</b> and <b>Snooze</b> answer right from the notification.</li><li>The same reminders show on Today and in your morning digest.</li></ul>'+
       '<p class="small muted">Sent at '+Q.esc(when)+'. Wait set to '+ad.waitDays+' days. Change it in <a href="#prefs">Settings</a>.</p></div>'+phone+'</div></div>';
   }
-  function mountTg(el){
+  function mountRm(el){
     el.querySelector('.page').addEventListener('click', function(e){
-      var b = e.target.closest('[data-tg]'); if(!b || b.disabled) return;
-      var v = b.dataset.tg;
-      if(v==='open'){ var c = D.cases[N.c]; return Q.go('#nudge-'+N.c+(c.nudged && !c.quiet ? '-draft' : '')); } // after a sent nudge, the reminder opens the next draft
-      if(v==='log') return Q.go('#nudge-'+N.c+'-reply');
-      if(v==='replied') tg.st = 'replied';
-      if(v==='snooze') tg.st = 'snooze';
-      if(v==='d1' || v==='d3'){ tg.days = v.slice(1); tg.st = 'snoozed'; D.cases[N.c].snoozedTo = SNOOZE[tg.days]; delete D.cases[N.c].nudged; }
+      var b = e.target.closest('[data-rn]'); if(!b || b.disabled) return;
+      var v = b.dataset.rn, c = D.cases[N.c];
+      if(v==='open') return Q.go('#nudge-'+N.c+(c.nudged && !c.quiet ? '-draft' : '')); // after a sent nudge, the reminder opens the next draft
+      if(v==='replied') rm.st = 'replied';
+      if(v==='snooze') rm.st = 'snooze';
+      if(v==='d1' || v==='d3'){ rm.days = v.slice(1); rm.st = 'snoozed'; c.snoozedTo = SNOOZE[rm.days]; delete c.nudged; }
       Q.refresh();
     });
   }
-  Q.screen('telegram', { title:'Telegram reminder', nav:'today', render:renderTg, mount:mountTg });
+  Q.screen('reminder', { title:'Reminder', nav:'today', render:renderRm, mount:mountRm });
 })();

@@ -21,6 +21,8 @@
      Q.status(caseKey)      {why, btn, go, needs}: the one short next step, used by Today, Cases and Case.
      Q.writeupProgress(k) / Q.masProgress(k)  {done,total}: the one count for write-up parts and firm review checks.
      Q.worry(case)          the kept worry text ('' if none or only suggested).
+     Q.waLink(case, text)   WhatsApp click-to-chat URL: wa.me/<digits>?text= with the case mobile, else wa.me/?text= (WhatsApp asks for the chat).
+     Q.notice(case?, opts)  the phone notification card from Quotient (case number only). Buttons carry data-rn="open|replied|snooze".
      Q.phonePreview(on?)    prototype only: wide screens show the app in an iPhone frame (iframe ?frame=phone). [data-phone] opens it.
      Q.caseMeetings(k)      [{m, upcoming}] every meeting and quick note on a case, oldest first.  Q.meetingById(id) -> {m, past}.
      [data-quick-notes]     any button starts Record notes (screens/quicknotes.js); ='<case>' pre-picks that case.
@@ -48,7 +50,7 @@
   var qs = new URLSearchParams(location.search);
 
   /* ---------- shared case state (one store, all screens) ---------- */
-  var SAVED = ['cases','writeup','mas','meetings','transcripts','adviser'], VER = 5; // bump VER when the data shape changes
+  var SAVED = ['cases','writeup','mas','meetings','transcripts','adviser'], VER = 6; // bump VER when the data shape changes
   try{
     if(qs.has('reset')) sessionStorage.removeItem('q-data');
     var saved = JSON.parse(sessionStorage.getItem('q-data') || 'null');
@@ -60,6 +62,14 @@
   /* ---------- small utils ---------- */
   Q.esc = function(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); };
   Q.money = function(n){ return n==null ? '' : 'S$' + Number(n).toLocaleString('en-SG'); };
+  /* Update 2e: click-to-chat, https://faq.whatsapp.com/5913398998672934. Digits only, country code first; a bare 8-digit SG mobile gets 65. */
+  Q.waDigits = function(m){ var d = String(m||'').replace(/\D/g,''); return /^[89]\d{7}$/.test(d) ? '65'+d : d; };
+  Q.waLink = function(c, text){ var d = Q.waDigits(c && c.mobile); return 'https://wa.me/'+(d ? d : '')+'?text='+encodeURIComponent(text||''); };
+  Q.notice = function(c, o){ c = c || Q.data.cases[Q.data.nudge.c]; o = o || {};
+    return '<div class="rn" role="group" aria-label="Notification from Quotient"><div class="rn-top">'+Q.icon('bell','i-sm')+'<b>Quotient</b><time>'+(o.time||'now')+'</time></div>'+
+      '<p class="rn-text">Case #'+c.no+' · no reply in '+(c.quietDays||3)+' days. A draft nudge is ready.</p>'+
+      '<div class="rn-acts">'+[['open','Open'],['replied','Already replied'],['snooze','Snooze']].map(function(b){
+        return o.live ? '<button type="button" data-rn="'+b[0]+'"'+(o.used?' disabled':'')+'>'+b[1]+'</button>' : '<span>'+b[1]+'</span>'; }).join('')+'</div></div>'; };
   Q.on = function(e,fn){ (listeners[e]=listeners[e]||[]).push(fn); };
   Q.emit = function(e,d){ (listeners[e]||[]).forEach(function(fn){ fn(d); }); };
   function store(k,v){ try{ if(v===undefined) return localStorage.getItem(k); if(v===null) localStorage.removeItem(k); else localStorage.setItem(k,v); }catch(e){ return null; } }
@@ -144,8 +154,8 @@
   /* ---------- screen inventory (ux-spec §6) for the demo jump menu ---------- */
   Q.inventory = [
     ['S01','Sign in','signin'], ['S02','Create account','signup'],
-    ['S03a','Onboarding: how it works','welcome-1'], ['S03b','Onboarding: client channel','welcome-2'], ['S03c','Onboarding: reminders','welcome-3'],
-    ['S03d','Onboarding: calendar','welcome-4'], ['S03e','Onboarding: follow-up wait','welcome-5'],
+    ['S03a','Onboarding: how it works','welcome-1'], ['S03b','Onboarding: reminders','welcome-2'],
+    ['S03c','Onboarding: calendar','welcome-3'], ['S03d','Onboarding: follow-up wait','welcome-4'],
     ['S04','Today','today'], ['S05','Meetings','meetings'],
     ['S06','Meeting: Wei Tan, today','meeting-wei-today'], ['S06','Meeting: Daniel Lee, done','meeting-daniel-past'],
     ['S07','New case','new-case'],
@@ -154,15 +164,16 @@
     ['S11','Case: Wei Tan (compared)','case-wei'], ['S11','Case: Daniel Lee (met)','case-daniel'], ['S11','Case: Priya Krishnan (shared)','case-priya'], ['S11','Case: Alvin Lim (revised)','case-alvin'],
     ['S11','Case: Siti Nur (write-up)','case-siti'], ['S11','Case: Marcus Raj (firm review)','case-marcus'], ['S11','Case: Kevin Ong (won)','case-kevin'], ['S11','Case: Jasmine Ong (lost)','case-jasmine'],
     ['S12','PDF side sheet','source-wei'], ['S13','Share','share-alvin'], ['S13','Share: blocked (Wei, 2 to check)','share-wei'], ['S14','Write-up','writeup-siti'], ['S15','MAS checks','mas-marcus'],
-    ['S16','Follow-up nudge','nudge-priya'], ['S16t','Telegram reminder','telegram'], ['S17','What left your device','sent-wei'],
+    ['S16','Follow-up nudge','nudge-priya'], ['S16t','Reminder notification','reminder'], ['S17','What left your device','sent-wei'],
     ['S18','Cases','cases'], ['S19','Settings','prefs'], ['S20','Morning digest','digest'], ['', 'Component gallery','gallery']
   ];
-  var NAV_OF = { today:'today', meetings:'meetings', meeting:'meetings', cases:'cases', prefs:'prefs', digest:'today', telegram:'today' };
+  var NAV_OF = { today:'today', meetings:'meetings', meeting:'meetings', cases:'cases', prefs:'prefs', digest:'today', reminder:'today' };
 
   /* ---------- registry and router ---------- */
   Q.screen = function(id, def){ def.id = id; screens[id] = def; if(booted) { buildJump(); if(Q.route().id===id) render(true); } };
   Q.route = function(){
     var h = decodeURIComponent(location.hash.replace(/^#\/?/,'')) || 'today';
+    if(/^telegram(-|$)/.test(h)){ h = h.replace(/^telegram/,'reminder'); history.replaceState(null,'','#'+h); } // old route (Update 2e)
     if(screens[h]) return { id:h, arg:'', hash:h };
     var best = null;
     Object.keys(screens).forEach(function(id){ if(h.indexOf(id+'-')===0 && (!best || id.length>best.length)) best=id; });

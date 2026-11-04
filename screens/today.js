@@ -172,7 +172,7 @@
       if(/^(needs|prog|won)$/.test(p.arg)) tab = p.arg; // deep link #today-won
       if(p.state==='empty') return '<div class="page bd">'+head(null)+
         '<div class="empty"><h2>Nothing needs you yet</h2><p>Your next meeting will show here. You can also start a case from PDFs.</p>'+
-        '<a class="btn btn-primary" href="#new-case">'+Q.icon('plus')+'New case</a><a href="#welcome-4">Connect your calendar</a></div></div>';
+        '<a class="btn btn-primary" href="#new-case">'+Q.icon('plus')+'New case</a><a href="#welcome-3">Connect your calendar</a></div></div>';
       if(p.state==='loading') return '<div class="page bd">'+head(null)+'<ul class="bd-list" aria-busy="true">'+[1,2,3,4].map(function(){
         return '<li class="bd-card"><div class="bd-top"><span class="bd-av skel"></span><div class="bd-who"><span class="skel" style="width:50%"></span><span class="skel" style="width:35%;margin-top:8px"></span></div></div>'+
           '<span class="skel" style="width:70%"></span><span class="skel" style="width:40%;margin-top:14px"></span></li>'; }).join('')+'</ul></div>';

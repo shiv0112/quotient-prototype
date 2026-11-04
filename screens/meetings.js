@@ -67,7 +67,7 @@
       (s.s==='empty' ? '' : '<p class="sync">'+(s.s==='error'?'':'<span class="ok" aria-hidden="true"></span>')+Q.esc(s.s==='error'?'Google Calendar · last synced 10:02':M.sync)+'</p>')+'</div>'+
       '<button class="btn btn-secondary" data-act="paste">'+Q.icon('file','i-sm')+'Paste notes</button></header>';
     var body;
-    if(s.s==='empty') body = '<div class="empty rise"><h2>Connect your calendar to see your meetings here.</h2><p>Google or Microsoft. Quotient only reads the time, title and link.</p><a class="btn btn-primary" href="#welcome-4">Connect calendar</a></div>';
+    if(s.s==='empty') body = '<div class="empty rise"><h2>Connect your calendar to see your meetings here.</h2><p>Google or Microsoft. Quotient only reads the time, title and link.</p><a class="btn btn-primary" href="#welcome-3">Connect calendar</a></div>';
     else if(s.s==='week') body = '<div class="empty rise"><h2>No meetings this week.</h2><p>New meetings show up here as soon as they are on your calendar.</p></div>'+past();
     else if(s.s==='loading') body = '<div class="card" aria-busy="true">'+[1,2,3,4].map(function(){ return '<div class="skel-row"><span class="skel" style="width:8%"></span><span class="skel" style="width:30%"></span><span class="skel" style="width:14%"></span><span class="skel" style="width:12%"></span></div>'; }).join('')+'</div>';
     else body = (s.s==='error' ? '<div class="banner banner-error rise" role="alert">'+Q.icon('alert')+'<p>Couldn\'t sync. Showing meetings from 10:02.</p><button class="btn-link" data-act="retry">Try again</button></div>' : '')+

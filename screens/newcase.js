@@ -41,7 +41,9 @@
       (c?'<a class="back" href="#case-'+key+'">'+Q.icon('back','i-sm')+'Back to '+Q.esc(c.name)+'</a>':'')+
       '<header class="page-head rise"><div><h1 class="h1">'+Q.esc(title)+'</h1><p class="sub">Your PDFs are read on this device. Nothing is sent until you see exactly what goes.</p></div></header>'+
       '<form class="s07-form rise" novalidate onsubmit="return false">'+
-        (c?'':'<div class="field s07-name"><label class="label" for="nc-name">Client name</label><input class="input" id="nc-name" autocomplete="off" value="'+Q.esc(st.name)+'"></div>')+
+        (c?'':'<div class="field s07-name"><label class="label" for="nc-name">Client name</label><input class="input" id="nc-name" autocomplete="off" value="'+Q.esc(st.name)+'"></div>'+
+          '<div class="field s07-name"><label class="label" for="nc-mobile">Mobile · optional</label><input class="input" id="nc-mobile" type="tel" inputmode="tel" autocomplete="off" placeholder="+65 9123 4567" value="'+Q.esc(st.mobile||'')+'">'+
+          '<span class="hint">Opens their WhatsApp chat directly</span></div>')+
         '<div class="field"><span class="label" id="pdf-l">Policy illustrations</span>'+drop+'</div>'+banner+files+
         notesPicker(key)+
         '<div class="s07-acts u2-dock"><button class="btn btn-primary" data-act="compare"'+(ok?'':' aria-disabled="true" title="'+Q.esc(why)+'"')+'>Compare plans</button>'+
@@ -82,7 +84,7 @@
       if(a.dataset.act==='sample'){ st.files = ['harbour','meridian','orchid'].map(function(k){ return F[k]; }); if(!st.name) st.name = 'Wei Tan'; Q.refresh(); }
       if(a.dataset.act==='compare'){ if(a.getAttribute('aria-disabled')==='true') return;
         // Each case goes to its own gate. A case that already has plans has no demo gate for new ones.
-        if(!key) Q.go('#gate-wei');
+        if(!key){ if(st.mobile && st.mobile.trim()) D.cases.wei.mobile = st.mobile.trim(); Q.go('#gate-wei'); } // demo: a new case continues as Wei's
         else if(/^compare/.test(QB.feature(key)||'')) Q.go('#gate-'+key);
         else { Q.toast('Demo: plans added to case #'+D.cases[key].no); Q.go('#case-'+key); } }
     });
@@ -91,7 +93,7 @@
       var pk = e.target.closest('[data-nc-pick]');
       if(pk){ var cur = QB.pick(key), i = cur.indexOf(pk.dataset.ncPick); if(pk.checked && i<0) cur.push(pk.dataset.ncPick); if(!pk.checked && i>=0) cur.splice(i,1); }
     });
-    pg.addEventListener('input', function(e){ if(e.target.id==='nc-name') st.name = e.target.value; });
+    pg.addEventListener('input', function(e){ if(e.target.id==='nc-name') st.name = e.target.value; if(e.target.id==='nc-mobile') st.mobile = e.target.value; });
     ['dragenter','dragover'].forEach(function(t){ drop.addEventListener(t, function(e){ e.preventDefault(); drop.classList.add('over'); }); });
     ['dragleave','drop'].forEach(function(t){ drop.addEventListener(t, function(e){ e.preventDefault(); drop.classList.remove('over'); }); });
     drop.addEventListener('drop', function(e){ if(e.dataTransfer && e.dataTransfer.files.length) add(e.dataTransfer.files); });

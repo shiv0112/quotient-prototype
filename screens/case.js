@@ -44,7 +44,7 @@
       case 2:
         if(c.quiet){ h='Case quiet · '+(c.nudgesSent||2)+' nudges sent'; p='Reminders for '+first+' have stopped. Log it here if '+first+' replies.'; btn=a('#nudge-'+key+'-reply', 'Log a reply', 'secondary'); }
         else if(c.nudged){ h='Nudge sent · next reminder '+c.nudged.next; p='You nudged '+first+' on '+c.nudged.on+'. Log it here when '+first+' replies.'; btn=a('#nudge-'+key+'-reply', 'Log a reply', 'secondary'); }
-        else if(c.snoozedTo){ h='Snoozed until '+c.snoozedTo; p='We\'ll remind you on Telegram.'; btn=a('#nudge-'+key, 'Open nudge', 'secondary'); }
+        else if(c.snoozedTo){ h='Snoozed until '+c.snoozedTo; p='We\'ll remind you then.'; btn=a('#nudge-'+key, 'Open nudge', 'secondary'); }
         else if((c.quietDays||0) >= D.adviser.waitDays){ h=first+' hasn\'t replied in '+c.quietDays+' days'; p='You shared the comparison on '+c.dates.shared+'. A short nudge is drafted.'; btn=a('#nudge-'+key, 'Send a nudge'); }
         else { h='Shared with '+first; p='We\'ll remind you on '+D.share.remindOn+' if there\'s no reply.'; btn=a('#nudge-'+key+'-reply', 'Log a reply', 'secondary'); }
         break;
@@ -176,7 +176,9 @@
     var sends = (D.log[key]||[]).length || c.sends;
     return '<div class="page case">'+switcher(key)+
       '<header class="card case-head tiled rise"><div><h1 class="h1 display">'+Q.esc(c.name)+' <span class="case-no">#'+c.no+'</span></h1>'+
-        '<p class="case-meta">'+c.age+'<span class="dot-sep"></span>'+c.product+'<span class="dot-sep"></span>'+(plans?plans+' plans':'No plans yet')+(status?' '+status:'')+'</p></div>'+
+        '<p class="case-meta">'+c.age+'<span class="dot-sep"></span>'+c.product+'<span class="dot-sep"></span>'+(plans?plans+' plans':'No plans yet')+(status?' '+status:'')+'</p>'+
+        '<p class="case-mobile">'+(c.mobile ? '<span>Mobile · <span class="num">'+Q.esc(c.mobile)+'</span></span><button class="btn-link" data-act="mobile">Edit</button>'
+          : '<span class="muted">No mobile</span><button class="btn-link" data-act="mobile">Add mobile</button>')+'</p></div>'+
         '<div class="menu"><button class="btn btn-secondary" data-menu aria-haspopup="true" aria-expanded="false">'+Q.icon('more')+'More</button><div class="menu-pop" role="menu">'+
           '<button role="menuitem" data-act="won">Mark won</button><button role="menuitem" data-act="lost">Mark lost</button>'+
           '<button role="menuitem" data-go="#new-case-'+key+'">Add plans</button><button role="menuitem" class="danger" data-act="delete">Delete case</button></div></div></header>'+
@@ -191,6 +193,14 @@
     el.querySelector('.page').addEventListener('click', function(e){
       var v = e.target.closest('[data-ver]'); if(v){ verOf[key] = v.dataset.ver; Q.refresh(); return; }
       var a = e.target.closest('[data-act]'); if(!a) return;
+      if(a.dataset.act==='mobile') return Q.sheet({ title:'Client mobile',
+        body:'<div class="field"><label class="label" for="cm-in">Mobile · optional</label><input class="input" id="cm-in" type="tel" inputmode="tel" autocomplete="off" placeholder="+65 9123 4567" value="'+Q.esc(c.mobile||'')+'">'+
+          '<span class="hint">Opens their WhatsApp chat directly. Never sent to the AI.</span></div>',
+        foot:'<button class="btn btn-primary" data-cm="save">Save</button><button class="btn btn-ghost" data-close>Cancel</button>',
+        mount:function(sh){ var inp = sh.querySelector('#cm-in'); inp.focus();
+          function save(){ var v = inp.value.trim(); if(v) c.mobile = v; else delete c.mobile; Q.closeSheet(); Q.refresh(); Q.toast(v ? 'Mobile saved' : 'Mobile removed'); }
+          sh.querySelector('[data-cm]').addEventListener('click', save);
+          inp.addEventListener('keydown', function(e){ if(e.key==='Enter') save(); }); } });
       if(a.dataset.act==='won'){ c.result='won'; c.now=7; c.dates.closed=D.today.date; Q.refresh(); Q.toast('Marked as won'); }
       if(a.dataset.act==='reopen'){ c.result=null; c.now=Math.min(c.lostAt||2,6); delete c.dates.closed; Q.refresh(); Q.toast('Case reopened'); }
       if(a.dataset.act==='lost') Q.dialog({ title:'Why was '+c.first+'\'s case lost?',

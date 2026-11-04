@@ -49,7 +49,7 @@
   body.focus .sh-acts,body.focus .ng-acts{bottom:0;padding-bottom:calc(var(--s-3) + env(safe-area-inset-bottom,0px))}
   .sh-acts>.btn-primary,.ng-acts>.btn-primary{flex:1 1 100%;min-height:48px;width:auto}
   .sh-acts .spacer,.ng-acts .spacer{display:none}
-  .ng-acts>.row{flex:1 1 100%;justify-content:center}
+  .ng-acts>.row,.ng-acts>.ng-email{flex:1 1 100%;justify-content:center}
   body:has(.sh-acts) .page,body:has(.ng-acts) .page{padding-bottom:calc(var(--u2-tab) + 150px + env(safe-area-inset-bottom,0px))}
 
   /* Case: next-step card keeps its words; its button docks. */

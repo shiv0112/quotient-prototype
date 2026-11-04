@@ -23,11 +23,11 @@ Read first: `docs/design/BRIEF.md` (wins on facts), `docs/design/ux-spec.md` (sc
 })();
 ```
 2. Add `<script src="screens/<name>.js"></script>` at the end of `index.html`. Do not edit `core.js`.
-3. Route ids already listed in the demo jump menu (`Q.inventory` in core.js): `signin`, `signup`, `welcome-1..5`, `meetings`, `meeting-<meetingId>`, `new-case[-<case>]`, `gate-<case>` (feature comes from `Q.data.gate[*].c`), `gate-edit-<case>`, `processing-<case>`, `share-<case>`, `writeup-<case>`, `mas-<case>`, `nudge-<case>`, `telegram`, `sent-<case>`, `cases`, `prefs` (Settings; never `#settings`), `digest`. Longest id wins, so `gate-edit` beats `gate`.
+3. Route ids already listed in the demo jump menu (`Q.inventory` in core.js): `signin`, `signup`, `welcome-1..4`, `meetings`, `meeting-<meetingId>`, `new-case[-<case>]`, `gate-<case>` (feature comes from `Q.data.gate[*].c`), `gate-edit-<case>`, `processing-<case>`, `share-<case>`, `writeup-<case>`, `mas-<case>`, `nudge-<case>`, `reminder` (old `#telegram` redirects here), `sent-<case>`, `cases`, `prefs` (Settings; never `#settings`), `digest`. Longest id wins, so `gate-edit` beats `gate`.
 4. Layout CSS for your screen goes at the end of `components.css` under "Screen layouts", using tokens only.
 
 ## Core API (full list at the top of core.js)
-`Q.data` · `Q.go(hash)` · `Q.refresh()` · `Q.state()` · `Q.edition()` · `Q.theme()` · `Q.openSheet('wei/v1/harbour/b20')` · `Q.sheet({title, body, foot, mount})` · `Q.closeSheet()` · `Q.dialog({title, body, actions, safe})` → Promise · `Q.toast(msg)` · `Q.recording.start({callAudio}) / pause / resume / stop` · `Q.toCheck(case, ver)` · `Q.cell(ref)` · `Q.rowLabel(row)` · `Q.money(n)` · `Q.esc(s)` · `Q.icon(name)`.
+`Q.data` · `Q.go(hash)` · `Q.refresh()` · `Q.state()` · `Q.edition()` · `Q.theme()` · `Q.openSheet('wei/v1/harbour/b20')` · `Q.sheet({title, body, foot, mount})` · `Q.closeSheet()` · `Q.dialog({title, body, actions, safe})` → Promise · `Q.toast(msg)` · `Q.recording.start({callAudio}) / pause / resume / stop` · `Q.toCheck(case, ver)` · `Q.waLink(case, text)` (WhatsApp click-to-chat) · `Q.notice(case, opts)` (reminder notification card) · `Q.cell(ref)` · `Q.rowLabel(row)` · `Q.money(n)` · `Q.esc(s)` · `Q.icon(name)`.
 Markup shortcuts: `data-go="#hash"`, `data-sheet="ref"`, `data-toast="text"`, `data-menu` (toggles parent `.menu`), `data-rec="stop"`.
 Icons: today, meetings, cases, prefs, plus, back, next, close, check, more, mic, file, info, alert, search, device, arrow, share, video, bell.
 
@@ -43,7 +43,7 @@ Icons: today, meetings, cases, prefs, plus, back, next, close, check, more, mic,
 
 ## Copy rules
 - Plain, short words. **No em-dashes** in UI copy (use " · " or a full stop).
-- Never "vault". Never "laptop" or "Mac" (say "device").
+- Never "vault". Never "Telegram": reminders are Quotient's own notifications, case numbers only. Clients get WhatsApp, "Email instead" is secondary. Never "laptop" or "Mac" (say "device").
 - Never claim the client consented. Never claim guaranteed returns; illustrated values always say "not guaranteed".
 - Never frame clients, seniors or advisers dismissively.
 - Money: `Q.money(n)` gives "S$72,760".

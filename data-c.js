@@ -1,4 +1,4 @@
-/* Builder C demo data (share, write-up, MAS, nudge, Telegram, cases). Extends Q.data read-only.
+/* Builder C demo data (share, write-up, MAS, nudge, cases). Extends Q.data read-only.
    Invented for the demo (not in the brief): client email addresses, Siti's MAS answers.
    Siti's meeting transcripts now live in data.js (transcripts['siti-oct13'], ['siti-oct29']). */
 window.QD = window.QD || {};
