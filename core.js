@@ -420,14 +420,21 @@
     '<svg viewBox="0 0 27 12" aria-hidden="true"><rect x=".5" y=".5" width="22" height="11" rx="3.5" fill="none" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="19" height="8" rx="2"/><path d="M24.5 4v4c.8-.3 1.3-1.1 1.3-2s-.5-1.7-1.3-2z" opacity=".5"/></svg>';
   function fitPhone(){ if(!ppEl) return; var st = ppEl.querySelector('.pp-stage'), h = st ? st.clientHeight : window.innerHeight - 96, w = st ? st.clientWidth : window.innerWidth;
     ppEl.style.setProperty('--pp-scale', Math.min(1, (h - 24) / 868, (w - 32) / 414).toFixed(3)); } // device box is 390x844 + 12px bezel each side
+  // The phone frame carries the parent's demo params (state, edition, theme, reset), never preview itself.
+  function frameSrc(){ var q = new URLSearchParams(location.search); q.delete('preview'); q.set('frame','phone'); return location.pathname+'?'+q.toString()+location.hash; }
+  // Demo pill drives the phone: keep parent and frame on the same screen, both ways (equality guard stops loops).
+  window.addEventListener('hashchange', function(){
+    if(ppEl){ var f = ppEl.querySelector('iframe'); try{ if(f.contentWindow.location.hash!==location.hash) f.contentWindow.location.hash = location.hash; }catch(e){ f.src = frameSrc(); } }
+    if(framed){ try{ if(parent.location.hash!==location.hash) parent.location.hash = location.hash; }catch(e){} }
+  });
   function openPhone(){
     if(ppEl || framed) return;
     ppEl = document.createElement('div'); ppEl.className = 'pp'; ppEl.setAttribute('role','dialog'); ppEl.setAttribute('aria-modal','true'); ppEl.setAttribute('aria-label','Phone preview');
-    ppEl.innerHTML = '<div class="pp-bar"><span class="pp-cap">Prototype only<span class="dot-sep"></span>Phone preview<span class="dot-sep"></span><span class="num">390 × 844</span></span>'+
+    ppEl.innerHTML = '<div class="pp-bar"><span class="pp-cap" aria-hidden="true"></span>'+
       '<button class="btn btn-secondary btn-sm" type="button" data-pp-close>'+Q.icon('close','i-sm')+'Close phone preview</button></div>'+
       '<div class="pp-stage"><div class="pp-device"><i class="pp-btn pp-b1"></i><i class="pp-btn pp-b2"></i><i class="pp-btn pp-b3"></i><i class="pp-btn pp-b4"></i>'+
       '<div class="pp-screen"><div class="pp-status"><span class="pp-time num">9:41</span><i class="pp-island"></i><span class="pp-sys">'+SYS+'</span></div>'+
-      '<iframe title="Quotient on a phone" src="'+location.pathname+'?frame=phone'+location.hash+'"></iframe><i class="pp-home"></i></div></div></div>';
+      '<iframe title="Quotient on a phone" src="'+frameSrc()+'"></iframe><i class="pp-home"></i></div></div></div>';
     document.body.appendChild(ppEl); document.body.classList.add('pp-on'); fitPhone();
     ppEl.querySelector('[data-pp-close]').focus({preventScroll:true});
   }

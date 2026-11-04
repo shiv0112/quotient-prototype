@@ -156,3 +156,7 @@ body.pp-on{overflow:hidden}
 .qn-new:focus-visible{outline:2px solid var(--focus,var(--accent));outline-offset:2px}
 .qn-new b{font-weight:var(--w-semi)}
 .qn-new small{font-size:var(--t-sm);color:var(--text-3)}
+
+/* Phone preview: the Demo pill replaces the caption, top left, and drives the phone screen. */
+body.pp-on .demo{z-index:90;top:var(--s-4);left:var(--s-6);right:auto;bottom:auto}
+body.pp-on .demo-panel{top:calc(100% + 8px);bottom:auto;left:0;right:auto;max-height:calc(100vh - 96px)}
