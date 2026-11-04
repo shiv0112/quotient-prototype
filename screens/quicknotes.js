@@ -20,28 +20,33 @@
     setTimeout(function(){ openSave(a.c, Math.max(1, Math.round((Date.now()-a.t0)/60000))); }, 1800);
   });
 
-  function openSave(c, mins){
-    var saved = false, where = c ? 'case' : 'none', len = (mins||1)+' min';
+  // typed = Write notes: same save options, with a text box instead of a recording.
+  function openSave(c, mins, typed){
+    var saved = false, where = c ? 'case' : 'none', len = typed ? 'typed' : (mins||1)+' min';
     var opts = D.caseOrder.map(function(k){ var x = D.cases[k]; return '<option value="'+k+'"'+(k===c?' selected':'')+'>'+Q.esc(x.name)+' #'+x.no+'</option>'; }).join('');
     function radio(v, label, extra){ return '<label class="check"><input type="radio" name="qn-where" value="'+v+'"'+(v===where?' checked':'')+'> '+label+'</label>'+(extra||''); }
-    Q.sheet({ title:'Save these notes',
-      body:'<p class="small muted">Quick notes · microphone only · '+len+'</p>'+
+    Q.sheet({ title:typed ? 'Write notes' : 'Save these notes',
+      body:(typed ? '<div class="field"><label class="label" for="qn-text">Notes</label><textarea class="textarea" id="qn-text" rows="6" placeholder="What did the client say?"></textarea></div>'
+                  : '<p class="small muted">Quick notes · microphone only · '+len+'</p>')+
         '<div class="field"><label class="label" for="qn-title">Title</label><input class="input" id="qn-title" value="Notes · '+NOW.date+' '+NOW.time+'"></div>'+
         '<fieldset class="field qn-opts"><legend class="label">Where should they go?</legend>'+
           radio('case', 'Add to a case', '<label class="sr" for="qn-case">Case</label><select class="select" id="qn-case">'+opts+'</select>')+
           radio('new', 'Start a new case')+
           radio('none', 'Keep unfiled · find them in Meetings under Notes')+'</fieldset>'+
-        '<p class="device-line small">'+Q.icon('device','i-sm')+(Q.recCopy()?Q.recCopy()+' ':'')+Q.aiRule+'</p>',
+        '<p class="device-line small">'+Q.icon('device','i-sm')+(!typed && Q.recCopy()?Q.recCopy()+' ':'')+Q.aiRule+'</p>',
       foot:'<button class="btn btn-primary" data-qn="save">Save notes</button><button class="btn btn-ghost" data-close>Close</button>',
-      onClose:function(){ if(!saved){ save('', 'none'); Q.toast('Saved in Meetings · Notes'); } }, // never lose a recording
+      onClose:function(){ if(saved) return; var tx = typed && document.getElementById('qn-text'); if(!typed || (tx && tx.value.trim())){ save('', 'none', '', len, tx && tx.value); Q.toast('Saved in Meetings · Notes'); } }, // never lose notes
       mount:function(sh){
         var sel = sh.querySelector('#qn-case');
         sel.disabled = where!=='case';
+        if(typed) sh.querySelector('#qn-text').focus();
         sh.addEventListener('change', function(e){ if(e.target.name==='qn-where') sel.disabled = e.target.value!=='case'; });
         sh.querySelector('[data-qn="save"]').addEventListener('click', function(){
           var t = sh.querySelector('#qn-title'), w = sh.querySelector('input[name=qn-where]:checked').value;
+          var tx = typed && sh.querySelector('#qn-text');
+          if(tx && !tx.value.trim()){ tx.setAttribute('aria-invalid','true'); tx.focus(); return; }
           if(!t.value.trim()){ t.setAttribute('aria-invalid','true'); t.focus(); return; }
-          saved = true; var k = w==='case' ? sel.value : '', id = save(t.value.trim(), w, k, len);
+          saved = true; var k = w==='case' ? sel.value : '', id = save(t.value.trim(), w, k, len, tx && tx.value);
           Q.closeSheet();
           if(w==='case'){ Q.toast('Notes added to case #'+D.cases[k].no); Q.go('#case-'+k); }
           else if(w==='new'){ QB.pick('', [id]); Q.toast('Notes saved · add PDFs to start the case'); Q.go('#new-case'); }
@@ -50,16 +55,26 @@
       } });
   }
 
-  function save(title, w, k, len){
+  function save(title, w, k, len, text){
     var id = 'notes-'+Date.now();
     D.meetings.past.unshift({ id:id, kind:'notes', date:NOW.date, time:NOW.time, at:NOW.at, who:title||('Notes · '+NOW.date+' '+NOW.time), c:k||null, len:len||'1 min', notesReady:true });
-    D.transcripts[id] = { labels:false, lines:QD.b.live.slice(0,3).map(function(l,i){ return ['00:'+String(5+i*20).padStart(2,'0'), l[1]]; }) };
+    D.transcripts[id] = { labels:false, lines: text ? text.trim().split(/\n+/).map(function(l){ return ['', l.trim()]; })
+      : QD.b.live.slice(0,3).map(function(l,i){ return ['00:'+String(5+i*20).padStart(2,'0'), l[1]]; }) };
     Q.save();
     return id;
   }
 
+  function newMenu(){
+    function opt(act, title, sub){ return '<button type="button" class="qn-new" data-qn-new="'+act+'"><b>'+title+'</b><small>'+sub+'</small></button>'; }
+    Q.sheet({ title:'New', body:'<div class="qn-newlist">'+opt('case','New case','Add 2 to 5 policy illustrations')+opt('rec','Record notes','Your microphone only')+opt('write','Write notes','Type what the client said')+'</div>',
+      mount:function(sh){ sh.addEventListener('click', function(e){ var b = e.target.closest('[data-qn-new]'); if(!b) return; var a = b.dataset.qnNew; Q.closeSheet();
+        if(a==='case') Q.go('#new-case'); else if(a==='rec') start(''); else setTimeout(function(){ openSave('', 0, true); }, 0); }); } });
+  }
+
   document.addEventListener('click', function(e){
-    var b = e.target.closest('[data-quick-notes]'); if(b){ e.preventDefault(); start(b.dataset.quickNotes); }
+    var b = e.target.closest('[data-quick-notes]'); if(b){ e.preventDefault(); start(b.dataset.quickNotes); return; }
+    var w = e.target.closest('[data-write-notes]'); if(w){ e.preventDefault(); openSave(w.dataset.writeNotes||'', 0, true); return; }
+    if(e.target.closest('[data-new-menu]')){ e.preventDefault(); newMenu(); }
   });
-  window.QN = { start:start, openSave:openSave };
+  window.QN = { start:start, openSave:openSave, newMenu:newMenu };
 })();

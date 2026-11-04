@@ -146,3 +146,11 @@ body.pp-on{overflow:hidden}
 
 /* Phone preview frame: the parent has its own Close button; keep the phone screen clean. */
 .in-phone-frame .demo-toggle,.in-phone-frame .demo{display:none!important}
+
+/* New menu (phone top bar + anywhere [data-new-menu]) */
+.qn-newlist{display:grid;gap:var(--s-3)}
+.qn-new{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-height:64px;padding:var(--s-3) var(--s-4);border:1px solid var(--line-strong);border-radius:var(--r-md);background:var(--surface);color:var(--ink);text-align:left;font:inherit;cursor:pointer}
+.qn-new:hover{border-color:var(--accent)}
+.qn-new:focus-visible{outline:2px solid var(--focus,var(--accent));outline-offset:2px}
+.qn-new b{font-weight:var(--w-semi)}
+.qn-new small{font-size:var(--t-sm);color:var(--text-3)}

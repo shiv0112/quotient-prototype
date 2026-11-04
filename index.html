@@ -26,6 +26,7 @@
     </ul>
     <a class="btn btn-secondary rail-new" href="#new-case"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New case</a>
     <button class="btn btn-secondary rail-notes" data-quick-notes><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v5"/></svg>Record notes</button>
+    <button class="btn btn-secondary rail-notes" data-write-notes><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4"/></svg>Write notes</button>
     <div class="rail-foot">
       <ul class="nav"><li><a href="#prefs" data-nav="prefs"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Settings</a></li></ul>
       <a class="user" href="#prefs" data-user aria-label="Rachel Lim, settings"></a>
@@ -33,7 +34,7 @@
   </nav>
 
   <div class="main">
-    <header class="u2-top"><a class="wordmark" href="#today" aria-label="Quotient, go to Today">Quotient</a><a class="btn btn-secondary btn-sm u2-top-new" href="#new-case"><svg class="i i-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New case</a></header>
+    <header class="u2-top"><a class="wordmark" href="#today" aria-label="Quotient, go to Today">Quotient</a><button class="btn btn-secondary btn-sm u2-top-new" type="button" data-new-menu aria-haspopup="dialog"><svg class="i i-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New</button></header>
     <div id="recbar" hidden></div>
     <main id="screen" tabindex="-1"></main>
   </div>

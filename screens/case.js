@@ -157,7 +157,7 @@
         '<a class="btn btn-ghost btn-sm" href="#meeting-'+m.id+'">'+(x.upcoming?'Open':'Transcript')+'</a></li>'; }).join('');
     return '<section class="card cm rise" aria-labelledby="cm-h"><div class="cm-head"><div><h2 class="h3" id="cm-h">Meetings and notes</h2>'+
       '<p class="small muted">'+(list.length ? list.length+' on this case' : 'No meetings yet')+'</p></div>'+
-      '<button class="btn btn-secondary btn-sm" data-quick-notes="'+key+'">'+Q.icon('mic','i-sm')+'Record notes for this case</button></div>'+
+      '<button class="btn btn-secondary btn-sm" data-quick-notes="'+key+'">'+Q.icon('mic','i-sm')+'Record notes for this case</button><button class="btn btn-secondary btn-sm" data-write-notes="'+key+'">Write notes</button></div>'+
       (rows ? '<ol class="cm-list">'+rows+'</ol>' : '')+'</section>';
   }
 
