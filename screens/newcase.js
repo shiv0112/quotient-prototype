@@ -5,8 +5,8 @@
 
 
   var PRESET = { empty:[], one:['harbour'], three:['harbour','meridian','orchid'], many:['harbour','meridian','orchid','harbour2','fifth','sixth'],
-    notpdf:['harbour','meridian','notpdf'], scanned:['harbour','meridian','scanned'], ilp:['harbour','orchid','ilp'] };
-  var STATES = [['empty','Empty'],['one','1 PDF'],['three','3 PDFs'],['many','Too many'],['notpdf','Not a PDF'],['scanned','Scanned'],['ilp','ILP']];
+    notpdf:['harbour','meridian','notpdf'], scanned:['harbour','meridian','scanned'], ilp:['harbour','orchid','ilp'], newlayout:['harbour','meridian','newlayout'] };
+  var STATES = [['empty','Empty'],['one','1 PDF'],['three','3 PDFs'],['many','Too many'],['notpdf','Not a PDF'],['scanned','Scanned'],['ilp','ILP'],['newlayout','New insurer layout']];
 
   function prefill(key){
     if(key==='daniel') return { name:'Daniel Lee', notes:'meeting', files:[] };
@@ -34,12 +34,13 @@
       var over = i>=5;
       if(f.err || over) return '<li class="bad"><span class="ic">'+Q.icon('alert')+'</span><span><b>'+Q.esc(f.name)+'</b><small>'+Q.esc(f.err || 'Up to 5 plans at a time.')+'</small></span><span></span>'+
         '<button class="icon-btn" data-rm="'+i+'" aria-label="Remove '+Q.esc(f.name)+'">'+Q.icon('close')+'</button></li>';
-      return '<li><span class="ic">'+Q.icon('file')+'</span><span><b>'+Q.esc(f.ins)+'</b><small>'+Q.esc(f.plan)+' · '+Q.esc(f.name)+'</small></span><span class="pg">'+f.pages+' pages</span>'+
+      var info = f.newLayout ? '<b>'+Q.esc(f.name)+'</b><small>New layout · we\'ll need to read the table pages</small>' : '<b>'+Q.esc(f.ins)+'</b><small>'+Q.esc(f.plan)+' · '+Q.esc(f.name)+'</small>';
+      return '<li><span class="ic">'+Q.icon('file')+'</span><span>'+info+'</span><span class="pg">'+(f.pages==='?'?'':f.pages+' pages')+'</span>'+
         '<button class="icon-btn" data-rm="'+i+'" aria-label="Remove '+Q.esc(f.name)+'">'+Q.icon('close')+'</button></li>'; }).join('')+'</ul>' : '';
     var banner = tooMany ? '<div class="banner banner-error" role="alert">'+Q.icon('alert')+'<p>Up to 5 plans at a time. Remove one to continue.</p></div>' : '';
     return '<div class="page s07">'+QB.demo(STATES, cur)+
       (c?'<a class="back" href="#case-'+key+'">'+Q.icon('back','i-sm')+'Back to '+Q.esc(c.name)+'</a>':'')+
-      '<header class="page-head rise"><div><h1 class="h1">'+Q.esc(title)+'</h1><p class="sub">Your PDFs are read on this device. Nothing is sent until you see exactly what goes.</p></div></header>'+
+      '<header class="page-head rise"><div><h1 class="h1">'+Q.esc(title)+'</h1><p class="sub">Known insurer layouts are read on this device. Nothing is sent until you see exactly what goes.</p></div></header>'+
       '<form class="s07-form rise" novalidate onsubmit="return false">'+
         (c?'':'<div class="field s07-name"><label class="label" for="nc-name">Client name</label><input class="input" id="nc-name" autocomplete="off" aria-describedby="nc-name-e" value="'+Q.esc(st.name)+'"><span class="field-error" id="nc-name-e" hidden>Add the client\'s name.</span></div>'+
           '<div class="field s07-name"><label class="label" for="nc-mobile">Mobile · optional</label><input class="input" id="nc-mobile" type="tel" inputmode="tel" autocomplete="off" placeholder="+65 9123 4567" value="'+Q.esc(st.mobile||'')+'">'+
@@ -71,7 +72,7 @@
     if(/scan/.test(low)) return { name:n, err:F.scanned.err };
     if(/ilp|invest/.test(low)) return { name:n, err:F.ilp.err };
     var hit = ['harbour','meridian','orchid'].filter(function(k){ return low.indexOf(k)>=0; })[0];
-    return hit ? { name:n, ins:F[hit].ins, plan:F[hit].plan, pages:F[hit].pages } : { name:n, ins:'Insurer not recognised', plan:'Read on this device', pages:'?' };
+    return hit ? { name:n, ins:F[hit].ins, plan:F[hit].plan, pages:F[hit].pages } : { name:n, pages:'?', newLayout:true };
   }
 
   /* "Wants changes": the new illustration becomes the next table version; the case is ready to share it. */
@@ -91,6 +92,7 @@
       if(a.dataset.act==='paste'){ QD.b.pasteSheet(key); return; }
       if(a.dataset.act==='sample'){ st.files = ['harbour','meridian','orchid'].map(function(k){ return F[k]; }); if(!st.name) st.name = 'Wei Tan'; Q.refresh(); }
       if(a.dataset.act==='compare'){ if(a.getAttribute('aria-disabled')==='true') return;
+        QB.newLayout = (st.files.filter(function(f){ return f.newLayout && !f.err; })[0] || {}).name || null; // the gate adds one outgoing line for it
         if(!key && !String(st.name||'').trim()){ var nm = pg.querySelector('#nc-name'); nm.setAttribute('aria-invalid','true'); pg.querySelector('#nc-name-e').hidden = false; nm.focus(); return; }
         // Each case goes to its own gate. A case that already has plans has no demo gate for new ones.
         if(key && D.cases[key].revising){ revise(key); return; }
@@ -113,5 +115,6 @@
     drop.addEventListener('drop', function(e){ if(e.dataTransfer && e.dataTransfer.files.length) add(e.dataTransfer.files); });
   }
 
+  QB.onState['new-case'] = function(){ st = null; }; // a demo chip loads its preset files
   Q.screen('new-case', { title:function(p){ var c = D.cases[p.parts[0]]; return c ? 'Add plans · '+c.name : 'New case'; }, nav:'cases', render:render, mount:mount });
 })();

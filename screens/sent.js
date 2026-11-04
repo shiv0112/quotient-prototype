@@ -16,9 +16,9 @@
       '<header class="page-head rise"><div><h1 class="h1">What left your device <span class="case-no">· '+Q.esc(c.name)+' #'+c.no+'</span></h1>'+
       '<p class="sub">Every piece of text sent to the AI for this case, exactly as sent.</p></div></header>';
     // Typed or pasted notes are not audio; a recorded meeting counts even while it is still on today's calendar.
-    // Web/phone send meeting audio to the speech service (UPDATE-2 2c); desktop transcribes on the device.
+    // Web/phone send meeting audio to the speech service (UPDATE-2 2c); desktop transcribes on the device unless the adviser chose the speech service (m.speech).
     var web = Q.edition()!=='desktop';
-    var audio = !web || s.s==='empty' ? '' : Q.caseMeetings(key).filter(function(x){ return x.m.len && x.m.len!=='typed'; }).reverse().map(function(x){
+    var audio = s.s==='empty' ? '' : Q.caseMeetings(key).filter(function(x){ return x.m.len && x.m.len!=='typed' && (web || x.m.speech); }).reverse().map(function(x){
       return '<li class="s17-audio">'+Q.icon('mic','i-sm')+'<span>Audio · '+Q.esc(x.m.len)+' · sent for transcription · deleted after<small>'+Q.esc(x.m.date||x.m.day)+'</small></span></li>'; }).join('');
     var fixed = '<ul class="s17-fixed rise">'+audio+D.log.fixed.map(function(t){ return '<li>'+Q.icon('device','i-sm')+Q.esc(t)+'</li>'; }).join('')+'</ul>';
     var body;

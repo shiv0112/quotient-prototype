@@ -75,7 +75,8 @@
     scanned:  { name:'orchid-scan.pdf', err:'We can\'t read this PDF yet. Ask the insurer for a digital copy.' },
     ilp:      { name:'meridian-invest.pdf', err:'ILP plans aren\'t supported.' },
     fifth:    { name:'lumen-wl.pdf', ins:'Lumen Life', plan:'Lumen Whole Life', pages:10 },
-    sixth:    { name:'kestrel-wl.pdf', ins:'Kestrel Life', plan:'Kestrel Whole Life', pages:11 }
+    sixth:    { name:'kestrel-wl.pdf', ins:'Kestrel Life', plan:'Kestrel Whole Life', pages:11 },
+    newlayout:{ name:'saffron-wl.pdf', pages:13, newLayout:true } // insurer layout we don't know yet: table pages go through the gate, names hidden
   };
 
   /* S06 live transcript script while recording Wei (speaker used only with call audio). */

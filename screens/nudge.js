@@ -1,12 +1,12 @@
-/* S16 Follow-up nudge (#nudge-<case>[-<state>]) and S16t reminder notification mock (#reminder[-<state>]). Phone-first.
+/* S16 Follow-up nudge (#nudge-<case>[-<state>]) and S16t reminder notification mock (#reminder). Phone-first.
    Nudge states: nodraft, default (client card + draft), sent, snoozed, reply (log a reply), quiet (max nudges reached).
    "Send on WhatsApp" opens a click-to-chat link (Q.waLink) with the draft typed in; the rep presses Send. Quotient never sends.
    Reminders are Quotient's own notifications: case number only. */
 (function(){
   'use strict';
-  var D = Q.data, N = D.nudge, ui = { hash:null }, rm = { hash:null };
+  var D = Q.data, N = D.nudge, ui = { hash:null };
   var SNOOZE = { '1':'Wed 4 Nov', '3':'Fri 6 Nov' }; // today is Tue 3 Nov
-  Q.on('render', function(p){ if(p.id!=='nudge') ui.hash = null; if(p.id!=='reminder') rm.hash = null; }); // coming back starts fresh
+  Q.on('render', function(p){ if(p.id!=='nudge') ui.hash = null; }); // coming back starts fresh
   var SVG = function(d){ return '<svg class="i i-sm" viewBox="0 0 24 24" aria-hidden="true">'+d+'</svg>'; };
   var I_COPY = SVG('<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/>');
   var I_CHAT = SVG('<path d="M20.5 12a8.5 8.5 0 0 1-12.4 7.5L3.5 20.5l1.1-4.4A8.5 8.5 0 1 1 20.5 12z"/>');
@@ -159,32 +159,18 @@
 
   Q.screen('nudge', { caseArg:true, title:function(p){ var c = D.cases[p.parts[0]]; return 'Nudge'+(c?' '+c.name:''); }, nav:'cases', render:render, mount:mount });
 
-  /* ---------- S16t Reminder: Quotient's own phone notification (Update 2e). Case numbers only. ---------- */
-  function renderRm(p){
-    if(location.hash!==rm.hash){ rm.hash = location.hash; rm.st = p.parts[0]||''; rm.days = '3'; }
-    var c = D.cases[N.c], ad = D.adviser, st = rm.st, after = '';
-    if(st==='snooze') after = '<div class="rm-pick" role="group" aria-label="Snooze for how long?"><button type="button" class="btn btn-secondary btn-sm" data-rn="d1">1 day</button><button type="button" class="btn btn-secondary btn-sm" data-rn="d3">3 days</button></div>';
-    if(st==='snoozed') after = '<p class="rm-done" role="status">'+Q.icon('bell','i-sm')+'Snoozed. We\'ll remind you on '+SNOOZE[rm.days]+'.</p>';
-    if(st==='replied') after = '<p class="rm-done" role="status">'+Q.icon('check','i-sm')+'Got it. No more reminders for case #'+c.no+'.</p>';
+  /* ---------- S16t Reminder: Quotient's own phone notification (Update 2e). Case numbers only.
+     One tap opens the nudge; Already replied and Snooze live there (iPhone web apps and the desktop app can't show notification buttons). ---------- */
+  function renderRm(){
+    var c = D.cases[N.c], ad = D.adviser, href = '#nudge-'+N.c+(c.nudged && !c.quiet ? '-draft' : ''); // after a sent nudge, the reminder opens the next draft
     var phone = '<div class="rm-phone" role="region" aria-label="Phone lock screen mock"><div class="rm-lock"><span class="rm-day">'+Q.esc(D.today.long)+'</span><span class="rm-time num">09:00</span></div>'+
-      '<div class="rm-stack" aria-live="polite">'+Q.notice(c, { live:true, used:!!st, time:'09:00' })+after+'</div></div>';
+      '<div class="rm-stack">'+Q.notice(c, { href:href, time:'09:00' })+'</div></div>';
     var when = ad.remindTime+(ad.weekdaysOnly?' on weekdays':'')+(ad.quietAfter21?', never after 21:00':'')+(ad.quietSunday?' or on Sunday':'');
-    return '<div class="page">'+demo('reminder', [['','Reminder'],['snooze','Snooze: how long?'],['snoozed','Snoozed'],['replied','Already replied']], st)+
+    return '<div class="page">'+
       '<div class="rm" style="margin-top:var(--s-6)"><div class="rm-copy"><p class="eyebrow">Reminder · on your phone</p><h1 class="h1 display">A reminder with no names</h1>'+
       '<p class="lede">After the follow-up wait, Quotient sends you its own notification. It carries the case number only.</p>'+
-      '<ul><li>Case numbers only. Never a client name, phone number or plan detail.</li><li><b>Open</b> opens the client card and the drafted message, after you sign in.</li><li><b>Already replied</b> and <b>Snooze</b> answer right from the notification.</li><li>The same reminders show on Today and in your morning digest.</li></ul>'+
+      '<ul><li>Case numbers only. Never a client name, phone number or plan detail.</li><li>Tap it to open the drafted nudge, after you sign in. <b>Already replied</b> and <b>Snooze</b> are there.</li><li>The same reminders show on Today and in your morning digest.</li></ul>'+
       '<p class="small muted">Sent at '+Q.esc(when)+'. Wait set to '+ad.waitDays+' days. Change it in <a href="#prefs">Settings</a>.</p></div>'+phone+'</div></div>';
   }
-  function mountRm(el){
-    el.querySelector('.page').addEventListener('click', function(e){
-      var b = e.target.closest('[data-rn]'); if(!b || b.disabled) return;
-      var v = b.dataset.rn, c = D.cases[N.c];
-      if(v==='open') return Q.go('#nudge-'+N.c+(c.nudged && !c.quiet ? '-draft' : '')); // after a sent nudge, the reminder opens the next draft
-      if(v==='replied') return Q.reply(N.c); // same sheet as the case page
-      if(v==='snooze') rm.st = 'snooze';
-      if(v==='d1' || v==='d3'){ rm.days = v.slice(1); rm.st = 'snoozed'; c.snoozedTo = SNOOZE[rm.days]; delete c.nudged; }
-      Q.refresh();
-    });
-  }
-  Q.screen('reminder', { title:'Reminder', nav:'today', render:renderRm, mount:mountRm });
+  Q.screen('reminder', { title:'Reminder', nav:'today', render:renderRm });
 })();

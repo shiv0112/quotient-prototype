@@ -62,7 +62,7 @@
       clearInterval(ticker); ms.phase = 'transcribing'; ms.call = false; // call audio resets after every recording
       while(ms.lines.length<6) feed(id, 1);
       if(Q.route().id==='meeting') Q.refresh();
-      setTimeout(function(){ if(ms.phase!=='transcribing') return; ms.phase = 'done'; keep(id, Math.max(1, Math.round((Date.now()-(ms.t0||Date.now()))/60000))+' min'); if(location.hash==='#meeting-'+id) Q.refresh(); }, 3200);
+      setTimeout(function(){ if(ms.phase!=='transcribing' || ms.slow) return; ms.phase = 'done'; keep(id, Math.max(1, Math.round((Date.now()-(ms.t0||Date.now()))/60000))+' min'); if(location.hash==='#meeting-'+id) Q.refresh(); }, 3200);
     });
   });
 
@@ -102,7 +102,9 @@
   function transcript(id, ms){
     var plain = !ms.lines.some(function(l){ return l.sp; });
     if(ms.phase==='transcribing') return '<section class="card rise" aria-busy="true"><h2 class="h3">Writing up the transcript'+(Q.edition()==='desktop'?' on this device':'')+'…</h2>'+
-      '<p class="small muted">You can leave this screen. We\'ll keep going.</p><div class="s06-prog"><i></i></div></section>';
+      '<p class="small muted">You can leave this screen. We\'ll keep going.</p><div class="s06-prog"><i></i></div>'+
+      (ms.slow && Q.edition()==='desktop' ? '<div class="s06-slow" role="status"><p class="small">This is taking a while on this device. Use our speech service instead? Audio is sent, written up, then deleted.</p>'+
+        '<div class="row"><button class="btn btn-secondary btn-sm" data-act="speech">Use speech service</button><button class="btn btn-ghost btn-sm" data-act="wait">Keep waiting</button></div></div>' : '')+'</section>';
     var live = ms.phase==='recording';
     var head = '<div class="s06-tr-head"><div><h2 class="h3">'+(live?'Live transcript':'Transcript')+'</h2><p class="small muted">'+
       (live?(Q.edition()==='desktop'?'Writing on this device as you talk':'Writing up as you talk'):!ms.lines.length?'Nothing recorded yet':(plain?'Microphone only · one transcript':'You and Client · call audio was on'))+'</p></div>'+
@@ -127,17 +129,18 @@
       '<p class="device-line small">'+Q.icon('device','i-sm')+Q.aiRule+'</p></aside>';
   }
 
-  var STATES = [['before','Upcoming'],['dialog','Permission dialog'],['recording','Recording'],['call','Recording + call audio'],['paused','Paused'],['transcribing','Transcribing'],['done','Done'],['mic','Mic blocked'],['upload','Upload error'],['callperm','Call audio permission']];
+  var STATES = [['before','Upcoming'],['dialog','Permission dialog'],['recording','Recording'],['call','Recording + call audio'],['paused','Paused'],['transcribing','Transcribing'],['slow','Slow computer'],['done','Done'],['mic','Mic blocked'],['upload','Upload error'],['callperm','Call audio permission']];
   function current(id, ms){
     var r = mine(id);
     if(r) return r.paused ? 'paused' : r.call ? 'call' : 'recording';
     if(ms.banner) return ms.banner;
-    return ms.phase;
+    return ms.slow ? 'slow' : ms.phase;
   }
   function apply(id, s){
     var ms = state(id), r = mine(id);
     if(r && ['recording','call','paused'].indexOf(s)<0){ ms.phase = 'idle'; Q.recording.stop(); }
-    ms.banner = null;
+    ms.banner = null; ms.slow = s==='slow'; // demo only: a device too slow to transcribe offers the speech service
+    if(s==='slow'){ ms.phase = 'transcribing'; if(!ms.lines.length) feed(id, 6); }
     if(s==='before' || s==='dialog'){ ms.phase = 'before'; ms.lines = []; askNow = s==='dialog'; }
     if(s==='mic' || s==='upload' || s==='callperm'){ ms.phase = 'before'; ms.lines = []; ms.banner = s; }
     if(s==='recording' || s==='call' || s==='paused'){
@@ -146,7 +149,7 @@
       if(s==='paused') Q.recording.pause(); else Q.recording.resume();
     }
     if(s==='transcribing'){ ms.phase = 'transcribing'; if(!ms.lines.length) feed(id, 6);
-      setTimeout(function(){ if(ms.phase==='transcribing'){ ms.phase='done'; if(location.hash==='#meeting-'+id) Q.refresh(); } }, 3200); }
+      setTimeout(function(){ if(ms.phase==='transcribing' && !ms.slow){ ms.phase='done'; if(location.hash==='#meeting-'+id) Q.refresh(); } }, 3200); }
     if(s==='done'){ ms.phase = 'done'; if(!ms.lines.length){ ms.callUsed = false; feed(id, 6); } }
   }
   QB.onState.meeting = function(s){ var r = Q.route(); apply(r.arg.split('@')[0], s); };
@@ -158,7 +161,7 @@
     if(s.fresh && s.s!=='none') apply(id, s.s);
     var c = x.m.c ? D.cases[x.m.c] : null;
     var when = x.past ? x.m.date+' '+x.m.time : x.m.day+' '+x.m.time, quick = x.m.kind==='notes';
-    var states = STATES.filter(function(z){ return Q.edition()==='desktop' || (z[0]!=='call' && z[0]!=='callperm'); });
+    var states = STATES.filter(function(z){ return Q.edition()==='desktop' || (z[0]!=='call' && z[0]!=='callperm' && z[0]!=='slow'); });
     var head = '<a class="back" href="#meetings">'+Q.icon('back','i-sm')+'Back to Meetings</a>'+
       '<header class="page-head rise"><div><h1 class="h1">'+Q.esc(quick ? x.m.who : x.m.who+' · '+when)+'</h1>'+
       '<p class="sub">'+(quick?'Quick notes · microphone only':Q.esc(x.m.app))+'<span class="dot-sep"></span>'+caseLine(x)+
@@ -181,6 +184,8 @@
       var act = a.dataset.act;
       if(act==='record') askRecord(id);
       if(act==='clear'){ ms.banner = null; Q.refresh(); }
+      if(act==='speech'){ ms.slow = false; ms.phase = 'done'; x.m.speech = true; keep(id, x.m.len || '1 min'); Q.refresh(); Q.toast('Written up by our speech service · audio deleted'); } // sent.js lists it like a web recording
+      if(act==='wait'){ ms.slow = false; Q.refresh(); setTimeout(function(){ if(ms.phase!=='transcribing' || ms.slow) return; ms.phase = 'done'; keep(id, x.m.len || '1 min'); if(location.hash==='#meeting-'+id) Q.refresh(); }, 3200); }
       if(act==='paste') Q.sheet({ title:'Paste notes', body:'<p class="small muted">For '+Q.esc(x.m.who)+'. '+Q.aiRule+'</p><div class="field"><label class="label" for="pn">Notes or transcript</label><textarea class="textarea" id="pn" rows="12"></textarea></div>',
         foot:'<button class="btn btn-primary" data-save>Add notes</button><button class="btn btn-ghost" data-close>Cancel</button>',
         mount:function(sh){ var t = sh.querySelector('#pn'); t.focus();

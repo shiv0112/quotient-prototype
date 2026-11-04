@@ -8,7 +8,7 @@
   var today = { date:'Tue 3 Nov', long:'Tuesday 3 November', hour:9 };
 
   var adviser = { name:'Rachel Lim', first:'Rachel', initials:'RL', email:'rachel.lim@kallangadvisers.sg',
-    firm:'Kallang Advisers', signin:'Google', waitDays:3, digestTime:'8:00',
+    firm:'Kallang Advisers', signin:'Google', waitDays:3, digestTime:'8:00', digestNames:false,
     /* Update 2 follow-up loop. notify = Quotient's own phone notifications (Update 2e). Clients get WhatsApp by default, no channel setting. Gentle timing lives in Settings. */
     notify:true, remindTime:'9:00', weekdaysOnly:true, quietAfter21:true, quietSunday:true, nudgeMax:2 };
 

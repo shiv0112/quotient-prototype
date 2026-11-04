@@ -3,6 +3,7 @@
 (function(){
   'use strict';
   var D = Q.data, B = QD.b, lifted = {};
+  Q.on('render', function(r){ if(!/^(gate|gate-edit|new-case)$/.test(r.id)) QB.newLayout = null; }); // set by New case for a PDF layout we don't know yet
 
 
   // #gate-<case>-<compare|writeup|nudge|mas>; the old #gate-<case> opens the case's own gate. f = null: nothing to send for that request.
@@ -34,7 +35,8 @@
 
   function renderGate(p){
     var x = ctx(p); if(!x.f) return nothing(x);
-    var v = QB.view(x.key), fl = B.flow[x.f], b = backTo(x);
+    var v = QB.view(x.key), fl = B.flow[x.f], b = backTo(x), nlf = /^compare/.test(x.f) && QB.newLayout;
+    var nl = nlf ? '<p class="small muted s08-nl">'+Q.icon('file','i-sm')+' + 1 new layout · table pages from '+Q.esc(nlf)+' sent, names hidden</p>' : '', pdfs = nlf ? 'the other PDFs' : 'the PDFs';
     // First case: the full receipt. After the first Send (D.adviser.gateSeen): a one-line summary, details one tap away.
     var states = [['normal','First time · full'],['summary','Later · one line'],['loading','Finding details'],['error','Error']];
     if(/^compare/.test(x.f)) states.splice(2,0,['nothing','Nothing to send']);
@@ -47,13 +49,14 @@
       '<p>Couldn\'t check this text. Nothing was sent.</p><button class="btn-link" data-bstate="normal">Try again</button></div>'+
       '<div class="s08-acts"><a class="btn btn-ghost" href="'+fl.back+'">Cancel</a></div></div>';
     if(s.s==='nothing') return '<div class="page s08">'+head+'<div class="s08-rc rise"><div class="s08-nothing">'+
-      '<span class="chip chip-device">'+Q.icon('device','i-sm')+'0 characters</span><p class="big">Nothing leaves your device for this comparison.</p>'+
-      '<p class="muted">Harbour Assurance, Meridian Life and Orchid Mutual are all read on this device.</p></div></div>'+
+      (nlf ? '<p class="big">Only the table pages of '+Q.esc(nlf)+' are sent, names hidden.</p><p class="muted">The known layouts are read on this device.</p>'
+        : '<span class="chip chip-device">'+Q.icon('device','i-sm')+'0 characters</span><p class="big">Nothing leaves your device for this comparison.</p>'+
+      '<p class="muted">Harbour Assurance, Meridian Life and Orchid Mutual are all read on this device.</p>')+'</div></div>'+
       '<div class="s08-acts u2-dock"><button class="btn btn-primary" data-act="build">Build comparison</button><span class="spacer"></span><a class="btn btn-ghost" href="'+fl.back+'">Cancel</a></div></div>';
     if(s.s==='summary') return '<div class="page s08">'+head+picker(x, v)+
       '<section class="s08-rc u2-gsum rise" aria-label="Outgoing text summary"><p class="u2-gline">'+Q.icon('device')+'<span><b class="num">'+v.charsLabel+'</b> characters<span class="dot-sep"></span><b class="num">'+v.count+'</b> details replaced on this device</span>'+
         '<button class="btn-link" data-bstate="normal">See details</button></p>'+
-        '<p class="small muted">Not sent: the PDFs, names, NRIC, phone, email, address.</p></section>'+
+        nl+'<p class="small muted">Not sent: '+pdfs+', names, NRIC, phone, email, address.</p></section>'+
       '<div class="s08-acts u2-dock"><button class="btn btn-primary" data-act="send">Send this text</button><span class="spacer"></span><a class="btn btn-ghost" href="'+fl.back+'">Cancel</a></div></div>';
     return '<div class="page s08">'+head+picker(x, v)+
       '<article class="s08-rc rise" aria-label="Outgoing text">'+
@@ -63,7 +66,7 @@
         '<hr class="s08-cut"><p class="s08-sec">The exact text</p>'+exact(v, x)+
         '<hr class="s08-dbl"><div class="s08-tot"><span class="l">Details replaced</span><span class="v num" data-count="'+v.count+'">'+v.count+'</span>'+
         '<span class="l">Characters sent</span><span class="v big num" data-count="'+v.chars+'">'+v.charsLabel+'</span></div>'+
-        '<p class="s08-kept">'+Q.icon('device','i-sm')+'<span>Not sent: the PDFs, names, NRIC, phone, email, address. Names go back in when the answer returns.</span></p>'+
+        nl+'<p class="s08-kept">'+Q.icon('device','i-sm')+'<span>Not sent: '+pdfs+', names, NRIC, phone, email, address. Names go back in when the answer returns.</span></p>'+
       '</article>'+
       '<div class="s08-acts u2-dock"><button class="btn btn-primary" data-act="send">Send this text</button><a class="btn btn-secondary" href="#gate-edit-'+x.key+x.s+'">Edit what is sent</a>'+
       '<span class="spacer"></span><a class="btn btn-ghost" href="'+fl.back+'">Cancel</a></div></div>';

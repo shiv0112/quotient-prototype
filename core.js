@@ -23,7 +23,7 @@
      Q.writeupProgress(k) / Q.masProgress(k)  {done,total}: the one count for write-up parts and firm review checks.
      Q.worry(case)          the kept worry text ('' if none or only suggested).
      Q.waLink(case, text)   WhatsApp click-to-chat URL: wa.me/<digits>?text= with the case mobile, else wa.me/?text= (WhatsApp asks for the chat).
-     Q.notice(case?, opts)  the phone notification card from Quotient (case number only). Buttons carry data-rn="open|replied|snooze".
+     Q.notice(case?, opts)  the phone notification card from Quotient (case number only). opts.href makes the whole card one tap (no action buttons: iPhone web apps and the desktop app can't show them).
      Q.phonePreview(on?)    prototype only: wide screens show the app in an iPhone frame (iframe ?frame=phone). [data-phone] opens it.
      Q.caseMeetings(k)      [{m, upcoming}] every meeting and quick note on a case, oldest first.  Q.meetingById(id) -> {m, past}.
      [data-quick-notes]     any button starts Record notes (screens/quicknotes.js); ='<case>' pre-picks that case.
@@ -69,11 +69,10 @@
   console.assert(Q.waDigits('9123 4567')==='6591234567' && Q.waDigits('6123 4567')==='6561234567' && Q.waDigits('+65 9123 4567')==='6591234567' &&
     Q.waDigits('0065 9123 4567')==='6591234567' && Q.waDigits('+61 412 345 678')==='61412345678' && Q.waDigits('')==='', 'waDigits self-check failed');
   Q.waLink = function(c, text){ var d = Q.waDigits(c && c.mobile); return 'https://wa.me/'+(d ? d : '')+'?text='+encodeURIComponent(text||''); };
-  Q.notice = function(c, o){ c = c || Q.data.cases[Q.data.nudge.c]; o = o || {};
-    return '<div class="rn" role="group" aria-label="Notification from Quotient"><div class="rn-top">'+Q.icon('bell','i-sm')+'<b>Quotient</b><time>'+(o.time||'now')+'</time></div>'+
-      '<p class="rn-text">Case #'+c.no+' · no reply in '+(c.quietDays||3)+' days. A draft nudge is ready.</p>'+
-      '<div class="rn-acts">'+[['open','Open'],['replied','Already replied'],['snooze','Snooze']].map(function(b){
-        return o.live ? '<button type="button" data-rn="'+b[0]+'"'+(o.used?' disabled':'')+'>'+b[1]+'</button>' : '<span>'+b[1]+'</span>'; }).join('')+'</div></div>'; };
+  Q.notice = function(c, o){ c = c || Q.data.cases[Q.data.nudge.c]; o = o || {}; var tag = o.href ? 'a' : 'div';
+    return '<'+tag+' class="rn"'+(o.href ? ' href="'+o.href+'" aria-label="Notification from Quotient. Case #'+c.no+'. Open the drafted nudge."' : ' role="group" aria-label="Notification from Quotient"')+'>'+
+      '<div class="rn-top">'+Q.icon('bell','i-sm')+'<b>Quotient</b><time>'+(o.time||'now')+'</time></div>'+
+      '<p class="rn-text">Case #'+c.no+' · no reply in '+(c.quietDays||3)+' days. A draft nudge is ready.</p></'+tag+'>'; };
   Q.on = function(e,fn){ (listeners[e]=listeners[e]||[]).push(fn); };
   Q.emit = function(e,d){ (listeners[e]||[]).forEach(function(fn){ fn(d); }); };
   function store(k,v){ try{ if(v===undefined) return localStorage.getItem(k); if(v===null) localStorage.removeItem(k); else localStorage.setItem(k,v); }catch(e){ return null; } }

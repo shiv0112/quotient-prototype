@@ -63,7 +63,8 @@
       '<label class="switch"><input type="checkbox" id="pf-dg"'+(pf.digest?' checked':'')+'> Send me a morning digest</label>'+
       '<div class="pf-time"><label class="label" for="pf-time">Time</label><select class="select" id="pf-time"'+(pf.digest?'':' disabled')+'>'+A.digestTimes.map(function(t){
         return '<option'+(t===ad.digestTime?' selected':'')+'>'+t+'</option>'; }).join('')+'</select></div>'+
-      '<p class="small device-line">'+Q.icon('device','i-sm')+(web?' Case numbers only, never a client name.':' Made on this device, so names are fine.')+' <a href="#digest">See an example</a></p>');
+      '<label class="switch"><input type="checkbox" id="pf-dgn"'+(ad.digestNames?' checked':'')+(pf.digest?'':' disabled')+'> Show client names on the lock screen</label>'+
+      '<p class="hint">Names come from this device, not from our server. <a href="#digest">See an example</a></p>');
 
     var edition = sec('ed','Edition','',
       (web ? '<p class="pf-line">You\'re using the web app. The desktop app adds call audio.</p>'+
@@ -107,7 +108,8 @@
         if(act==='ol-on'){ pf.outlook = true; refreshSaved('cal'); }
       });
       pg.addEventListener('change', function(e){
-        if(e.target.id==='pf-dg'){ pf.digest = e.target.checked; pg.querySelector('#pf-time').disabled = !pf.digest; saved(pg,'dg'); }
+        if(e.target.id==='pf-dg'){ pf.digest = e.target.checked; pg.querySelector('#pf-time').disabled = pg.querySelector('#pf-dgn').disabled = !pf.digest; saved(pg,'dg'); }
+        if(e.target.id==='pf-dgn'){ ad.digestNames = e.target.checked; saved(pg,'dg'); }
         if(e.target.id==='pf-notify'){ ad.notify = e.target.checked; saved(pg,'rm'); }
         if(e.target.id==='pf-time'){ ad.digestTime = e.target.value; saved(pg,'dg'); }
         var tm = { 'pf-rt':'remindTime', 'pf-wd':'weekdaysOnly', 'pf-q21':'quietAfter21', 'pf-qsun':'quietSunday', 'pf-max':'nudgeMax' }[e.target.id];
