@@ -28,7 +28,10 @@
 .bd-new{flex:none}
 
 /* meeting line: one quiet row, only when a meeting is near */
-.bd-meet{display:flex;align-items:center;gap:var(--s-2);flex-wrap:wrap;margin:0 0 var(--s-5);padding:var(--s-3) var(--s-4);border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface);font-size:var(--t-sm);color:var(--text-2)}
+.bd-meet{display:flex;align-items:center;gap:var(--s-3);flex-wrap:wrap;margin:0 0 var(--s-5);padding:var(--s-3) var(--s-4);border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface);font-size:var(--t-sm);color:var(--text-2)}
+.bd-meet-txt{display:flex;flex-direction:column;gap:2px;min-width:0}
+.bd-meet .eyebrow{margin:0;font-size:var(--t-xs);color:var(--link)}
+.bd-meet-row{display:inline-flex;align-items:center;gap:var(--s-2)}
 .bd-meet b{color:var(--ink);font-weight:var(--w-semi)}
 .bd-meet a{margin-left:auto;display:inline-flex;align-items:center;gap:var(--s-1);font-weight:var(--w-semi);min-height:32px}
 .bd .banner{margin-bottom:var(--s-5)}
@@ -55,12 +58,28 @@
 .bd-name{font-family:var(--f-display);font-size:var(--t-md);font-weight:var(--w-bold);letter-spacing:-0.01em;color:var(--ink);text-decoration:none;line-height:var(--lh-snug)}
 .bd-name:hover{text-decoration:underline;text-underline-offset:3px}
 .bd-line{font-size:var(--t-sm);color:var(--text-3);overflow-wrap:anywhere}
-.bd-when{flex:none;display:inline-flex;align-items:center;gap:var(--s-1);font-size:var(--t-sm);font-weight:var(--w-semi);color:var(--text-2);padding-top:2px}
-.bd-when .i{color:var(--text-3)}
+.bd-when{flex:none;align-self:flex-start;margin-top:6px;display:inline-flex;align-items:center;gap:6px;min-height:28px;padding:0 var(--s-3);border-radius:var(--r-pill);background:var(--surface-2);font-size:var(--t-xs);font-weight:var(--w-semi);color:var(--text-2);white-space:nowrap}
+.bd-when.plain{background:none;padding:0;font-size:var(--t-sm)}
+.bd-when .i{color:var(--text-3);width:14px;height:14px}
 
 .bd-tags{display:flex;flex-wrap:wrap;gap:var(--s-2);align-items:center}
-.bd-worry{display:inline-flex;align-items:flex-start;gap:var(--s-2);max-width:100%;padding:6px var(--s-3);border-radius:var(--r-md);background:var(--worry-bg);color:var(--worry-ink);font-size:var(--t-sm);font-weight:var(--w-med);line-height:var(--lh-snug)}
-.bd-worry .i{color:var(--worry-icon);margin-top:2px}
+.bd-worry{display:flex;flex-direction:column;gap:2px;padding:var(--s-3) var(--s-3) 2px;border-radius:var(--r-md);background:var(--worry-bg);color:var(--worry-ink);line-height:var(--lh-snug)}
+.bd-wl{display:inline-flex;align-items:center;gap:6px;font-size:var(--t-xs);font-weight:var(--w-semi);letter-spacing:var(--track-caps);text-transform:uppercase;opacity:.85}
+.bd-wl .i{color:var(--worry-icon);width:14px;height:14px}
+.bd-wt{margin:0;font-size:var(--t-base);font-weight:var(--w-semi)}
+.bd-src{display:flex;align-items:center;flex-wrap:wrap;margin:0;font-size:var(--t-xs);color:var(--worry-ink);opacity:.9}
+.bd-src a,.bd-src .btn-link{display:inline-flex;align-items:center;min-height:var(--target);padding:0;color:inherit;font-size:inherit;font-weight:var(--w-semi);text-decoration:underline;text-underline-offset:3px}
+/* not kept yet: dashed and muted, so it never reads as fact */
+.bd-worry.sugg{background:transparent;border:1px dashed var(--line-strong);color:var(--text-2)}
+.bd-worry.sugg .bd-wt{font-weight:var(--w-med)}
+.bd-worry.sugg .bd-src{color:var(--text-3)}
+.bd-worry.sugg .bd-src .btn-link{color:var(--link)}
+.bd-addw{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;padding:0;font-size:var(--t-sm)}
+.bd-quote{margin:var(--s-4) 0 0;padding:var(--s-3) var(--s-4);border-left:3px solid var(--worry-icon);background:var(--worry-bg);border-radius:0 var(--r-md) var(--r-md) 0;color:var(--worry-ink)}
+.bd-quote blockquote{margin:0;font-size:var(--t-base);line-height:var(--lh-snug)}
+.bd-quote figcaption{margin-top:var(--s-1);font-size:var(--t-xs)}
+.bd-quote figcaption a{display:inline-flex;align-items:center;min-height:var(--target);color:var(--link);font-weight:var(--w-semi)}
+.s06-tr li.s06-hit{background:var(--worry-bg);box-shadow:-8px 0 0 var(--worry-bg),8px 0 0 var(--worry-bg);border-radius:var(--r-sm)}
 
 .bd-foot{display:flex;align-items:center;gap:var(--s-3);margin-top:auto;padding-top:var(--s-3);border-top:1px solid var(--line)}
 .bd-dots{display:inline-flex;gap:5px;flex:none}

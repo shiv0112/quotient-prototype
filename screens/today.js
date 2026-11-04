@@ -53,13 +53,51 @@
     return '<a class="btn btn-sm '+cls+' bd-act" href="'+st.go+'" aria-label="'+Q.esc(label+' · '+c.name)+'">'+(label==='Nudge'?svg('chat'):'')+Q.esc(label)+'</a>';
   }
 
+  /* Labelled "when" chip: the next calendar meeting wins; else the rep's timing note (the note also shows on the nudge screen). */
   function when(k){
     var c = D.cases[k], m = meetingFor(k);
-    if(c.result) return c.dates && c.dates.closed ? '<span class="bd-when">'+Q.esc(c.dates.closed.replace(/^\w+ /,''))+'</span>' : '';
-    if(c.timing) return '<span class="bd-when" title="Your note">'+svg('moon')+Q.esc(c.timing)+'</span>';
-    if(!m) return '';
-    var d = m.day==='Today' ? '' : (m.date||m.day).split(' ')[0]+' ';
-    return '<span class="bd-when num" title="Meeting">'+Q.esc(d)+m.time+'</span>';
+    if(c.result) return c.dates && c.dates.closed ? '<span class="bd-when plain">'+Q.esc(c.dates.closed.replace(/^\w+ /,''))+'</span>' : '';
+    if(m) return '<span class="bd-when">'+Q.icon('meetings','i-sm')+'<span class="num">'+(m.day==='Today' ? 'Today '+m.time+' meeting' : 'Meeting '+Q.esc((m.date||m.day).split(' ')[0])+' '+m.time)+'</span></span>';
+    if(c.timing) return '<span class="bd-when" title="Your note">'+svg('moon')+'Prefers '+Q.esc(c.timing.toLowerCase())+'</span>';
+    return '';
+  }
+
+  /* Worry with its source (UPDATE-2 2b). Suggested by the privacy-gated AI after a meeting; never shown as fact until kept. */
+  function worry(k){
+    var c = D.cases[k], w = c.worry;
+    if(c.result) return '';
+    if(!w || !w.text) return '<button class="btn-link bd-addw" type="button" data-worry-edit="'+k+'">'+Q.icon('plus','i-sm')+'Add their main worry</button>';
+    var date = String(w.from||'').split(' · ')[0], ts = String(w.from||'').split(' · ')[1], src = Q.meetingById(w.meeting);
+    var link = src ? '<a href="#meeting-'+w.meeting+(ts?'@'+ts:'')+'">'+(src.m.kind==='notes' ? 'From your notes' : 'From your meeting')+' · '+Q.esc(date)+'</a>' : 'From your notes';
+    return '<div class="bd-worry'+(w.kept?'':' sugg')+'">'+
+      '<span class="bd-wl">'+svg('heart')+'Worried about</span>'+
+      '<p class="bd-wt">'+Q.esc(w.text)+'</p>'+
+      '<p class="bd-src">'+(w.kept ? link :
+        'Suggested from notes<span class="dot-sep"></span><button type="button" class="btn-link" data-worry-keep="'+k+'" aria-label="Keep worry for '+Q.esc(c.first)+'">Keep</button>'+
+        '<span class="dot-sep"></span><button type="button" class="btn-link" data-worry-edit="'+k+'" aria-label="Edit worry for '+Q.esc(c.first)+'">Edit</button>')+'</p></div>';
+  }
+
+  function editWorry(k){
+    var c = D.cases[k], w = c.worry || {}, ts = String(w.from||'').split(' · ');
+    Q.sheet({ title: w.text ? 'Their main worry' : 'Add their main worry',
+      body:'<div class="field"><label class="label" for="bd-w">What worries '+Q.esc(c.first)+' most</label>'+
+        '<input class="input" id="bd-w" maxlength="80" value="'+Q.esc(w.text||'')+'" placeholder="In their words, one short line">'+
+        '<p class="hint">Stays on this device. Your nudge and write-up use it once you save.</p></div>'+
+        (w.quote ? '<figure class="bd-quote"><blockquote>"'+Q.esc(w.quote)+'"</blockquote><figcaption>'+
+          (Q.meetingById(w.meeting) ? '<a href="#meeting-'+w.meeting+(ts[1]?'@'+ts[1]:'')+'">From your meeting · '+Q.esc(ts[0])+(ts[1]?' at '+ts[1]:'')+'</a>' : 'From your notes')+'</figcaption></figure>' : ''),
+      foot:'<button class="btn btn-ghost" type="button" data-close>Cancel</button><button class="btn btn-primary" type="button" data-save>Save</button>',
+      mount:function(s){
+        var inp = s.querySelector('#bd-w');
+        function save(){
+          var t = inp.value.trim();
+          if(t){ c.worry = Object.assign({}, c.worry, { text:t, kept:true }); if(!c.worry.from) c.worry.from = D.today.date; }
+          else c.worry = { text:'', kept:false }; // not null: backfill() would restore the old one
+          Q.closeSheet(); Q.refresh(); Q.toast(t ? 'Worry saved' : 'Worry removed');
+        }
+        s.querySelector('[data-save]').addEventListener('click', save);
+        inp.addEventListener('keydown', function(e){ if(e.key==='Enter') save(); });
+        setTimeout(function(){ inp.focus(); }, 0);
+      } });
   }
 
   function card(k){
@@ -68,12 +106,10 @@
       '<div class="bd-top">'+
         '<span class="bd-av av'+AV[D.caseOrder.indexOf(k)%4]+'" aria-hidden="true">'+initials(c.name)+'</span>'+
         '<div class="bd-who"><a class="bd-name" href="#case-'+k+'">'+Q.esc(c.name)+'</a>'+
-          '<span class="bd-line"><span class="num">#'+c.no+'</span>'+(c.line?' · '+Q.esc(c.line):'')+'</span></div>'+
-        when(k)+
+          '<span class="bd-line"><span class="num">#'+c.no+'</span>'+(c.line?' · '+Q.esc(c.line):'')+'</span>'+when(k)+'</div>'+
       '</div>'+
-      ((c.worry && !c.result) || c.selected ? '<div class="bd-tags">'+
-        (c.worry && !c.result ? '<span class="bd-worry">'+svg('heart')+'<span><span class="sr-only">Their worry: </span>'+Q.esc(c.worry)+'</span></span>' : '')+
-        (c.selected ? '<span class="chip chip-outline">Selected Client</span>' : '')+'</div>' : '')+
+      worry(k)+
+      (c.selected ? '<div class="bd-tags"><span class="chip chip-outline">Selected Client</span></div>' : '')+
       '<div class="bd-foot">'+dots(k)+'<span class="bd-where">'+Q.esc(where(k))+'</span>'+(c.result?'':action(k))+'</div>'+
     '</li>';
   }
@@ -91,8 +127,10 @@
     var now = (D.today.hour||9)*60, m = D.meetings.upcoming.filter(function(x){
       var d = mins(x.time) - now; return x.day==='Today' && !x.internal && d>=0 && d<=120; })[0];
     if(!m) return '';
-    return '<p class="bd-meet">'+Q.icon('video','i-sm')+'<span><b>'+Q.esc(m.who)+'</b> at <span class="num">'+m.time+'</span> · '+Q.esc(m.app)+'</span>'+
-      '<a href="#meeting-'+m.id+'">Open meeting'+Q.icon('arrow','i-sm')+'</a></p>';
+    var d = mins(m.time) - now, inT = d < 60 ? 'in '+d+' min' : 'in '+Math.round(d/60)+' hr';
+    return '<div class="bd-meet"><div class="bd-meet-txt"><span class="eyebrow">Next meeting · '+inT+'</span>'+
+      '<span class="bd-meet-row">'+Q.icon('video','i-sm')+'<span><b>'+Q.esc(m.who)+'</b> at <span class="num">'+m.time+'</span> · '+Q.esc(m.app)+'</span></span></div>'+
+      '<a href="#meeting-'+m.id+'">Open meeting'+Q.icon('arrow','i-sm')+'</a></div>';
   }
 
   function head(n){
@@ -139,6 +177,9 @@
     mount:function(el){
       var page = el.querySelector('.page');
       page.addEventListener('click', function(e){
+        var wk = e.target.closest('[data-worry-keep]');
+        if(wk){ D.cases[wk.dataset.worryKeep].worry.kept = true; Q.refresh(); Q.toast('Worry kept'); return; }
+        var we = e.target.closest('[data-worry-edit]'); if(we){ editWorry(we.dataset.worryEdit); return; }
         var b = e.target.closest('[data-tab]'); if(!b) return;
         tab = b.dataset.tab;
         page.querySelectorAll('[data-tab]').forEach(function(x){ x.setAttribute('aria-pressed', x===b); });

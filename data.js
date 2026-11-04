@@ -105,15 +105,20 @@
   var caseOrder = ['wei','priya','alvin','siti','marcus','daniel','kevin','jasmine'];
 
   /* Update 2 people fields (synthetic, docs/design/UPDATE-2.md). line = the short line on the case board card.
-     worry/goal are in the client's words from notes. timing = the rep's own typed note, never a guess.
+     goal is in the client's words. worry = { text, quote, from:'<date> · <time in meeting>', meeting:<id>, kept } (UPDATE-2 2b): AI-suggested until the rep keeps it. timing = the rep's own typed note, never a guess.
      nudgeNo = which nudge is next (max 2, Settings "Gentle timing"). Merged into cases below. */
   var caseExtra = {
-    wei:     { job:'Logistics manager', family:'2 kids (8 and 11)', line:'BTO keys Nov 2027', worry:'Cover to 65 for the new home', goal:'Whole life cover' },
-    priya:   { job:'Nurse', family:'2 kids, Aarav and Meera', line:'nurse, 2 kids', worry:'Kids\' uni fund if she can\'t work', goal:'Uni fund by 2038', timing:'Evenings', nudgeNo:1 },
-    alvin:   { line:'baby due in March', family:'Baby due in March', worry:'Lower budget, same cover' },
-    siti:    { job:'Nurse', family:'2 kids', line:'home loan, 2 kids', worry:'Cover that lasts past retirement' },
-    marcus:  { family:'Daughter Mei helps', line:'64 · daughter Mei helps', worry:'Leave something for Mei' },
-    daniel:  { line:'met yesterday', worry:'Not sure yet' },
+    wei:     { job:'Logistics manager', family:'2 kids (8 and 11)', line:'BTO keys Nov 2027', goal:'Whole life cover',
+               worry:{ text:'Cover to 65 and a uni fund for the kids', quote:'Cover to 65, and something for the kids\' university.', from:'Wed 28 Oct · 00:41', meeting:'wei-oct', kept:true } },
+    priya:   { job:'Nurse', family:'2 kids, Aarav and Meera', line:'nurse, 2 kids', goal:'Uni fund by 2038', timing:'Evenings', nudgeNo:1,
+               worry:{ text:'Kids\' uni fund if she can\'t work', quote:'If I ever can\'t work, my worry is the uni fund for Aarav and Meera.', from:'Thu 22 Oct · 06:12', meeting:'priya-oct22', kept:true } },
+    alvin:   { line:'baby due in March', family:'Baby due in March',
+               worry:{ text:'Lower budget, same cover', quote:'With the baby coming, can we bring the premium down but keep the same cover?', from:'Mon 26 Oct · 03:05', meeting:'alvin-oct26', kept:true } },
+    siti:    { job:'Nurse', family:'2 kids', line:'home loan, 2 kids',
+               worry:{ text:'Cover to 65 while the kids are young', quote:'I want cover until 65, while the kids are still young.', from:'Tue 13 Oct · 03:12', meeting:'siti-oct13', kept:false } },
+    marcus:  { family:'Daughter Mei helps', line:'64 · daughter Mei helps',
+               worry:{ text:'Leave something for Mei', quote:'Most of all, I want to leave something for Mei.', from:'Tue 27 Oct · 05:20', meeting:'marcus-oct', kept:true } },
+    daniel:  { line:'met yesterday' }, // no worry yet: the board offers "Add their main worry"
     kevin:   { line:'Meridian Life' },
     jasmine: { line:'budget changed' }
   };
@@ -142,6 +147,8 @@
       { id:'daniel-past', date:'Mon 2 Nov', time:'16:00', at:'2026-11-02 16:00', who:'Daniel Lee', app:'In person', c:'daniel', len:'35 min', notesReady:true },
       { id:'junhao', date:'Fri 30 Oct', time:'12:30', at:'2026-10-30 12:30', who:'Teo Jun Hao', app:'Zoom', c:null, notesReady:false },
       { id:'marcus-oct29', date:'Thu 29 Oct', time:'10:00', at:'2026-10-29 10:00', who:'Marcus Raj', app:'In person', c:'marcus', len:'55 min', notesReady:true, ti:'Mei (daughter)' },
+      { id:'alvin-oct26', date:'Mon 26 Oct', time:'12:30', at:'2026-10-26 12:30', who:'Alvin Lim', app:'Zoom', c:'alvin', len:'20 min', notesReady:true },
+      { id:'priya-oct22', date:'Thu 22 Oct', time:'19:00', at:'2026-10-22 19:00', who:'Priya Krishnan', app:'Zoom', c:'priya', len:'45 min', notesReady:true },
       { id:'siti-oct29', date:'Thu 29 Oct', time:'15:00', at:'2026-10-29 15:00', who:'Siti Nur', app:'In person', c:'siti', len:'30 min', notesReady:true },
       { id:'wei-oct', date:'Wed 28 Oct', time:'11:00', at:'2026-10-28 11:00', who:'Wei Tan', app:'Google Meet', c:'wei', len:'38 min', notesReady:true },
       { id:'marcus-oct', date:'Tue 27 Oct', time:'14:00', at:'2026-10-27 14:00', who:'Marcus Raj', app:'In person', c:'marcus', len:'50 min', notesReady:true, ti:'Mei (daughter)' },
@@ -149,7 +156,7 @@
     ]
   };
 
-  /* Transcripts by meeting id. labels:false = mic only (one plain transcript). Siti's and Marcus's later lines are synthetic demo text. */
+  /* Transcripts by meeting id. labels:false = mic only (one plain transcript). Siti's, Marcus's, Priya's and Alvin's later lines are synthetic demo text. */
   var transcripts = {
     'daniel-past': { labels:false, lines:[
       ['00:12','Thanks for coming in. Shall we start with what you have now?'],
@@ -166,7 +173,17 @@
     'marcus-oct': { labels:false, lines:[
       ['00:30','Good afternoon, thank you for having me.'],
       ['02:15','Can we go through it in Mandarin?'],
-      ['04:02','My daughter Mei will help me read the English papers.'] ] },
+      ['04:02','My daughter Mei will help me read the English papers.'],
+      ['05:20','Most of all, I want to leave something for Mei.'] ] },
+    'priya-oct22': { labels:false, lines:[
+      ['00:40','Sorry, evenings are easier with my shifts.'],
+      ['03:30','I have the hospital group cover, nothing of my own.'],
+      ['06:12','If I ever can\'t work, my worry is the uni fund for Aarav and Meera.'],
+      ['09:45','Can you compare a few whole life plans for me?'] ] },
+    'alvin-oct26': { labels:false, lines:[
+      ['00:30','Thanks for the comparison. We read it over the weekend.'],
+      ['03:05','With the baby coming, can we bring the premium down but keep the same cover?'],
+      ['07:20','I will send you a revised Harbour plan this week.'] ] },
     'marcus-oct29': { labels:false, lines:[
       ['01:10','Mei went through the three plans with me last night.'],
       ['06:40','I prefer Harbour. The premium term is shorter.'] ] },

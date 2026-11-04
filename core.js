@@ -20,6 +20,8 @@
                             ?reset (or Demo > Reset demo data) starts fresh.
      Q.status(caseKey)      {why, btn, go, needs}: the one short next step, used by Today, Cases and Case.
      Q.writeupProgress(k) / Q.masProgress(k)  {done,total}: the one count for write-up parts and firm review checks.
+     Q.worry(case)          the kept worry text ('' if none or only suggested).
+     Q.phonePreview(on?)    prototype only: wide screens show the app in an iPhone frame (iframe ?frame=phone). [data-phone] opens it.
      Q.caseMeetings(k)      [{m, upcoming}] every meeting and quick note on a case, oldest first.  Q.meetingById(id) -> {m, past}.
      [data-quick-notes]     any button starts Record notes (screens/quicknotes.js); ='<case>' pre-picks that case.
      Q.go('#case-wei')      navigate.          Q.refresh()   re-render current screen, keeps scroll, no entrance motion.
@@ -45,7 +47,7 @@
   var qs = new URLSearchParams(location.search);
 
   /* ---------- shared case state (one store, all screens) ---------- */
-  var SAVED = ['cases','writeup','mas','meetings','transcripts','adviser'], VER = 4; // bump VER when the data shape changes
+  var SAVED = ['cases','writeup','mas','meetings','transcripts','adviser'], VER = 5; // bump VER when the data shape changes
   try{
     if(qs.has('reset')) sessionStorage.removeItem('q-data');
     var saved = JSON.parse(sessionStorage.getItem('q-data') || 'null');
@@ -60,6 +62,9 @@
   Q.on = function(e,fn){ (listeners[e]=listeners[e]||[]).push(fn); };
   Q.emit = function(e,d){ (listeners[e]||[]).forEach(function(fn){ fn(d); }); };
   function store(k,v){ try{ if(v===undefined) return localStorage.getItem(k); if(v===null) localStorage.removeItem(k); else localStorage.setItem(k,v); }catch(e){ return null; } }
+
+  /* The client's main worry, only once the rep kept it (UPDATE-2 2b: never shown as fact until kept). */
+  Q.worry = function(c){ var w = c && c.worry; return w && w.kept && w.text ? w.text : ''; };
 
   /* One short next step per case, derived from the shared data. Today, Cases and Case all read this. */
   Q.status = function(k){
@@ -401,6 +406,42 @@
       d.querySelectorAll('[data-'+p[0]+']').forEach(function(b){ b.setAttribute('aria-pressed', String(b.getAttribute('data-'+p[0])===p[1])); }); });
   }
 
+  /* ---------- Preview as Phone (prototype only, wide screens). The same app in an iframe with ?frame=phone, which never nests. ---------- */
+  var framed = qs.get('frame')==='phone', ppEl = null;
+  if(framed) document.documentElement.classList.add('in-phone-frame');
+  function ss(k,v){ try{ if(v===undefined) return sessionStorage.getItem(k); if(v===null) sessionStorage.removeItem(k); else sessionStorage.setItem(k,v); }catch(e){ return null; } }
+  if(qs.get('preview')==='phone' && !framed) ss('q-phone','1');
+  var SYS = '<svg viewBox="0 0 18 12" aria-hidden="true"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>'+
+    '<svg viewBox="0 0 16 12" aria-hidden="true"><path d="M8 2.6c2.3 0 4.4.9 6 2.4l1.3-1.4A10.6 10.6 0 0 0 8 .7 10.6 10.6 0 0 0 .7 3.6L2 5c1.6-1.5 3.7-2.4 6-2.4zm0 3.8c1.3 0 2.5.5 3.4 1.3l1.3-1.4A6.8 6.8 0 0 0 8 4.5c-1.8 0-3.5.7-4.7 1.8l1.3 1.4C5.5 6.9 6.7 6.4 8 6.4zm0 3.8L10.2 8a3.2 3.2 0 0 0-4.4 0z"/></svg>'+
+    '<svg viewBox="0 0 27 12" aria-hidden="true"><rect x=".5" y=".5" width="22" height="11" rx="3.5" fill="none" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="19" height="8" rx="2"/><path d="M24.5 4v4c.8-.3 1.3-1.1 1.3-2s-.5-1.7-1.3-2z" opacity=".5"/></svg>';
+  function fitPhone(){ if(ppEl) ppEl.style.setProperty('--pp-scale', Math.min(1, (window.innerHeight - 96) / 868, (window.innerWidth - 32) / 414).toFixed(3)); }
+  function openPhone(){
+    if(ppEl || framed) return;
+    ppEl = document.createElement('div'); ppEl.className = 'pp'; ppEl.setAttribute('role','dialog'); ppEl.setAttribute('aria-modal','true'); ppEl.setAttribute('aria-label','Phone preview');
+    ppEl.innerHTML = '<div class="pp-bar"><span class="pp-cap">Prototype only<span class="dot-sep"></span>Phone preview<span class="dot-sep"></span><span class="num">390 × 844</span></span>'+
+      '<button class="btn btn-secondary btn-sm" type="button" data-pp-close>'+Q.icon('close','i-sm')+'Close phone preview</button></div>'+
+      '<div class="pp-stage"><div class="pp-device"><i class="pp-btn pp-b1"></i><i class="pp-btn pp-b2"></i><i class="pp-btn pp-b3"></i><i class="pp-btn pp-b4"></i>'+
+      '<div class="pp-screen"><div class="pp-status"><span class="pp-time num">9:41</span><i class="pp-island"></i><span class="pp-sys">'+SYS+'</span></div>'+
+      '<iframe title="Quotient on a phone" src="'+location.pathname+'?frame=phone'+location.hash+'"></iframe><i class="pp-home"></i></div></div></div>';
+    document.body.appendChild(ppEl); document.body.classList.add('pp-on'); fitPhone();
+    ppEl.querySelector('[data-pp-close]').focus({preventScroll:true});
+  }
+  /* Closing reloads on the frame's screen, so data the frame saved to sessionStorage shows here too. */
+  function closePhone(){
+    if(!ppEl) return;
+    var h = location.hash; try{ h = ppEl.querySelector('iframe').contentWindow.location.hash || h; }catch(e){}
+    history.replaceState(null, '', location.pathname + location.search.replace(/[?&]preview=phone/,'') + h); location.reload();
+  }
+  Q.phonePreview = function(on){
+    if(on===undefined) return !framed && ss('q-phone')==='1';
+    if(framed) return;
+    ss('q-phone', on ? '1' : null);
+    if(on) openPhone(); else closePhone();
+  };
+  window.addEventListener('resize', fitPhone);
+  // Theme picked inside the phone frame: keep the device status bar in step.
+  window.addEventListener('storage', function(e){ if(e.key==='q-theme'){ if(e.newValue) document.documentElement.setAttribute('data-theme', e.newValue); else document.documentElement.removeAttribute('data-theme'); } });
+
   /* ---------- global events ---------- */
   document.addEventListener('click', function(e){
     var t = e.target;
@@ -414,9 +455,12 @@
     var d = t.closest('#demo [data-theme],#demo [data-edition],#demo [data-state]');
     if(d){ if(d.dataset.theme) Q.theme(d.dataset.theme); if(d.dataset.edition) Q.edition(d.dataset.edition); if(d.dataset.state) Q.state(d.dataset.state); }
     if(t.closest('[data-reset]')){ Q.resetData(); return; }
+    if(t.closest('[data-phone]')){ Q.phonePreview(true); return; }
+    if(t.closest('[data-pp-close]')){ Q.phonePreview(false); return; }
     if(t.closest('.demo-toggle')){ var dm=document.getElementById('demo'); var o=dm.classList.toggle('open'); t.closest('.demo-toggle').setAttribute('aria-expanded', String(o)); }
   });
   document.addEventListener('keydown', function(e){
+    if(e.key==='Escape' && ppEl){ Q.phonePreview(false); return; }
     if(e.key==='Escape'){ if(sheetEl) Q.closeSheet(); document.querySelectorAll('.menu.open,.demo.open').forEach(function(x){ x.classList.remove('open'); }); }
     var typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) || document.activeElement.isContentEditable;
     if(!typing && !e.metaKey && !e.ctrlKey && !e.altKey && (e.key==='n'||e.key==='N') && !document.body.classList.contains('focus') && !sheetEl) Q.go('#new-case');
@@ -435,5 +479,6 @@
       return '<a href="#'+t[0]+'" data-nav="'+t[0]+'">'+Q.icon(t[1])+'<span>'+t[2]+'</span></a>'; }).join('');
     var j = document.getElementById('demo-jump'); if(j) j.addEventListener('change', function(){ Q.go('#'+j.value); });
     render(true);
+    if(Q.phonePreview() && window.innerWidth > 760) openPhone();
   });
 })();

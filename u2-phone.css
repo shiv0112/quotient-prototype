@@ -97,3 +97,45 @@
   /* Small text floor: labels at least 12px, body at least 15px. */
   .case-meta,.s05-who a,.cs-list .who b{font-size:var(--t-base)}
 }
+
+/* ---------- Preview as Phone (prototype only, UPDATE-2 2b item 4). Wide screens only; never inside the frame. ---------- */
+:root{
+  --pp-backdrop:#E4EAEE; --pp-glow:#F7FAFB; --pp-bezel:#15191D; --pp-edge:#3A424A; --pp-btn:#2A3036; --pp-shadow:#0F2436;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --pp-backdrop:#050D14; --pp-glow:#12283A; --pp-bezel:#0B0E11; --pp-edge:#4A545E; --pp-btn:#262C32; --pp-shadow:#000000; }
+}
+:root[data-theme="dark"]{ --pp-backdrop:#050D14; --pp-glow:#12283A; --pp-bezel:#0B0E11; --pp-edge:#4A545E; --pp-btn:#262C32; --pp-shadow:#000000; }
+
+@media (max-width:760px){ [data-phone]{display:none!important} }
+.in-phone-frame [data-phone]{display:none!important}
+body.pp-on{overflow:hidden}
+
+.pp{position:fixed;inset:0;z-index:80;display:flex;flex-direction:column;
+  background:radial-gradient(ellipse at 50% 40%,var(--pp-glow) 0%,var(--pp-backdrop) 70%);animation:pp-in var(--dur-3) var(--ease-out)}
+@keyframes pp-in{from{opacity:0}to{opacity:1}}
+.pp-bar{display:flex;align-items:center;justify-content:space-between;gap:var(--s-4);padding:var(--s-4) var(--s-6);flex:none}
+.pp-cap{display:inline-flex;align-items:center;font-size:var(--t-xs);font-weight:var(--w-semi);letter-spacing:var(--track-caps);text-transform:uppercase;color:var(--text-3)}
+.pp-bar .btn{min-height:var(--target);gap:var(--s-2)}
+.pp-stage{flex:1;min-height:0;display:grid;place-items:center;overflow:hidden}
+.pp-device{position:relative;width:390px;height:844px;padding:12px;box-sizing:content-box;border-radius:64px;background:var(--pp-bezel);
+  scale:var(--pp-scale,1);transform-origin:center;
+  box-shadow:inset 0 0 0 1.5px var(--pp-edge),inset 0 0 0 5px var(--pp-bezel),0 0 0 1px color-mix(in srgb,var(--pp-edge) 60%,transparent),
+    0 50px 100px -30px color-mix(in srgb,var(--pp-shadow) 45%,transparent),0 20px 40px -20px color-mix(in srgb,var(--pp-shadow) 35%,transparent)}
+.pp-btn{position:absolute;width:4px;border-radius:2px;background:var(--pp-btn)}
+.pp-b1{left:-3px;top:150px;height:32px}
+.pp-b2{left:-3px;top:210px;height:62px}
+.pp-b3{left:-3px;top:286px;height:62px}
+.pp-b4{right:-3px;top:240px;height:96px}
+.pp-screen{position:relative;width:390px;height:844px;border-radius:52px;overflow:hidden;background:var(--surface);display:flex;flex-direction:column;padding-bottom:24px;box-sizing:border-box} /* bottom strip = home indicator safe area, matches the tab bar */
+.pp-status{position:relative;flex:none;height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 30px 0 44px;background:var(--bg);color:var(--ink)}
+.pp-time{font-size:17px;font-weight:var(--w-semi);letter-spacing:-0.01em}
+.pp-island{position:absolute;left:50%;top:11px;width:124px;height:36px;margin-left:-62px;border-radius:var(--r-pill);background:var(--pp-bezel)}
+.pp-sys{display:inline-flex;align-items:center;gap:6px}
+.pp-sys svg{height:12px;width:auto;fill:currentColor}
+.pp-screen iframe{flex:1;width:100%;border:0;display:block;background:var(--bg)}
+.pp-home{position:absolute;left:50%;bottom:8px;width:134px;height:5px;margin-left:-67px;border-radius:var(--r-pill);background:var(--ink);opacity:.85;pointer-events:none}
+@media (prefers-reduced-motion:reduce){ .pp{animation:none} }
+
+/* Phone preview frame: the parent has its own Close button; keep the phone screen clean. */
+.in-phone-frame .demo-toggle,.in-phone-frame .demo{display:none!important}

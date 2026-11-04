@@ -25,7 +25,7 @@
   function draftFor(key, c){
     if(N.drafts && N.drafts[key]) return N.drafts[key];
     if(key===N.c) return N.draft;
-    return 'Hi '+c.first+'! '+(c.worry && c.worry!=='Not sure yet' ? 'You said "'+c.worry+'" matters most to you. ' : '')+
+    return 'Hi '+c.first+'! '+(Q.worry(c) ? 'You said "'+Q.worry(c)+'" matters most to you. ' : '')+
       'Page 1 of the comparison shows the cover and premium for each plan side by side. Happy to go through it on a call whenever suits you, no pressure to decide.';
   }
 
@@ -40,7 +40,7 @@
       '<dl class="fu-facts">'+
         fact('Sent', Q.icon('file','i-sm')+'<span>'+sentWhat(c)+'</span>')+
         fact('Goal', c.goal ? Q.esc(c.goal) : '')+
-        fact('Worry', c.worry ? '<q>'+Q.esc(c.worry)+'</q>' : '', 'fu-worry')+
+        fact('Worry', Q.worry(c) ? '<q>'+Q.esc(Q.worry(c))+'</q>' : '', 'fu-worry')+
         fact('Your note', c.timing ? Q.esc(c.timing)+'<span class="fu-q"> · quiet after 21:00</span>' : '<span class="muted">No timing note</span>')+
       '</dl>'+
       '<div class="fu-foot"><span class="fu-count"><span class="fu-dots" aria-hidden="true">'+dots+'</span>'+(quiet ? maxN()+' of '+maxN()+' nudges sent · case quiet' : 'Nudge '+no+' of '+maxN())+'</span>'+

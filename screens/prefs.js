@@ -70,7 +70,7 @@
              '<div class="pf-dl"><button class="btn btn-secondary" data-toast="Downloading Quotient for Mac">'+Q.icon('device','i-sm')+'Download for Mac</button>'+
              '<button class="btn btn-secondary" data-toast="Downloading Quotient for Windows">'+Q.icon('device','i-sm')+'Download for Windows</button></div>'
            : '<p class="pf-line"><b>Desktop app · version '+A.version+'</b></p><p class="hint">Call audio is available on each meeting. It starts off every time.</p>')+
-      '<div class="pf-proto"><span>Prototype only · Preview as</span><div class="seg"><button data-ed="web" aria-pressed="'+web+'">Web</button><button data-ed="desktop" aria-pressed="'+!web+'">Desktop</button></div></div>');
+      '<div class="pf-proto"><span>Prototype only · Preview as</span><div class="seg"><button data-ed="web" aria-pressed="'+web+'">Web</button><button data-ed="desktop" aria-pressed="'+!web+'">Desktop</button><button data-phone type="button" aria-pressed="false">Phone</button></div></div>');
 
     return '<div class="page pf">'+head+banner+'<div class="pf-list">'+account+calendar+telegram+wait+digest+edition+'</div></div>';
   }

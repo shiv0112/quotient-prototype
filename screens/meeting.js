@@ -5,7 +5,9 @@
   var D = Q.data, B = QD.b, MS = {}, ticker = null, askNow = false;
 
 
-  function find(id){ return Q.meetingById(id); }
+  // #meeting-<id>@<mm:ss> opens the transcript at that line (the board's worry source link).
+  function find(id){ return Q.meetingById(String(id||'').split('@')[0]); }
+  function hitAt(){ return (Q.route().arg.split('@')[1]) || ''; }
   /* "Case #402 · meeting 2 of 2" */
   function caseLine(x){
     var c = x.m.c ? D.cases[x.m.c] : null; if(!c) return 'No case yet';
@@ -67,7 +69,7 @@
   /* ---------- render ---------- */
   function lines(ms){
     return ms.lines.map(function(l){
-      return '<li><span class="ts">'+Q.esc(l.t||'')+'</span>'+(l.sp?'<span class="sp'+(l.sp==='You'?' you':'')+'">'+l.sp+'</span>':'')+'<span>'+Q.esc(l.s)+'</span></li>'; }).join('');
+      return '<li'+(l.t && l.t===hitAt() ? ' class="s06-hit" id="s06-hit"' : '')+'><span class="ts">'+Q.esc(l.t||'')+'</span>'+(l.sp?'<span class="sp'+(l.sp==='You'?' you':'')+'">'+l.sp+'</span>':'')+'<span>'+Q.esc(l.s)+'</span></li>'; }).join('');
   }
   function recordCard(id, x, ms){
     var desk = Q.edition()==='desktop', r = mine(id);
@@ -137,7 +139,7 @@
       setTimeout(function(){ if(ms.phase==='transcribing'){ ms.phase='done'; if(location.hash==='#meeting-'+id) Q.refresh(); } }, 3200); }
     if(s==='done'){ ms.phase = 'done'; if(!ms.lines.length){ ms.callUsed = false; feed(id, 6); } }
   }
-  QB.onState.meeting = function(s){ var r = Q.route(); apply(r.arg, s); };
+  QB.onState.meeting = function(s){ var r = Q.route(); apply(r.arg.split('@')[0], s); };
 
   function render(p){
     var x = find(p.arg) || find('wei-today'), id = x.m.id, ms = state(id);
@@ -161,6 +163,7 @@
     var x = find(p.arg) || find('wei-today'), id = x.m.id, ms = state(id), pg = el.querySelector('.page');
     if(ms.phase==='idle') ms.phase = 'before';
     paintLive(id);
+    var hit = pg.querySelector('#s06-hit'); if(hit) requestAnimationFrame(function(){ window.scrollTo(0, Math.max(0, hit.getBoundingClientRect().top + window.scrollY - window.innerHeight/2)); });
     pg.addEventListener('click', function(e){
       var a = e.target.closest('[data-act]'); if(!a) return;
       var act = a.dataset.act;

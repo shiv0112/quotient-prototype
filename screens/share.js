@@ -20,7 +20,7 @@
   function message(key, c){
     if(key==='wei') return D.share.message;
     if(D.share.messages && D.share.messages[key]) return D.share.messages[key];
-    return 'Hi '+c.first+'! Here are the plans we talked about, side by side. '+(c.worry && c.worry!=='Not sure yet' ? 'You said "'+c.worry+'" matters most: page 1' : 'Page 1')+
+    return 'Hi '+c.first+'! Here are the plans we talked about, side by side. '+(Q.worry(c) ? 'You said "'+Q.worry(c)+'" matters most: page 1' : 'Page 1')+
       ' shows the cover and premium for each one. Illustrated values are not guaranteed. Happy to go through it on a call, no rush to decide.';
   }
 
