@@ -18,8 +18,8 @@
     return phoneStep(c)+'<div class="tl-wrap"><ol class="timeline" aria-label="Case progress">'+D.steps.map(function(s,i){
       var cls = 'tl', label = stepLabel(c,i), small = c.dates[s.key] || '';
       var reached = c.result==='lost' ? i<=c.lostAt : i<c.now;
-      if(i===6 && !c.selected){ cls += ' skip'; small = 'Not needed'; }
-      else if(i===7 && c.result){ cls += ' '+c.result; label = c.result==='won'?'Won':'Lost'; small = c.dates.closed; }
+      if(i===6 && !c.selected && !small) small = 'Docs review';  // not Selected: documentation review still applies (FAA-N16 §41L), no call-back
+      if(i===7 && c.result){ cls += ' '+c.result; label = c.result==='won'?'Won':'Lost'; small = c.dates.closed; }
       else if(i===c.now && !c.result){ cls += ' now'; small = 'Now'; }
       else if(reached){ cls += ' done'; }
       else small = '';
