@@ -91,7 +91,7 @@
       tables:{ v2:{ plans:['harbour','meridian','orchid'], cells:(function(){ var c=clean(weiSet,.95); c.harbour=clean({h:harbourV2}).h; return c; })() } }, chose:'Harbour Assurance v2', sends:3 },
     marcus:  { no:393, name:'Marcus Raj', first:'Marcus', age:64, product:'Whole life', now:6, selected:true, language:'Mandarin',
       dates:{ met:'Tue 27 Oct', compared:'Wed 28 Oct', shared:'Wed 28 Oct', replied:'Thu 29 Oct', chosen:'Thu 29 Oct', writeup:'Fri 30 Oct', review:'Mon 2 Nov' }, last:'Yesterday',
-      tables:{ v1:{ plans:['harbour','meridian','orchid'], cells:clean(weiSet,1.6) } }, sends:3 },
+      tables:{ v1:{ plans:['harbour','meridian','orchid'], cells:clean(weiSet,1.6) } }, chose:'Harbour Assurance', sends:3 },
     kevin:   { no:388, name:'Kevin Ong', first:'Kevin', age:39, product:'Whole life', now:7, result:'won', selected:false,
       dates:{ met:'Mon 5 Oct', compared:'Wed 7 Oct', shared:'Thu 8 Oct', replied:'Mon 12 Oct', chosen:'Mon 12 Oct', writeup:'Wed 14 Oct', closed:'Tue 20 Oct' }, last:'2 weeks ago',
       tables:{ v1:{ plans:['harbour','meridian','orchid'], cells:clean(weiSet,1.05) } }, chose:'Meridian Life', sends:4 },
@@ -269,7 +269,7 @@
       ['You told her in writing that it is her responsibility to make sure the plan suits her: ',null,null,{ blank:'Date told in writing' }] ] } ] };
 
   /* MAS checks for Marcus (Selected Client, firm review 3 of 5). Wording follows MAS Notice FAA-N16 (29 Dec 2025) and its FAQs. */
-  var mas = { c:'marcus',
+  var mas = { marcus:{
     questions:[
       { q:'Is the client under 62?', answer:'no', from:'From the case: age 64', note:'If the client turns 62 before the policy starts, apply the safeguards (FAQ 6).' },
       { q:'Is the client proficient in spoken and written English, or the language the meeting and documents use?', answer:'no', suggest:{ value:'no', quote:'Can we go through it in Mandarin?', at:'02:15', mid:'marcus-oct' } },
@@ -279,7 +279,7 @@
       { id:'ti', t:'Trusted individual at every meeting, or the client\'s written statement', ref:'§10D', done:true, date:'Mon 2 Nov', path:'a', ti:'Mei (daughter)' },
       { id:'doc', t:'Documentation review of the needs analysis and know-your-client records', ref:'§41K(a)', done:true, date:'Mon 2 Nov', by:'Your supervisor' },
       { id:'call', t:'Call-back, audio-recorded', ref:'§41K(b) · §41S', done:false, sup:false, summary:false },
-      { id:'eff', t:'Both checks done before the policy\'s effective date', ref:'§41K', done:false } ] };
+      { id:'eff', t:'Both checks done before the policy\'s effective date', ref:'§41K', done:false } ], override:null } }; // one entry per case (Q.masFor)
 
   /* Nudge drafts (UPDATE-2 style): start from the client's own words, point to one page of what was sent,
      never pick a plan or promise returns, no pressure, end with an easy next step. Others fall back to a template in nudge.js. */
@@ -296,5 +296,5 @@
 
   window.QDATA = { today:today, adviser:adviser, insurers:insurers, rows:rows, groups:groups, steps:steps,
     cases:cases, caseOrder:caseOrder, caseExtra:caseExtra, digest:digest, meetings:meetings,
-    transcripts:transcripts, gate:gate, log:log, writeup:writeup, mas:mas, nudge:nudge, share:share };
+    transcripts:transcripts, gate:gate, log:log, writeup:writeup, writeups:{}, mas:mas, sends:{}, nudge:nudge, share:share };
 })();

@@ -5,7 +5,16 @@
   var D = Q.data, B = QD.b, lifted = {};
 
 
-  function ctx(p){ var key = D.cases[p.parts[0]] && QB.feature(p.parts[0]) ? p.parts[0] : 'wei'; return { key:key, c:D.cases[key], f:QB.feature(key) }; }
+  // #gate-<case>-<compare|writeup|nudge|mas>; the old #gate-<case> opens the case's own gate. f = null: nothing to send for that request.
+  function ctx(p){ var key = p.parts[0] || 'wei', f = QB.gateFor(key, p.parts[1]); return { key:key, c:D.cases[key], f:f, s:'-'+QB.short(f), want:p.parts[1]||'' }; }
+  var WANT = { compare:'comparison', writeup:'write-up', nudge:'nudge', mas:'answer suggestions' };
+  function nothing(x){
+    var what = WANT[x.want] || 'request', back = '#case-'+x.key;
+    return '<div class="page s08"><a class="back" href="'+back+'">'+Q.icon('back','i-sm')+'Back to '+Q.esc(x.c.name)+'</a>'+
+      '<header class="s08-head rise"><p class="eyebrow">Case #'+x.c.no+'</p><h1 class="h1">Nothing to send</h1>'+
+      '<p class="sub">There is no '+Q.esc(what)+' text for '+Q.esc(x.c.name)+' in this demo, so nothing leaves your device.</p></header>'+
+      '<div class="s08-acts"><a class="btn btn-secondary" href="'+back+'">Back to '+Q.esc(x.c.name)+'</a></div></div>';
+  }
   function backTo(x){ var fl = B.flow[x.f]; return { href:fl.back, label: { compare:'Back to '+x.c.name, 'compare-daniel':'Back to '+x.c.name, writeup:'Back to the write-up', nudge:'Back to the nudge', 'mas-suggest':'Back to MAS checks' }[x.f] }; }
 
   /* ---------------- S08 ---------------- */
@@ -24,7 +33,8 @@
   }
 
   function renderGate(p){
-    var x = ctx(p), v = QB.view(x.key), fl = B.flow[x.f], b = backTo(x);
+    var x = ctx(p); if(!x.f) return nothing(x);
+    var v = QB.view(x.key), fl = B.flow[x.f], b = backTo(x);
     // First case: the full receipt. After the first Send (D.adviser.gateSeen): a one-line summary, details one tap away.
     var states = [['normal','First time · full'],['summary','Later · one line'],['loading','Finding details'],['error','Error']];
     if(/^compare/.test(x.f)) states.splice(2,0,['nothing','Nothing to send']);
@@ -55,7 +65,7 @@
         '<span class="l">Characters sent</span><span class="v big num" data-count="'+v.chars+'">'+v.charsLabel+'</span></div>'+
         '<p class="s08-kept">'+Q.icon('device','i-sm')+'<span>Not sent: the PDFs, names, NRIC, phone, email, address. Names go back in when the answer returns.</span></p>'+
       '</article>'+
-      '<div class="s08-acts u2-dock"><button class="btn btn-primary" data-act="send">Send this text</button><a class="btn btn-secondary" href="#gate-edit-'+x.key+'">Edit what is sent</a>'+
+      '<div class="s08-acts u2-dock"><button class="btn btn-primary" data-act="send">Send this text</button><a class="btn btn-secondary" href="#gate-edit-'+x.key+x.s+'">Edit what is sent</a>'+
       '<span class="spacer"></span><a class="btn btn-ghost" href="'+fl.back+'">Cancel</a></div></div>';
   }
 
@@ -71,17 +81,17 @@
 
 
   function mountGate(el, p){
-    var x = ctx(p), pg = el.querySelector('.page');
+    var x = ctx(p), pg = el.querySelector('.page'), sent = false; if(!x.f) return;
     pg.addEventListener('click', function(e){
       var pk = e.target.closest('[data-pick]');
       if(pk){ var cur = QB.pick(x.key), i = cur.indexOf(pk.dataset.pick); if(i>=0) cur.splice(i,1); else cur.push(pk.dataset.pick); Q.refresh(); var f = document.querySelector('[data-pick="'+pk.dataset.pick+'"]'); if(f) f.focus({preventScroll:true}); return; }
       var a = e.target.closest('[data-act]'); if(!a) return;
       var v = QB.view(x.key);
-      if(a.dataset.act==='send'){
+      if(a.dataset.act==='send'){ if(sent) return; sent = true; // a double click logs one send
         (B.sends[x.key] = B.sends[x.key] || []).unshift({ feature:B.featureName[x.f], when:D.today.date+', 10:12', text:v.cards.map(function(c){ return c.text; }).join('\n\n'), fresh:true });
-        B.nothing = false; D.adviser.gateSeen = true; Q.go('#processing-'+x.key);
+        B.nothing = false; D.adviser.gateSeen = true; Q.go('#processing-'+x.key+x.s);
       }
-      if(a.dataset.act==='build'){ B.nothing = true; Q.go('#processing-'+x.key); }
+      if(a.dataset.act==='build'){ B.nothing = true; Q.go('#processing-'+x.key+x.s); }
     });
     var phs = pg.querySelectorAll('.s08-ph');
     if(!phs.length || lifted[location.hash] || QB.reduced()) return;
@@ -98,12 +108,13 @@
     setTimeout(function(){ cnt.textContent = cnt.dataset.count; }, 700 + phs.length*110);
   }
 
-  Q.screen('gate', { title:'What leaves your device', rail:false, nav:'', render:renderGate, mount:mountGate });
+  Q.screen('gate', { caseArg:true, title:'What leaves your device', rail:false, nav:'', render:renderGate, mount:mountGate });
 
   /* ---------------- S09 ---------------- */
   var tick = false, askNow = false;
   function renderEdit(p){
-    var x = ctx(p), v = QB.view(x.key), e = QB.edits(x.key);
+    var x = ctx(p); if(!x.f) return nothing(x);
+    var v = QB.view(x.key), e = QB.edits(x.key);
     var s = QB.local('gate-edit', ['normal','hidden','confirm'], 'normal', p);
     if(s.fresh && s.s==='hidden' && !e.hidden.length){ e.hidden.push('non-smoker'); e.undo.push({ hide:'non-smoker' }); v = QB.view(x.key); }
     var text = v.cards.map(function(c){
@@ -121,16 +132,16 @@
     var undo = e.undo.length ? '<button class="btn btn-ghost btn-sm" data-act="undo">Undo</button>' : '';
     var t = tick ? ' s09-tick' : ''; tick = false; askNow = s.fresh && s.s==='confirm';
     return '<div class="page s09">'+QB.demo([['normal','Default'],['hidden','After hide'],['confirm','Show-again confirm']], s.s)+
-      '<a class="back" href="#gate-'+x.key+'">'+Q.icon('back','i-sm')+'Back to what leaves your device</a>'+
+      '<a class="back" href="#gate-'+x.key+x.s+'">'+Q.icon('back','i-sm')+'Back to what leaves your device</a>'+
       '<header class="s08-head rise" style="margin-bottom:var(--s-6)"><h1 class="h1">Edit what is sent</h1><p class="sub">Click any word to hide it. Click a placeholder to show it again.</p></header>'+
       '<div class="s09-grid"><div class="stack">'+text+'</div>'+
       '<aside class="card s09-side" aria-labelledby="s09-h"><div class="card-head" style="margin-bottom:0"><h2 class="h3" id="s09-h">Hidden on this device</h2>'+undo+'</div>'+
         '<div class="s09-count" aria-live="polite"><div><b class="num'+t+'">'+v.count+'</b><span>details replaced</span></div><div><b class="num">'+v.charsLabel+'</b><span>characters sent</span></div></div>'+
         '<hr class="s08-cut" style="margin:var(--s-4) 0 var(--s-2)">'+side+
-        '<div class="u2-dock" style="margin-top:var(--s-5)"><a class="btn btn-primary btn-block" href="#gate-'+x.key+'">Done</a></div></aside></div></div>';
+        '<div class="u2-dock" style="margin-top:var(--s-5)"><a class="btn btn-primary btn-block" href="#gate-'+x.key+x.s+'">Done</a></div></aside></div></div>';
   }
   function mountEdit(el, p){
-    var x = ctx(p), e = QB.edits(x.key);
+    var x = ctx(p), e = QB.edits(x.key); if(!x.f) return;
     function ask(ph){
       var m = QB.view(x.key).rows.filter(function(r){ return r.ph===ph; })[0]; if(!m) return;
       Q.dialog({ title:'Show \''+m.orig+'\' in the text sent to the AI?', body:'<p>It will be sent as written, in '+m.n+' place'+(m.n>1?'s':'')+'.</p>',
@@ -151,5 +162,5 @@
     });
     if(askNow) setTimeout(function(){ ask('[CLIENT]'); }, 300);
   }
-  Q.screen('gate-edit', { title:'Edit what is sent', rail:false, nav:'', render:renderEdit, mount:mountEdit });
+  Q.screen('gate-edit', { caseArg:true, title:'Edit what is sent', rail:false, nav:'', render:renderEdit, mount:mountEdit });
 })();

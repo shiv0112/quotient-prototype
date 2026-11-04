@@ -26,11 +26,12 @@
     switch(c.now){
       case 0: return 'No plans yet';
       case 1: n = Q.toCheck(k).length; return n ? n+' to check' : 'Ready to share';
-      case 2: return c.quiet ? 'Quiet' : c.nudged ? 'Nudge sent' : (c.quietDays||0) >= D.adviser.waitDays ? c.quietDays+' quiet days' : 'Shared';
+      case 2: return c.quiet ? 'Quiet' : c.nudged ? 'Nudge sent' : c.snoozedTo ? 'Snoozed' : (c.quietDays||0) >= D.adviser.waitDays ? c.quietDays+' quiet days' : 'Shared';
       case 3: return 'Replied';
-      case 4: return c.shareSent ? 'v2 shared' : 'v2 ready';
+      case 4: return c.revising ? 'Wants changes' : c.shareSent ? 'v'+Object.keys(c.tables).length+' shared' : 'v'+Object.keys(c.tables).length+' ready';
       case 5: n = Q.writeupProgress(k); return n.done+' of '+n.total+' done';
-      case 6: n = Q.masProgress(k); n = n.total - n.done; return n ? n+' check'+(n>1?'s':'')+' left' : 'Checks done';
+      case 6: if(!c.selected) return c.reviewed ? 'Review done' : 'Firm review';
+        n = Q.masProgress(k); n = n.total - n.done; return n ? n+' check'+(n>1?'s':'')+' left' : 'Checks done';
     }
     return '';
   }

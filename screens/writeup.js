@@ -5,7 +5,7 @@
    Copy unlocks when every required part is ticked. Progress counts come from Q.writeupProgress (core.js), shared with Today, Cases and Case. */
 (function(){
   'use strict';
-  var D = Q.data, W = D.writeup, ui = { hash:null };
+  var D = Q.data, W = D.writeup, ui = { hash:null }; // W = the shown case's write-up (Q.wu), Siti's as the demo fallback
 
   /* "i" info button with a rule-reference popover (shared by write-up and MAS; first loaded copy wires the listeners) */
   function info(t){ return '<span class="u2-i"><button type="button" class="u2-ib" aria-label="Rule reference" aria-expanded="false">'+Q.icon('info','i-sm')+'</button><span class="u2-tip" role="tooltip">'+Q.esc(t)+'</span></span>'; }
@@ -102,15 +102,17 @@
 
   function aside(key, c, st){
     var drafted = !(st==='notdrafted'||st==='drafting'||st==='error'), r = req(), n = tickedCount(), all = n===r.length, sel = c.selected;
-    var copy = ui.copied ? '<button class="btn btn-primary btn-block" data-act="copy">'+Q.icon('check','i-sm')+'Copied</button>'
+    var nx = !st && !ui.st && c.now>=6 && !c.result && W.c===key ? Q.status(key) : null;
+    var copy = nx ? '<a class="btn btn-primary btn-block" href="'+nx.go+'">'+Q.esc(nx.btn)+'</a></div><div><button class="btn btn-secondary btn-block" data-act="copy">'+(ui.copied?Q.icon('check','i-sm')+'Copied':'Copy again')+'</button>'
+      : ui.copied ? '<button class="btn btn-primary btn-block" data-act="copy">'+Q.icon('check','i-sm')+'Copied</button>'
       : '<button class="btn btn-primary btn-block" data-act="copy"'+(all?'':' aria-disabled="true" title="Tick all '+r.length+' required parts first"')+'>Copy for firm portal</button>';
     var mp = Q.masProgress(key);
     var mas = sel ? '<b>Selected Client · firm review needed</b><span class="small muted">'+mp.done+' of '+mp.total+' checks done</span>'
-      : '<b>Not a Selected Client</b><span class="small muted">0 of 3 "no"</span>';
+      : '<b>Not a Selected Client</b><span class="small muted">'+Q.masFor(key).questions.filter(function(q){ return q.answer==='no'; }).length+' of 3 "no"</span>';
     return '<aside class="wu-aside">'+(!drafted?'':
       '<section class="card wu-ready" aria-labelledby="wu-r"><p class="eyebrow" id="wu-r">For the firm portal</p>'+
         '<p class="big">'+n+' of '+r.length+'<small>required parts ticked</small></p><div class="wu-meter" style="grid-template-columns:repeat('+r.length+',1fr)" aria-hidden="true">'+r.map(function(i){ return '<i class="'+(ui.ticked[i]?'on':'')+'"></i>'; }).join('')+'</div>'+
-        '<div class="u2-dock">'+copy+'</div><p class="small muted">'+(all?'Paste each part into your firm\'s portal. Nothing is sent from here.':'Tick each part when it reads right.')+'</p></section>')+
+        '<div class="u2-dock">'+copy+'</div><p class="small muted">'+(nx?'Next · '+Q.esc(nx.why)+'.':all?'Paste each part into your firm\'s portal. Nothing is sent from here.':'Tick each part when it reads right.')+'</p></section>')+
       '<section class="card wu-mas" aria-labelledby="wu-m"><p class="eyebrow" id="wu-m">Selected Client check</p>'+mas+
         '<p class="wu-dev">'+Q.icon('device','i-sm')+'<span>Checked on this device · plain rules · nothing sent</span></p>'+
         '<a href="#mas-'+key+'" class="small" style="font-weight:600">Open MAS checks</a></section>'+
@@ -119,7 +121,13 @@
 
   function render(p){
     var key = D.cases[p.parts[0]] ? p.parts[0] : 'siti', c = D.cases[key];
-    if(location.hash!==ui.hash){ ui.hash = location.hash; reset(p.parts[1]||''); }
+    var w = Q.wu(key);
+    if(!w){ ui.hash = null; // no plan chosen yet: nothing to write up (never another case's text)
+      return '<div class="page wu"><header><a class="back" href="#case-'+key+'">'+Q.icon('back','i-sm')+'Back to '+Q.esc(c.name)+'</a>'+
+        '<h1 class="h1 display">Write-up · '+Q.esc(c.name)+' <span class="case-no" style="font-family:var(--f-text);font-size:var(--t-lg);letter-spacing:0">#'+c.no+'</span></h1>'+
+        '<p class="wu-sub">Not started</p></header><section class="empty rise"><h2>The write-up starts when '+Q.esc(c.first)+' chooses a plan.</h2>'+
+        '<p>Log '+Q.esc(c.first)+'\'s reply on the case. We draft each part from your notes and the chosen plan.</p><a class="btn btn-secondary" href="#case-'+key+'">Back to '+Q.esc(c.name)+'</a></section></div>'; }
+    if(location.hash!==ui.hash || w!==W){ W = w; ui.hash = location.hash; reset(p.parts[1]||''); }
     ui.key = key; sync();
     var st = p.state==='error' ? 'error' : p.state==='loading' ? 'drafting' : p.state==='empty' ? 'notdrafted' : ui.st;
     var plan = c.chose || W.plan, n = tickedCount(), total = req().length;
@@ -130,13 +138,13 @@
     var main;
     if(st==='notdrafted') main = '<section class="card hero wu-gate" aria-labelledby="wu-g"><div><p class="eyebrow">Next step</p><h2 id="wu-g">Draft the write-up from your notes and '+Q.esc(plan.replace('Harbour Assurance','Harbour'))+'</h2>'+
         '<p>It goes through the privacy gate first. You see exactly what leaves your device before anything is sent.</p></div>'+
-        '<div class="acts u2-dock"><a class="btn btn-primary" href="#gate-'+key+'">Draft write-up'+Q.icon('arrow','i-sm')+'</a></div></section>';
+        '<div class="acts u2-dock"><a class="btn btn-primary" href="#gate-'+key+'-writeup">Draft write-up'+Q.icon('arrow','i-sm')+'</a></div></section>';
     else if(st==='drafting') main = '<section class="card" aria-busy="true" aria-labelledby="wu-d"><h2 class="h3" id="wu-d">Drafting the write-up…</h2>'+
         '<ul class="wu-steps" style="margin-top:var(--s-4)"><li>'+Q.icon('check','i-sm')+'Names replaced</li><li>'+Q.icon('check','i-sm')+'Sent '+QB.view(key).charsLabel+' characters</li>'+
         '<li><span class="wu-spin" aria-hidden="true"></span>Writing each part</li><li><span class="todo-dot" aria-hidden="true"></span>Putting names back</li></ul>'+
         '<p class="small" style="margin-top:var(--s-4)"><a href="#sent-'+key+'">See what was sent</a></p></section>'+
         [1,2].map(function(){ return '<div class="card"><span class="skel" style="width:35%"></span><span class="skel" style="width:92%;margin-top:16px"></span><span class="skel" style="width:70%;margin-top:10px"></span></div>'; }).join('');
-    else if(st==='error') main = '<div class="banner banner-error" role="alert">'+Q.icon('alert')+'<p>Couldn\'t draft. Nothing else was sent.</p><button class="btn-link" data-go="#gate-'+key+'">Try again</button></div>';
+    else if(st==='error') main = '<div class="banner banner-error" role="alert">'+Q.icon('alert')+'<p>Couldn\'t draft. Nothing else was sent.</p><button class="btn-link" data-go="#gate-'+key+'-writeup">Try again</button></div>';
     else { var k = 0; main = ui.parts.map(function(P,i){ if(P.key==='switch' && !ui.on[i]) return switchRow(i); return shown(i) ? part(i, ++k) : ''; }).join('')+
       '<div class="wu-foot">'+
         '<p>'+Q.icon('info','i-sm')+'<span>Your firm\'s form follows the LIA Minimum Standard for Life Insurance Advisory Process. Paste each part into the matching section.'+info('MAS Notice FAA-N16 §34')+'</span></p>'+
@@ -146,6 +154,7 @@
 
   function mount(el, p){
     var key = D.cases[p.parts[0]] ? p.parts[0] : 'siti', pg = el.querySelector('.page');
+    if(!Q.wu(key)) return;
     var inp = pg.querySelector('#wu-in'); if(inp){ inp.focus(); inp.addEventListener('keydown', function(e){ if(e.key==='Enter') act('save'); if(e.key==='Escape') act('cancel'); }); }
     var ed = pg.querySelector('#wu-ed'); if(ed) ed.focus();
     function act(a){
@@ -153,7 +162,8 @@
       if(a==='nd'){ ui.fills[ui.editing] = { nd:true }; ui.editing = null; Q.refresh(); }
       if(a==='cancel'){ ui.editing = null; Q.refresh(); }
       if(a==='saveedit'){ var i = ui.editPart, txt = pg.querySelector('#wu-ed').value.trim();
-        if(txt!==plain(i)){ ui.parts[i].s = txt ? [{ t:txt, src:'Edited by you', ref:null, blank:null }] : []; Object.keys(ui.fills).forEach(function(k){ if(k.indexOf(i+'-')===0) delete ui.fills[k]; }); ui.ticked[i] = false; }
+        if(txt!==plain(i)){ ui.parts[i].s = txt ? [{ t:txt, src:'Edited by you', ref:null, blank:null }] : []; Object.keys(ui.fills).forEach(function(k){ if(k.indexOf(i+'-')===0) delete ui.fills[k]; }); ui.ticked[i] = false;
+          if(!ui.st && ui.key===W.c) W.parts[i].s = txt ? [[txt, 'Edited by you', null]] : []; } // the real write-up keeps the edit, so blanks don't come back
         ui.editPart = null; Q.refresh(); }
       if(a==='canceledit'){ ui.editPart = null; Q.refresh(); }
       if(a==='switch-on' || a==='switch-off'){ var s = idx('switch'); ui.on[s] = a==='switch-on'; if(!ui.on[s]) ui.ticked[s] = false; Q.refresh();
@@ -161,7 +171,9 @@
       if(a==='copy'){
         var k = 0, all = ui.parts.map(function(P,i){ if(!shown(i) || (P.need==='opt' && !ui.ticked[i])) return ''; return (++k)+'. '+P.title+' ('+P.ref+')\n'+plain(i); }).filter(Boolean).join('\n\n');
         try{ navigator.clipboard && navigator.clipboard.writeText(all).catch(function(){}); }catch(e){}
-        ui.copied = true; Q.refresh(); Q.toast('Copied. Paste each part into your firm portal.');
+        var c = D.cases[key], moved = !ui.st && W.c===key && c.now===5;
+        if(moved){ c.now = 6; c.dates.review = D.today.date; } // copied for the portal: the case moves on to firm review
+        ui.copied = true; Q.refresh(); Q.toast(moved ? 'Copied · '+c.first+'\'s case moves to firm review' : 'Copied. Paste each part into your firm portal.');
         var h = ui.hash; setTimeout(function(){ if(ui.hash===h && ui.st!=='copied'){ ui.copied = false; Q.refresh(); } }, 2000);
       }
     }
@@ -189,5 +201,5 @@
       foot:'<a class="btn btn-secondary" href="#meeting-'+mid+'">Open meeting</a><button class="btn btn-ghost" data-close>Close</button>' });
   }
 
-  Q.screen('writeup', { title:function(p){ var c = D.cases[p.parts[0]]; return 'Write-up'+(c?' · '+c.name:''); }, nav:'cases', render:render, mount:mount });
+  Q.screen('writeup', { caseArg:true, title:function(p){ var c = D.cases[p.parts[0]]; return 'Write-up'+(c?' · '+c.name:''); }, nav:'cases', render:render, mount:mount });
 })();

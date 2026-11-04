@@ -89,11 +89,17 @@
     ['You','Yes. Meridian and Orchid are both under that.'],
     ['Client','Let\'s look at Meridian more closely.'] ];
 
-  QD.b = { gate:gate, flow:flow, featureName:featureName, log:log, files:files, live:live, sends:{} };
+  QD.b = { gate:gate, flow:flow, featureName:featureName, log:log, files:files, live:live, sends:(D.sends = D.sends || {}) }; // sends are saved with the case data (core SAVED)
 
   /* ---------- helpers shared by my screens ---------- */
   var QB = window.QB = {};
   QB.feature = function(key){ var f = null; Object.keys(D.gate).forEach(function(k){ if(D.gate[k].c===key) f = k; }); return f; };
+  /* Route feature names: #gate-<case>-<compare|writeup|nudge|mas>. No feature = the case's own gate. null = nothing to send. */
+  var SHORT = { compare:'compare', 'compare-daniel':'compare', writeup:'writeup', nudge:'nudge', 'mas-suggest':'mas' };
+  QB.short = function(g){ return SHORT[g] || ''; };
+  QB.gateFor = function(key, want){ var g = D.cases[key] ? QB.feature(key) : null; return g && (!want || SHORT[g]===want) ? g : null; };
+  /* Every send for a case, newest first: this session's sends, then the demo log. The one source for counts and the log page. */
+  QB.sendRows = function(key){ return (D.sends[key]||[]).concat(log[key] || D.log[key] || []); };
   var edits = {};
   QB.edits = function(key){ return edits[key] || (edits[key] = { hidden:[], shown:[], undo:[] }); };
   function reEsc(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
@@ -118,7 +124,12 @@
     var rx = reps.length ? new RegExp('('+reps.map(function(r){ return reEsc(r.ph); }).sort(function(a,b){ return b.length-a.length; }).join('|')+')') : null;
     var chars = 0;
     var pick = QB.pick(key);
-    var cards = (g.cards||[]).filter(function(c){ return !c.mid || pick.indexOf(c.mid)>=0; }).map(function(c){
+    var mids = (g.cards||[]).map(function(c){ return c.mid; }), cname = D.cases[key] && D.cases[key].name;
+    var extra = pick.filter(function(id){ return mids.indexOf(id)<0 && D.transcripts[id]; }).map(function(id){ var x = Q.meetingById(id), tr = D.transcripts[id];
+      var t = tr.lines.map(function(l){ return tr.labels ? l[2] : l[1]; }).join(' ');
+      g.map.concat(cname ? [[cname,'[CLIENT]']] : []).forEach(function(m){ t = t.split(m[0]).join(m[1]==='removed' ? '' : m[1]); });
+      return { src:'Your notes · '+(x ? x.m.who : id), mid:id, text:t }; });
+    var cards = (g.cards||[]).concat(extra).filter(function(c){ return !c.mid || pick.indexOf(c.mid)>=0; }).map(function(c){
       var t = c.text;
       g.map.forEach(function(m){ if(e.shown.indexOf(m[1])>=0) t = t.split(m[1]).join(m[0]); });
       e.hidden.forEach(function(w,i){ t = t.replace(new RegExp('(^|[^A-Za-z0-9$\'’-])'+reEsc(w)+'(?=$|[^A-Za-z0-9$\'’-])','g'), '$1[HIDDEN '+(i+1)+']'); });

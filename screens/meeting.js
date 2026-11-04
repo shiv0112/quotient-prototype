@@ -22,13 +22,19 @@
     return MS[id] = { phase: tr ? 'done' : 'before', call:false, callUsed: tr ? tr.labels : false, lines:lines, banner:null };
   }
   function mine(id){ var r = Q.recording.get(); return r && r.meeting===id ? r : null; }
+  /* Notes recorded, pasted or uploaded here are saved with the meeting, so the case, the gate and the audio log see them. */
+  function keep(id, len){
+    var ms = state(id), x = Q.meetingById(id); if(!x) return;
+    D.transcripts[id] = { labels:!!ms.callUsed, lines: ms.lines.map(function(l){ return ms.callUsed ? [l.sp||'', l.t||'', l.s] : [l.t||'', l.s]; }) };
+    x.m.notesReady = true; x.m.len = len; Q.save();
+  }
 
   /* ---------- recording ---------- */
   function startRec(id, call){
     var ms = state(id);
     Q.recording.start({ callAudio: call });
     var r = Q.recording.get(); r.meeting = id;
-    ms.phase = 'recording'; ms.callUsed = r.call; ms.lines = []; ms.banner = null;
+    ms.phase = 'recording'; ms.callUsed = r.call; ms.lines = []; ms.banner = null; ms.t0 = Date.now();
     feed(id, 2);
     clearInterval(ticker);
     var k = 0;
@@ -56,11 +62,14 @@
       clearInterval(ticker); ms.phase = 'transcribing'; ms.call = false; // call audio resets after every recording
       while(ms.lines.length<6) feed(id, 1);
       if(Q.route().id==='meeting') Q.refresh();
-      setTimeout(function(){ if(ms.phase!=='transcribing') return; ms.phase = 'done'; if(location.hash==='#meeting-'+id) Q.refresh(); }, 3200);
+      setTimeout(function(){ if(ms.phase!=='transcribing') return; ms.phase = 'done'; keep(id, Math.max(1, Math.round((Date.now()-(ms.t0||Date.now()))/60000))+' min'); if(location.hash==='#meeting-'+id) Q.refresh(); }, 3200);
     });
   });
 
   function askRecord(id){
+    var r = Q.recording.get();
+    if(r && r.meeting!==id) return Q.dialog({ title:'Already recording', body:'<p>Stop the current recording first.</p>', actions:[{label:'OK',value:null}], safe:null });
+    if(r) return;
     Q.dialog({ title:'Before you record', body:'<p>You must have the client\'s permission to record this meeting. Do you wish to continue?</p>',
       actions:[{label:'Cancel',value:null},{label:'Continue',value:'go',kind:'primary'}], safe:null })
     .then(function(ok){ if(!ok) return; startRec(id, Q.edition()==='desktop' && state(id).call); Q.refresh(); });
@@ -143,6 +152,7 @@
   QB.onState.meeting = function(s){ var r = Q.route(); apply(r.arg.split('@')[0], s); };
 
   function render(p){
+    if(p.arg && !find(p.arg)) return Q.noCase(p.arg.split('@')[0], 'meeting');
     var x = find(p.arg) || find('wei-today'), id = x.m.id, ms = state(id);
     var s = QB.local('meeting', STATES.map(function(z){ return z[0]; }), 'none', p);
     if(s.fresh && s.s!=='none') apply(id, s.s);
@@ -161,6 +171,7 @@
   }
 
   function mount(el, p){
+    if(p.arg && !find(p.arg)) return;
     var x = find(p.arg) || find('wei-today'), id = x.m.id, ms = state(id), pg = el.querySelector('.page');
     if(ms.phase==='idle') ms.phase = 'before';
     paintLive(id);
@@ -176,7 +187,7 @@
           sh.querySelector('[data-save]').addEventListener('click', function(){
             var ls = t.value.split(/\n+/).map(function(z){ return z.trim(); }).filter(Boolean);
             if(!ls.length){ t.setAttribute('aria-invalid','true'); return; }
-            ms.lines = ls.map(function(z){ return { t:'', s:z }; }); ms.phase = 'done'; ms.banner = null; Q.closeSheet(); Q.refresh(); Q.toast('Notes added'); }); } });
+            ms.lines = ls.map(function(z){ return { t:'', s:z }; }); ms.callUsed = false; ms.phase = 'done'; ms.banner = null; keep(id, 'typed'); Q.closeSheet(); Q.refresh(); Q.toast('Notes added'); }); } });
       if(act==='upload') pg.querySelector('[data-file]').click();
       if(act==='move') moveDialog(x);
       if(act==='add'){ Q.toast('Notes added to case #'+D.cases[x.m.c].no); Q.go('#case-'+x.m.c); }
@@ -191,7 +202,7 @@
         rd.onload = function(){ var ls = String(rd.result).split(/\r?\n/).map(function(z){ return z.trim(); })
             .filter(function(z){ return z && z!=='WEBVTT' && z.indexOf('-->')<0 && !/^\d+$/.test(z); }).slice(0,60);
           if(!ls.length){ ms.banner = 'upload'; Q.refresh(); return; }
-          ms.lines = ls.map(function(z){ return { t:'', s:z }; }); ms.phase = 'done'; ms.banner = null; Q.refresh(); Q.toast('Transcript added'); };
+          ms.lines = ls.map(function(z){ return { t:'', s:z }; }); ms.callUsed = false; ms.phase = 'done'; ms.banner = null; keep(id, 'typed'); Q.refresh(); Q.toast('Transcript added'); };
         rd.onerror = function(){ ms.banner = 'upload'; Q.refresh(); };
         rd.readAsText(f); }
     });

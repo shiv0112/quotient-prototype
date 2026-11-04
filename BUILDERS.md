@@ -23,7 +23,7 @@ Read first: `docs/design/BRIEF.md` (wins on facts), `docs/design/ux-spec.md` (sc
 })();
 ```
 2. Add `<script src="screens/<name>.js"></script>` at the end of `index.html`. Do not edit `core.js`.
-3. Route ids already listed in the demo jump menu (`Q.inventory` in core.js): `signin`, `signup`, `welcome-1..4`, `meetings`, `meeting-<meetingId>`, `new-case[-<case>]`, `gate-<case>` (feature comes from `Q.data.gate[*].c`), `gate-edit-<case>`, `processing-<case>`, `share-<case>`, `writeup-<case>`, `mas-<case>`, `nudge-<case>`, `reminder` (old `#telegram` redirects here), `sent-<case>`, `cases`, `prefs` (Settings; never `#settings`), `digest`. Longest id wins, so `gate-edit` beats `gate`.
+3. Route ids already listed in the demo jump menu (`Q.inventory` in core.js): `signin`, `signup`, `welcome-1..4`, `meetings`, `meeting-<meetingId>`, `new-case[-<case>]`, `gate-<case>-<compare|writeup|nudge|mas>` (plain `gate-<case>` opens the case's own gate; a case with no text for that feature shows "Nothing to send"), `gate-edit-<case>-<feature>`, `processing-<case>-<feature>`, `share-<case>`, `writeup-<case>`, `mas-<case>`, `nudge-<case>`, `reminder` (old `#telegram` redirects here), `sent-<case>`, `cases`, `prefs` (Settings; never `#settings`), `digest`. Longest id wins, so `gate-edit` beats `gate`.
 4. Layout CSS for your screen goes at the end of `components.css` under "Screen layouts", using tokens only.
 
 ## Core API (full list at the top of core.js)
@@ -62,4 +62,4 @@ Icons: today, meetings, cases, prefs, plus, back, next, close, check, more, mic,
 
 ## Demo
 - Demo state chips for a screen are written inside the page as `<nav class="switcher">`; core.js moves them into the Demo panel ("States for this screen"). Never style them as part of the screen.
-- Shared case state: mutate `Q.data` (cases, writeup, mas, meetings) and it is saved to sessionStorage on every render, so Today, Cases and Case agree. `Q.status(key)` is the one short next step. `?reset` or Demo > Reset demo data starts fresh.
+- Shared case state: mutate `Q.data` (cases, writeup, mas, meetings) and it is saved to sessionStorage on every render, so Today, Cases and Case agree. `Q.status(key)` is the one short next step. `Q.masFor(key)` holds each case's MAS answers, §10B reason and checks (`c.selected` follows the verdict). `Q.canWin(key)` gates Mark won. Screens with `caseArg:true` show a 404 for an unknown case. Demo params (`?reset`, `?state`, `?edition`, `?theme`) are dropped from the URL once applied. `?reset` or Demo > Reset demo data starts fresh.

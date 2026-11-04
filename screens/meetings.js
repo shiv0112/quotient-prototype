@@ -90,14 +90,8 @@
     });
   }
 
-  function pasteSheet(){
-    Q.sheet({ title:'Paste notes', body:'<p class="small muted">For a meeting that is not on your calendar. '+Q.aiRule+'</p>'+
-      '<div class="field"><label class="label" for="pn-who">Client name</label><input class="input" id="pn-who" autocomplete="off"></div>'+
-      '<div class="field"><label class="label" for="pn-txt">Notes or transcript</label><textarea class="textarea" id="pn-txt" rows="10"></textarea></div>',
-      foot:'<button class="btn btn-primary" data-act="save">Save notes</button><button class="btn btn-ghost" data-close>Cancel</button>',
-      mount:function(sh){ sh.querySelector('#pn-who').focus();
-        sh.querySelector('[data-act="save"]').addEventListener('click', function(){ Q.closeSheet(); Q.toast('Notes saved'); }); } });
-  }
+  /* Paste notes = Write notes (screens/quicknotes.js): the same sheet saves the text to a case, a new case or unfiled. */
+  function pasteSheet(k){ QN.openSave(k||'', 0, true); }
   QD.b.pasteSheet = pasteSheet;
 
   Q.screen('meetings', { title:'Meetings', nav:'meetings', render:render, mount:mount });

@@ -4,9 +4,7 @@
   var D = Q.data, B = QD.b;
 
 
-  function rows(key){
-    return (B.sends[key]||[]).concat(B.log[key] || D.log[key] || []);
-  }
+  function rows(key){ return QB.sendRows(key); }
   function chars(t){ return t.length.toLocaleString('en-SG'); }
 
   function render(p){
@@ -17,10 +15,11 @@
       '<a class="back" href="#case-'+key+'">'+Q.icon('back','i-sm')+'Back to '+Q.esc(c.name)+'</a>'+
       '<header class="page-head rise"><div><h1 class="h1">What left your device <span class="case-no">· '+Q.esc(c.name)+' #'+c.no+'</span></h1>'+
       '<p class="sub">Every piece of text sent to the AI for this case, exactly as sent.</p></div></header>';
+    // Typed or pasted notes are not audio; a recorded meeting counts even while it is still on today's calendar.
     // Web/phone send meeting audio to the speech service (UPDATE-2 2c); desktop transcribes on the device.
     var web = Q.edition()!=='desktop';
-    var audio = !web || s.s==='empty' ? '' : Q.caseMeetings(key).filter(function(x){ return !x.upcoming && x.m.len; }).reverse().map(function(x){
-      return '<li class="s17-audio">'+Q.icon('mic','i-sm')+'<span>Audio · '+Q.esc(x.m.len)+' · sent for transcription · deleted after<small>'+Q.esc(x.m.date)+'</small></span></li>'; }).join('');
+    var audio = !web || s.s==='empty' ? '' : Q.caseMeetings(key).filter(function(x){ return x.m.len && x.m.len!=='typed'; }).reverse().map(function(x){
+      return '<li class="s17-audio">'+Q.icon('mic','i-sm')+'<span>Audio · '+Q.esc(x.m.len)+' · sent for transcription · deleted after<small>'+Q.esc(x.m.date||x.m.day)+'</small></span></li>'; }).join('');
     var fixed = '<ul class="s17-fixed rise">'+audio+D.log.fixed.map(function(t){ return '<li>'+Q.icon('device','i-sm')+Q.esc(t)+'</li>'; }).join('')+'</ul>';
     var body;
     if(s.s==='loading') body = '<div aria-busy="true">'+[1,2,3].map(function(){ return '<div class="skel-row"><span class="skel" style="width:30%"></span><span class="skel" style="width:16%"></span><span class="skel" style="width:12%"></span></div>'; }).join('')+'</div>';
@@ -39,5 +38,5 @@
     return '<div class="page s17">'+head+body+fixed+'</div>';
   }
 
-  Q.screen('sent', { title:function(p){ var c = D.cases[p.parts[0]]; return 'What left your device'+(c?' · '+c.name:''); }, nav:'cases', render:render });
+  Q.screen('sent', { caseArg:true, title:function(p){ var c = D.cases[p.parts[0]]; return 'What left your device'+(c?' · '+c.name:''); }, nav:'cases', render:render });
 })();

@@ -145,3 +145,6 @@
 .wa-list button:hover{background:var(--surface-2)}
 .wa-list b{display:block;font-size:var(--t-base);font-weight:var(--w-semi)}.wa-list small{font-size:var(--t-xs);color:var(--text-3)}
 @media (prefers-reduced-motion:no-preference){ .wa-win{animation:wa-in var(--dur-2) var(--ease-out)} @keyframes wa-in{from{transform:translateY(12px)}to{transform:none}} }
+
+/* Share: inline warning when the message drops the "not guaranteed" line (audit #21). */
+.sh-ngwarn{display:flex;gap:var(--s-1);align-items:flex-start;background:var(--confirm-bg);color:var(--confirm-ink);border-radius:var(--r-sm);padding:var(--s-1) var(--s-2);margin-top:var(--s-1)}

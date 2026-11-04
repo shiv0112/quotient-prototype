@@ -10,7 +10,7 @@
 
   function prefill(key){
     if(key==='daniel') return { name:'Daniel Lee', notes:'meeting', files:[] };
-    if(key==='alvin') return { name:'Alvin Lim', notes:'meeting', files:['harbour2'] };
+    if(key==='alvin' || (key && D.cases[key].revising)) return { name:D.cases[key].name, notes:'meeting', files:['harbour2'] };
     if(key && D.cases[key]) return { name:D.cases[key].name, notes:'meeting', files:[] };
     return { name:'', notes:'meeting', files:[] };
   }
@@ -22,9 +22,9 @@
     var cur = s.s==='none' ? '' : s.s;
     var good = st.files.filter(function(f){ return !f.err; }), bad = st.files.filter(function(f){ return f.err; });
     var tooMany = st.files.length>5;
-    var ok = good.length>=2 && good.length<=5 && !bad.length && !tooMany;
-    var why = tooMany ? 'Up to 5 plans at a time.' : bad.length ? 'Remove the files marked in red.' : good.length===1 ? 'Add at least one more PDF to compare.' : good.length===0 ? 'Add 3 to 5 PDFs to compare (2 allowed).' : '';
-    var title = c ? 'Add plans · '+c.name+' #'+c.no : 'New case';
+    var rev = c && c.revising, ok = (good.length>=2 || (rev && good.length===1)) && good.length<=5 && !bad.length && !tooMany; // a revision needs only the new PDF
+    var why = tooMany ? 'Up to 5 plans at a time.' : bad.length ? 'Remove the files marked in red.' : good.length===1 && !rev ? 'Add at least one more PDF to compare.' : good.length===0 ? 'Add 3 to 5 PDFs to compare (2 allowed).' : '';
+    var title = rev ? 'Add the new illustration · '+c.name+' #'+c.no : c ? 'Add plans · '+c.name+' #'+c.no : 'New case';
     var drop = '<div class="s07-drop'+(st.files.length?' small':'')+(st.over?' over':'')+'" data-drop>'+
       '<span class="ic">'+Q.icon('file')+'</span>'+
       '<span class="big">'+(st.files.length?'Add another PDF':'Drop 3 to 5 policy illustration PDFs (2 allowed)')+'</span>'+
@@ -41,7 +41,7 @@
       (c?'<a class="back" href="#case-'+key+'">'+Q.icon('back','i-sm')+'Back to '+Q.esc(c.name)+'</a>':'')+
       '<header class="page-head rise"><div><h1 class="h1">'+Q.esc(title)+'</h1><p class="sub">Your PDFs are read on this device. Nothing is sent until you see exactly what goes.</p></div></header>'+
       '<form class="s07-form rise" novalidate onsubmit="return false">'+
-        (c?'':'<div class="field s07-name"><label class="label" for="nc-name">Client name</label><input class="input" id="nc-name" autocomplete="off" value="'+Q.esc(st.name)+'"></div>'+
+        (c?'':'<div class="field s07-name"><label class="label" for="nc-name">Client name</label><input class="input" id="nc-name" autocomplete="off" aria-describedby="nc-name-e" value="'+Q.esc(st.name)+'"><span class="field-error" id="nc-name-e" hidden>Add the client\'s name.</span></div>'+
           '<div class="field s07-name"><label class="label" for="nc-mobile">Mobile · optional</label><input class="input" id="nc-mobile" type="tel" inputmode="tel" autocomplete="off" placeholder="+65 9123 4567" value="'+Q.esc(st.mobile||'')+'">'+
           '<span class="hint">Opens their WhatsApp chat directly</span></div>')+
         '<div class="field"><span class="label" id="pdf-l">Policy illustrations</span>'+drop+'</div>'+banner+files+
@@ -74,18 +74,32 @@
     return hit ? { name:n, ins:F[hit].ins, plan:F[hit].plan, pages:F[hit].pages } : { name:n, ins:'Insurer not recognised', plan:'Read on this device', pages:'?' };
   }
 
+  /* "Wants changes": the new illustration becomes the next table version; the case is ready to share it. */
+  function revise(key){
+    var c = D.cases[key], vs = Object.keys(c.tables), last = c.tables[vs[vs.length-1]], cells = JSON.parse(JSON.stringify(last.cells)), v = 'v'+(vs.length+1);
+    cells.harbour = JSON.parse(JSON.stringify(D.cases.alvin.tables.v2.cells.harbour)); // shortcut: the demo revision is always the lower-premium Harbour PDF (harbour2)
+    c.tables[v] = { plans:last.plans.slice(), cells:cells, changed:'harbour' }; delete c.revising;
+    Q.toast(v+' ready · share it with '+c.first); Q.go('#case-'+key);
+  }
+
   function mount(el, p){
     var key = D.cases[p.parts[0]] ? p.parts[0] : '', pg = el.querySelector('.page'), drop = pg.querySelector('[data-drop]');
     function add(list){ Array.prototype.forEach.call(list, function(f){ st.files.push(fromFile(f)); }); Q.refresh(); }
     pg.addEventListener('click', function(e){
       var rm = e.target.closest('[data-rm]'); if(rm){ st.files.splice(+rm.dataset.rm,1); Q.refresh(); var d = document.querySelector('[data-drop] label'); if(d) d.focus(); return; }
       var a = e.target.closest('[data-act]'); if(!a) return;
-      if(a.dataset.act==='paste'){ QD.b.pasteSheet(); return; }
+      if(a.dataset.act==='paste'){ QD.b.pasteSheet(key); return; }
       if(a.dataset.act==='sample'){ st.files = ['harbour','meridian','orchid'].map(function(k){ return F[k]; }); if(!st.name) st.name = 'Wei Tan'; Q.refresh(); }
       if(a.dataset.act==='compare'){ if(a.getAttribute('aria-disabled')==='true') return;
+        if(!key && !String(st.name||'').trim()){ var nm = pg.querySelector('#nc-name'); nm.setAttribute('aria-invalid','true'); pg.querySelector('#nc-name-e').hidden = false; nm.focus(); return; }
         // Each case goes to its own gate. A case that already has plans has no demo gate for new ones.
-        if(!key){ if(st.mobile && st.mobile.trim()) D.cases.wei.mobile = st.mobile.trim(); Q.go('#gate-wei'); } // demo: a new case continues as Wei's
-        else if(/^compare/.test(QB.feature(key)||'')) Q.go('#gate-'+key);
+        if(key && D.cases[key].revising){ revise(key); return; }
+        if(!key){ // demo: a new case continues as Wei's sample case. Notes picked here go with it; Wei's saved mobile is never overwritten.
+          var picked = QB.pick('').slice(); picked.forEach(function(id){ var x = Q.meetingById(id); if(x && !x.m.c) x.m.c = 'wei'; });
+          QB.pick('wei', QB.pick('wei').concat(picked.filter(function(id){ return QB.pick('wei').indexOf(id)<0; })));
+          if(st.name.trim()!=='Wei Tan') Q.toast('Demo: continues with the sample case for Wei Tan');
+          Q.go('#gate-wei-compare'); }
+        else if(QB.gateFor(key, 'compare')) Q.go('#gate-'+key+'-compare');
         else { Q.toast('Demo: plans added to case #'+D.cases[key].no); Q.go('#case-'+key); } }
     });
     pg.addEventListener('change', function(e){

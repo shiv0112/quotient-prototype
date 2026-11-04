@@ -8,9 +8,9 @@
   function stepLabel(c,i){ return i===4 && c.chosenLabel ? c.chosenLabel : D.steps[i].label; }
 
   /* Phone (<480px): the 8-step timeline does not fit, so show one line on a 6-step scale instead. */
-  var SIX = ['Met','Compared','Shared','Chosen','Write-up','Won'], SIX_AT = [1,2,3,4,4,5,5,6];
+  var SIX = ['Met','Compared','Shared','Chosen','Write-up','Won'], SIX_AT = [1,2,3,3,4,5,5,6]; // same step as the board dots (today.js DOT + 1)
   function phoneStep(c){
-    var n = SIX_AT[c.now] || 1, label = c.result==='lost' ? 'Lost' : c.now===6 ? 'Firm review' : SIX[n-1];
+    var n = SIX_AT[c.now] || 1, label = c.result==='lost' ? 'Lost' : c.now===6 ? 'Firm review' : c.now===3 ? 'Client replied' : c.now===4 && c.chosenLabel ? c.chosenLabel : SIX[n-1];
     return '<div class="fx-step"><p><b>Step '+n+' of 6:</b> '+Q.esc(label)+'</p><span class="fx-bar" aria-hidden="true"><i style="width:'+Math.round(n/6*100)+'%"></i></span></div>';
   }
 
@@ -29,7 +29,7 @@
 
   /* The next-step card is derived from the shared case data, so it moves on after every action (nudge, ticks, checks). */
   function nextStep(key, c){
-    var first = c.first, h, p = '', btn = '', done = false, dup = false, n;
+    var first = c.first, h, p = '', btn = '', done = false, dup = false, n, r, vs, t;
     function a(href, label, kind, icon){ return '<a class="btn btn-'+(kind||'primary')+'" href="'+href+'">'+(icon?Q.icon(icon,'i-sm'):'')+label+'</a>'; }
     if(c.result==='won'){ done = true; h='Won · policy with '+(c.chose||'the chosen insurer'); p='Closed on '+c.dates.closed+'.'; btn='<a class="btn-link" href="#sent-'+key+'">See what left your device</a>'; }
     else if(c.result==='lost'){ done = true; h='Lost · '+(c.reason||'no reason').toLowerCase(); p='Closed on '+c.dates.closed+'.'; btn='<button class="btn-link" data-act="reopen">Reopen case</button>'; }
@@ -41,25 +41,29 @@
             '<button class="btn btn-secondary u2-ponly" aria-disabled="true" title="Check every yellow number first">'+Q.icon('share','i-sm')+'Share</button>'; }
         else { h='Ready to share with '+first; p='Every number is checked against its PDF page.'; btn=a('#share-'+key, 'Share comparison', 'primary', 'share'); }
         break;
-      case 2:
-        if(c.quiet){ h='Case quiet · '+(c.nudgesSent||2)+' nudges sent'; p='Reminders for '+first+' have stopped. Log it here if '+first+' replies.'; btn=a('#nudge-'+key+'-reply', 'Log a reply', 'secondary'); }
-        else if(c.nudged){ h='Nudge sent · next reminder '+c.nudged.next; p='You nudged '+first+' on '+c.nudged.on+'. Log it here when '+first+' replies.'; btn=a('#nudge-'+key+'-reply', 'Log a reply', 'secondary'); }
-        else if(c.snoozedTo){ h='Snoozed until '+c.snoozedTo; p='We\'ll remind you then.'; btn=a('#nudge-'+key, 'Open nudge', 'secondary'); }
-        else if((c.quietDays||0) >= D.adviser.waitDays){ h=first+' hasn\'t replied in '+c.quietDays+' days'; p='You shared the comparison on '+c.dates.shared+'. A short nudge is drafted.'; btn=a('#nudge-'+key, 'Send a nudge'); }
-        else { h='Shared with '+first; p='We\'ll remind you on '+D.share.remindOn+' if there\'s no reply.'; btn=a('#nudge-'+key+'-reply', 'Log a reply', 'secondary'); }
+      case 2: r = '#case-'+key+'-reply';
+        if(c.quiet){ h='Case quiet · '+(c.nudgesSent||2)+' nudges sent'; p='Reminders for '+first+' have stopped. Log it here if '+first+' replies.'; btn=a(r, 'Log a reply'); }
+        else if(c.nudged){ h='Nudge sent · next reminder '+c.nudged.next; p='You nudged '+first+' on '+c.nudged.on+'. Log it here when '+first+' replies.'; btn=a(r, 'Log a reply'); }
+        else if(c.snoozedTo){ h='Snoozed until '+c.snoozedTo; p='We\'ll remind you then. Log it here if '+first+' replies first.'; btn=a(r, 'Log a reply')+a('#nudge-'+key, 'Open nudge', 'secondary'); }
+        else if((c.quietDays||0) >= D.adviser.waitDays){ h=first+' hasn\'t replied in '+c.quietDays+' days'; p='You shared the comparison on '+c.dates.shared+'. A short nudge is drafted.'; btn=a('#nudge-'+key, 'Send a nudge')+a(r, 'Already replied', 'secondary'); }
+        else { h='Shared with '+first; p='We\'ll remind you on '+D.share.remindOn+' if there\'s no reply.'; btn=a(r, 'Log a reply'); }
         break;
-      case 3: h=first+' replied'; p='Note which plan '+first+' chose, then draft the write-up.'; break;
-      case 4:
-        if(c.shareSent){ h='Revised plan shared with '+first; p='We\'ll remind you on '+D.share.remindOn+' if there\'s no reply.'; btn=a('#nudge-'+key+'-reply', 'Log a reply', 'secondary'); }
-        else { h='Share the revised plan with '+first; p='Harbour v2 is S$3,300 a year, down from S$4,200.'; btn=a('#share-'+key, 'Share v2', 'primary', 'share'); }
+      case 3: h=first+' replied'; p='Note which plan '+first+' chose, then start the write-up.'; btn=a('#case-'+key+'-reply', 'Log a reply'); break;
+      case 4: vs = Object.keys(c.tables); t = c.tables[vs[vs.length-1]];
+        if(c.revising){ h='Add the new illustration'; p=first+' wants changes'+(typeof c.revising==='string'?': '+c.revising:'')+'. Add the insurer\'s new PDF and we build v'+(vs.length+1)+' of the comparison.'; btn=a('#new-case-'+key, Q.icon('plus')+'Add the new illustration'); }
+        else if(c.shareSent){ h='Revised plan shared with '+first; p='We\'ll remind you on '+D.share.remindOn+' if there\'s no reply.'; btn=a('#case-'+key+'-reply', 'Log a reply'); }
+        else { h='Share the revised plan with '+first; p = t && t.changed && vs.length>1 ? D.insurers[t.changed].short+' v'+vs.length+' is '+Q.money(t.cells[t.changed].premium.v)+' a year, down from '+Q.money(c.tables[vs[0]].cells[t.changed].premium.v)+'.' : '';
+          btn=a('#share-'+key, 'Share v'+vs.length, 'primary', 'share'); }
         break;
       case 5: n = Q.writeupProgress(key);
-        if(n.done<n.total){ h='Finish the write-up · '+n.done+' of '+n.total+' parts ticked'; p=first+' chose '+(c.chose||'a plan')+'.'; btn=a('#writeup-'+key, 'Continue write-up'); }
+        if(!n.done){ h='Start the write-up'; p=first+' chose '+(c.chose||'a plan')+'. Each part is drafted for you to check.'; btn=a('#writeup-'+key, 'Start the write-up'); }
+        else if(n.done<n.total){ h='Finish the write-up · '+n.done+' of '+n.total+' parts ticked'; p=first+' chose '+(c.chose||'a plan')+'.'; btn=a('#writeup-'+key, 'Continue write-up'); }
         else { h='Write-up ready · copy it to your firm portal'; p='All '+n.total+' required parts are ticked.'; btn=a('#writeup-'+key, 'Open write-up'); }
         break;
-      case 6: n = Q.masProgress(key); var left = n.total-n.done;
-        if(left){ h='Firm review · '+left+' check'+(left>1?'s':'')+' left'; p=first+' is a Selected Client. '+n.done+' of '+n.total+' checks are done.'; btn=a('#mas-'+key, 'Open checklist'); }
-        else { h='Firm review done · Mark won when the policy starts'; p='All '+n.total+' checks are ticked. Your firm decides when the policy starts.'; btn='<button class="btn btn-primary" data-act="won">Mark won</button>'; }
+      case 6: n = Q.masProgress(key); var left = c.selected ? n.total-n.done : (c.reviewed ? 0 : 1);
+        if(left && c.selected){ h='Firm review · '+left+' check'+(left>1?'s':'')+' left'; p=first+' is a Selected Client. '+n.done+' of '+n.total+' checks are done.'; btn=a('#mas-'+key, 'Open checklist'); }
+        else if(left){ h='Documentation review by your firm'; p='Your supervisor or firm checks the needs analysis and client records before the policy starts. Tick it here once it is done.'; btn=a('#case-'+key+'-reviewed', 'Firm review done')+a('#mas-'+key, 'Open checks', 'secondary'); }
+        else { h='Firm review done · Mark won when the policy starts'; p=c.selected ? 'All '+n.total+' checks are ticked. Your firm decides when the policy starts.' : 'Documentation review done '+c.reviewed+'. Your firm decides when the policy starts.'; btn=a('#case-'+key+'-won', 'Mark won'); }
         break;
       default: h='No next step';
     }
@@ -85,8 +89,8 @@
   function table(key, ver){
     var t = D.cases[key].tables[ver], n = t.plans.length, lastGrp = 'summary';
     var head = '<thead><tr><th scope="col"><span class="sr">Item</span><small>Whole life par · LIA order</small></th>'+t.plans.map(function(ins){ var i = D.insurers[ins];
-      var v2 = t.changed===ins || (ver==='v2' && !t.changed && (D.cases[key].chose||'').indexOf(i.name)===0);
-      return '<th scope="col">'+Q.esc(i.name)+(v2?' v2':'')+'<small>'+Q.icon('file','i-sm')+' '+Q.esc(i.file)+'</small></th>'; }).join('')+'</tr></thead>';
+      var rev = t.changed===ins || (ver!=='v1' && !t.changed && (D.cases[key].chose||'').indexOf(i.name)===0);
+      return '<th scope="col">'+Q.esc(i.name)+(rev?' '+ver:'')+'<small>'+Q.icon('file','i-sm')+' '+Q.esc(i.file)+'</small></th>'; }).join('')+'</tr></thead>';
     var body = D.rows.map(function(r){
       var g = '';
       if(r.grp!==lastGrp){ var G = D.groups[r.grp]; lastGrp = r.grp;
@@ -173,14 +177,14 @@
     if(p.state==='error') return '<div class="page">'+switcher(key)+'<div class="banner banner-error" role="alert">'+Q.icon('alert')+'<p>Couldn\'t load this case. Nothing was changed.</p><button class="btn-link" data-go="#case-'+key+'">Try again</button></div></div>';
     var plans = Object.keys(c.tables).length ? c.tables[Object.keys(c.tables)[0]].plans.length : 0;
     var status = c.selected ? '<span class="chip chip-outline">Selected Client</span>' : c.result==='won' ? '<span class="chip chip-ok chip-dot">Won</span>' : c.result==='lost' ? '<span class="chip chip-dot">Lost</span>' : '';
-    var sends = (D.log[key]||[]).length || c.sends;
+    var sends = QB.sendRows(key).length; // same rows as the log page
     return '<div class="page case">'+switcher(key)+
       '<header class="card case-head tiled rise"><div><h1 class="h1 display">'+Q.esc(c.name)+' <span class="case-no">#'+c.no+'</span></h1>'+
         '<p class="case-meta">'+c.age+'<span class="dot-sep"></span>'+c.product+'<span class="dot-sep"></span>'+(plans?plans+' plans':'No plans yet')+(status?' '+status:'')+'</p>'+
         '<p class="case-mobile">'+(c.mobile ? '<span>Mobile · <span class="num">'+Q.esc(c.mobile)+'</span></span><button class="btn-link" data-act="mobile">Edit</button>'
           : '<span class="muted">No mobile</span><button class="btn-link" data-act="mobile">Add mobile</button>')+'</p></div>'+
         '<div class="menu"><button class="btn btn-secondary" data-menu aria-haspopup="true" aria-expanded="false">'+Q.icon('more')+'More</button><div class="menu-pop" role="menu">'+
-          '<button role="menuitem" data-act="won">Mark won</button><button role="menuitem" data-act="lost">Mark lost</button>'+
+          (Q.canWin(key)?'<button role="menuitem" data-act="won">Mark won</button>':'')+(c.result?'':'<button role="menuitem" data-act="lost">Mark lost</button>')+
           '<button role="menuitem" data-go="#new-case-'+key+'">Add plans</button><button role="menuitem" class="danger" data-act="delete">Delete case</button></div></div></header>'+
       '<section class="rise" aria-label="Progress">'+timeline(c)+'</section>'+
       nextStep(key, c)+comparison(key, c, p.state)+meetingsSec(key, c)+
@@ -190,6 +194,7 @@
 
   function mount(el, p){
     var key = D.cases[p.parts[0]] ? p.parts[0] : 'wei', c = D.cases[key];
+    if(p.id==='case' && Q.CASE_ACTS[p.parts[1]]){ history.replaceState(null, '', '#case-'+key); Q.caseAct(key, p.parts[1]); } // e.g. #case-wei-reply from Today
     el.querySelector('.page').addEventListener('click', function(e){
       var v = e.target.closest('[data-ver]'); if(v){ verOf[key] = v.dataset.ver; Q.refresh(); return; }
       var a = e.target.closest('[data-act]'); if(!a) return;
@@ -201,8 +206,8 @@
           function save(){ var v = inp.value.trim(); if(v) c.mobile = v; else delete c.mobile; Q.closeSheet(); Q.refresh(); Q.toast(v ? 'Mobile saved' : 'Mobile removed'); }
           sh.querySelector('[data-cm]').addEventListener('click', save);
           inp.addEventListener('keydown', function(e){ if(e.key==='Enter') save(); }); } });
-      if(a.dataset.act==='won'){ c.result='won'; c.now=7; c.dates.closed=D.today.date; Q.refresh(); Q.toast('Marked as won'); }
-      if(a.dataset.act==='reopen'){ c.result=null; c.now=Math.min(c.lostAt||2,6); delete c.dates.closed; Q.refresh(); Q.toast('Case reopened'); }
+      if(a.dataset.act==='won') Q.caseAct(key, 'won');
+      if(a.dataset.act==='reopen'){ c.result=null; c.now=Math.min(c.lostAt!=null?c.lostAt:2,6); delete c.dates.closed; Q.refresh(); Q.toast('Case reopened'); }
       if(a.dataset.act==='lost') Q.dialog({ title:'Why was '+c.first+'\'s case lost?',
         body:'<div class="opts" role="radiogroup">'+['Budget changed','Chose another adviser','Not ready','Other'].map(function(r,i){
           return '<label class="check"><input type="radio" name="why" value="'+r+'"'+(i===0?' checked':'')+'> '+r+'</label>'; }).join('')+'</div>',
@@ -227,6 +232,6 @@
     if(p.id==='source' && shownFor!==location.hash){ shownFor = location.hash; var refs = Q.toCheck(key); Q.openSheet(refs[0] || key+'/'+Object.keys(c.tables)[0]+'/harbour/b20'); }
   }
 
-  Q.screen('case', { title:function(p){ var c = D.cases[p.parts[0]]; return c ? c.name+' #'+c.no : 'Case'; }, nav:'cases', render:render, mount:mount });
-  Q.screen('source', { title:'PDF page', nav:'cases', render:render, mount:mount });
+  Q.screen('case', { caseArg:true, title:function(p){ var c = D.cases[p.parts[0]]; return c ? c.name+' #'+c.no : 'Case'; }, nav:'cases', render:render, mount:mount });
+  Q.screen('source', { caseArg:true, title:'PDF page', nav:'cases', render:render, mount:mount });
 })();

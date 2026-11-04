@@ -62,4 +62,5 @@
       }
     });
   };
+  Q.waDemo.close = close; // core closes it when the screen changes
 })();

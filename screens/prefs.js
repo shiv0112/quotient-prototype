@@ -3,7 +3,7 @@
 (function(){
   'use strict';
   var D = Q.data, A = QD.a, ad = D.adviser;
-  var pf = { cal:true, outlook:false, digest:true };
+  var pf = ad.pf || (ad.pf = { cal:true, outlook:false, digest:true }); // saved with the adviser (core SAVED)
   var autoOpened = false;
   Q.on('render', function(r){ if(r.id!=='prefs') autoOpened = false; });
 
@@ -63,7 +63,7 @@
       '<label class="switch"><input type="checkbox" id="pf-dg"'+(pf.digest?' checked':'')+'> Send me a morning digest</label>'+
       '<div class="pf-time"><label class="label" for="pf-time">Time</label><select class="select" id="pf-time"'+(pf.digest?'':' disabled')+'>'+A.digestTimes.map(function(t){
         return '<option'+(t===ad.digestTime?' selected':'')+'>'+t+'</option>'; }).join('')+'</select></div>'+
-      '<p class="small device-line">'+Q.icon('device','i-sm')+' Shown on this device only. <a href="#digest">See an example</a></p>');
+      '<p class="small device-line">'+Q.icon('device','i-sm')+(web?' Case numbers only, never a client name.':' Made on this device, so names are fine.')+' <a href="#digest">See an example</a></p>');
 
     var edition = sec('ed','Edition','',
       (web ? '<p class="pf-line">You\'re using the web app. The desktop app adds call audio.</p>'+

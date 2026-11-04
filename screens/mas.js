@@ -28,13 +28,13 @@
     verdict(['no','yes','yes'])==='not' && verdict(['no','no','no'])==='selected' && verdict([null,null,null])==='open', 'MAS rule self-check failed');
 
   function reset(key, st){
-    var src = key==='marcus' ? D.mas : C.masSiti;
-    ui.st = st; ui.key = key; ui.noteOpen = null; ui.override = null; ui.open = {};
-    ui.ns = { decl:false, doc:false, selrep:false, call:false }; // Not Selected path (demo only)
-    ui.q = src.questions.map(function(q){ return { q:q.q, answer:q.answer, from:q.from, note:q.note, suggest:q.suggest||null }; });
-    // Marcus's real checklist is the shared one, so ticks show on the case, Today and Cases. Demo states get a copy.
-    ui.list = key===D.mas.c && !st ? D.mas.checklist : D.mas.checklist.map(function(x){ return Object.assign({}, x, { note:'' }); });
-    if(key!=='marcus'){ ui.q[0].from = 'From the case: age '+D.cases[key].age; ui.q[0].answer = D.cases[key].age<62 ? 'yes' : 'no'; }
+    // The case's saved answers, §10B reason and checks (Q.masFor), so ticks show on the case, Today and Cases. Demo states get a copy.
+    var M = Q.masFor(key); if(st) M = JSON.parse(JSON.stringify(M));
+    ui.M = M; ui.st = st; ui.key = key; ui.noteOpen = null; ui.open = {};
+    M.ns = M.ns || {}; ['decl','doc','selrep','call'].forEach(function(k){ if(M.ns[k]==null) M.ns[k] = false; });
+    if(!st && D.cases[key].reviewed) M.ns.doc = true; // the documentation review is shared with the case (c.reviewed)
+    ui.ns = M.ns; ui.q = M.questions; ui.list = M.checklist;
+    if(st) ui.list.forEach(function(x){ x.note = ''; });
     if(st==='notstarted'){ ui.q.forEach(function(q){ q.answer = null; q.suggest = null; }); }
     if(st==='suggest'){ ui.q[1].answer = null; ui.q[2].answer = null; }
     if(st==='noquote'){ ui.q[1].answer = null; ui.q[1].suggest = 'none'; }
@@ -64,10 +64,13 @@
         return '<button data-q="'+i+'" data-v="'+v+'" aria-pressed="'+(q.answer===v)+'">'+(v==='yes'?'Yes':'No')+'</button>'; }).join('')+'</div></div>';
   }
 
+  /* The case is a Selected Client when two or more answers are "no" and no §10B reason is recorded. Demo states change nothing. */
+  function derive(){ if(ui.st) return; D.cases[ui.key].selected = verdict(ui.q.map(function(q){ return q.answer; }))==='selected' && !ui.M.override; }
+
   function readout(){
     var a = ui.q.map(function(q){ return q.answer; }), no = a.filter(function(x){ return x==='no'; }).length, v = verdict(a), h;
-    if(v==='selected' && ui.override) h = '<h2 class="h2">Not treated as a Selected Client</h2><p>'+no+' of 3 answers are "no", but you recorded why the safeguards do not apply.'+info('MAS Notice FAA-N16 §10B')+'</p>'+
-      '<p class="mas-why">"'+Q.esc(ui.override)+'"</p><button class="btn-link" data-act="undo10b">Undo</button>';
+    if(v==='selected' && ui.M.override) h = '<h2 class="h2">Not treated as a Selected Client</h2><p>'+no+' of 3 answers are "no", but you recorded why the safeguards do not apply.'+info('MAS Notice FAA-N16 §10B')+'</p>'+
+      '<p class="mas-why">"'+Q.esc(ui.M.override)+'"</p><button class="btn-link" data-act="undo10b">Undo</button>';
     else if(v==='selected') h = '<h2 class="h2">Selected Client</h2><p>'+no+' of 3 answers are "no". '+info('MAS Notice FAA-N16 §10A')+'The safeguards below apply before the policy starts.</p>'+
       '<span class="u2-row"><button class="btn btn-secondary btn-sm mas-10b" data-act="10b">Not treating as a Selected Client? Record why</button>'+info('MAS Notice FAA-N16 §10B')+'</span>';
     else if(v==='not') h = '<h2 class="h2">Not a Selected Client</h2><p>'+no+' of 3 answers are "no". '+info('MAS Notice FAA-N16 §10A')+'The Selected Client safeguards do not apply.</p>';
@@ -125,7 +128,7 @@
   /* Not a Selected Client: the determination is still documented (§10C) and a documentation review is still needed (§41L). */
   function notSelected(){
     var n = ui.ns, rows = [
-      ['decl','§10C', ui.override ? 'Assessment documented and declared, with your reason for not treating the client as a Selected Client' : 'Assessment documented and declared', 'Signed by the client and you (FAQ 5).'],
+      ['decl','§10C', ui.M.override ? 'Assessment documented and declared, with your reason for not treating the client as a Selected Client' : 'Assessment documented and declared', 'Signed by the client and you (FAQ 5).'],
       ['doc','§41L','Documentation review before the policy starts','Needs analysis and know-your-client records, reviewed by your supervisor, non-sales staff, a third party or a system your firm has shown works (§41N).'] ];
     if(n.selrep) rows.push(['call','§41K(b) · §41S','Call-back, audio-recorded','Needed because you are a selected representative. Same questions as for a Selected Client.']);
     return '<section class="card mas-review" aria-labelledby="mas-nh"><div class="mas-rhead"><div><h2 class="h3" id="mas-nh">Before the policy starts</h2>'+
@@ -139,7 +142,7 @@
 
   /* Phone: one sticky main action. Next open firm check, else back to the case (answers save as you go). */
   function dock(key, v){
-    var nextI = -1; if(v==='selected' && !ui.override) ui.list.some(function(x,i){ if(!Q.masDone(x)){ nextI = i; return true; } });
+    var nextI = -1; if(v==='selected' && !ui.M.override) ui.list.some(function(x,i){ if(!Q.masDone(x)){ nextI = i; return true; } });
     return '<div class="u2-dock u2-ponly">'+(nextI>=0 ? '<button class="btn btn-primary" data-tick="'+nextI+'">'+Q.icon('check','i-sm')+'Mark check '+(nextI+1)+' of '+ui.list.length+' done</button>'
       : '<a class="btn btn-primary" href="#case-'+key+'">Save and back to case</a>')+'</div>';
   }
@@ -159,9 +162,9 @@
       '<section class="card mas-inst" aria-labelledby="mas-t"><div class="mas-q"><div class="mas-ihead"><h2 class="eyebrow" id="mas-t">Selected Client test · 3 questions</h2>'+
         '<p class="mas-rule">Rule: <b>two or more "no" = Selected Client</b></p></div>'+
         ui.q.map(function(q,i){ return question(i, q, i===nextQ, key); }).join('')+
-        (hasSug ? '' : '<p class="small" style="margin-top:var(--s-5)"><a href="#gate-'+key+'" style="font-weight:600">Suggest answers from the meeting</a> <span class="muted">· goes through the privacy gate. You still choose every answer.</span></p>')+
+        (hasSug ? '' : '<p class="small" style="margin-top:var(--s-5)"><a href="#gate-'+key+'-mas" style="font-weight:600">Suggest answers from the meeting</a> <span class="muted">· goes through the privacy gate. You still choose every answer.</span></p>')+
       '</div>'+readout()+'</section>'+
-      (v==='selected' && !ui.override ? review(key) : v==='open' ? '' : notSelected())+
+      (v==='selected' && !ui.M.override ? review(key) : v==='open' ? '' : notSelected())+
       '<p class="mas-foot">'+Q.icon('info','i-sm')+'<span>This is an aid for you and your firm. It is not a sign-off. Your firm sets the timing.</span></p>'+dock(key, v)+'</div>';
   }
 
@@ -175,22 +178,24 @@
         t.addEventListener('input', function(){ reason = t.value.trim(); });
         // Block the save until there is a written reason (capture runs before the dialog's own click handler).
         w.addEventListener('click', function(e){ var b = e.target.closest('[data-i="1"]'); if(b && !t.value.trim()){ e.stopPropagation(); t.setAttribute('aria-invalid','true'); w.querySelector('#m10b-e').hidden = false; t.focus(); } }, true); } })
-    .then(function(v){ if(v && reason){ ui.override = reason; Q.refresh(); Q.toast('Reason recorded'); } });
+    .then(function(v){ if(v && reason){ ui.M.override = reason; derive(); Q.refresh(); Q.toast('Reason recorded'); } });
   }
 
   function mount(el, p){
     var pg = el.querySelector('.page'), ni = pg.querySelector('.mas-note .input'); if(ni) ni.focus();
     pg.addEventListener('click', function(e){
-      var b = e.target.closest('[data-q]'); if(b){ var q = ui.q[+b.dataset.q]; q.answer = q.answer===b.dataset.v ? null : b.dataset.v; Q.refresh(); refocus('[data-q="'+b.dataset.q+'"][data-v="'+b.dataset.v+'"]'); return; }
-      var u = e.target.closest('[data-use]'); if(u){ var qq = ui.q[+u.dataset.use]; qq.answer = qq.suggest.value; Q.refresh(); return; }
+      var b = e.target.closest('[data-q]'); if(b){ var q = ui.q[+b.dataset.q]; q.answer = q.answer===b.dataset.v ? null : b.dataset.v; derive(); Q.refresh(); refocus('[data-q="'+b.dataset.q+'"][data-v="'+b.dataset.v+'"]'); return; }
+      var u = e.target.closest('[data-use]'); if(u){ var qq = ui.q[+u.dataset.use]; qq.answer = qq.suggest.value; derive(); Q.refresh(); return; }
       var t = e.target.closest('[data-tick]'); if(t){ var x = ui.list[+t.dataset.tick]; x.done = true; x.date = D.today.date; delete ui.open[+t.dataset.tick]; Q.refresh(); Q.toast('Check ticked'); return; }
       var un = e.target.closest('[data-untick]'); if(un){ ui.list[+un.dataset.untick].done = false; Q.refresh(); return; }
       var pa = e.target.closest('[data-path]'); if(pa){ ui.list.filter(function(x){ return x.id==='ti'; })[0].path = pa.dataset.path; Q.refresh(); refocus('[data-path="'+pa.dataset.path+'"]'); return; }
-      var ns = e.target.closest('[data-ns]'); if(ns){ ui.ns[ns.dataset.ns] = !ui.ns[ns.dataset.ns]; Q.refresh(); refocus('[data-ns="'+ns.dataset.ns+'"]'); return; }
+      var ns = e.target.closest('[data-ns]'); if(ns){ ui.ns[ns.dataset.ns] = !ui.ns[ns.dataset.ns];
+        var cc = D.cases[ui.key]; if(ns.dataset.ns==='doc' && !ui.st && cc.now===6 && !cc.selected){ if(ui.ns.doc) cc.reviewed = D.today.date; else delete cc.reviewed; }
+        Q.refresh(); refocus('[data-ns="'+ns.dataset.ns+'"]'); return; }
       var n = e.target.closest('[data-note]'); if(n){ ui.noteOpen = +n.dataset.note; Q.refresh(); return; }
       var sn = e.target.closest('[data-savenote]'); if(sn){ saveNote(); return; }
       var a = e.target.closest('[data-act]'); if(a && a.dataset.act==='10b') ask10b();
-      if(a && a.dataset.act==='undo10b'){ ui.override = null; Q.refresh(); }
+      if(a && a.dataset.act==='undo10b'){ ui.M.override = null; derive(); Q.refresh(); }
     });
     pg.addEventListener('change', function(e){
       var f = e.target.closest('[data-flag]'); if(f){ var x = ui.list.filter(function(z){ return z.id==='call'; })[0]; x[f.dataset.flag] = f.checked; Q.refresh(); refocus('[data-flag="'+f.dataset.flag+'"]'); return; }
@@ -202,5 +207,5 @@
     function refocus(sel){ var f = document.querySelector(sel); if(f) f.focus({preventScroll:true}); }
   }
 
-  Q.screen('mas', { title:function(p){ var c = D.cases[p.parts[0]]; return 'MAS checks'+(c?' · '+c.name:''); }, nav:'cases', render:render, mount:mount });
+  Q.screen('mas', { caseArg:true, title:function(p){ var c = D.cases[p.parts[0]]; return 'MAS checks'+(c?' · '+c.name:''); }, nav:'cases', render:render, mount:mount });
 })();

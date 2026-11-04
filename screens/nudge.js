@@ -6,6 +6,7 @@
   'use strict';
   var D = Q.data, N = D.nudge, ui = { hash:null }, rm = { hash:null };
   var SNOOZE = { '1':'Wed 4 Nov', '3':'Fri 6 Nov' }; // today is Tue 3 Nov
+  Q.on('render', function(p){ if(p.id!=='nudge') ui.hash = null; if(p.id!=='reminder') rm.hash = null; }); // coming back starts fresh
   var SVG = function(d){ return '<svg class="i i-sm" viewBox="0 0 24 24" aria-hidden="true">'+d+'</svg>'; };
   var I_COPY = SVG('<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/>');
   var I_CHAT = SVG('<path d="M20.5 12a8.5 8.5 0 0 1-12.4 7.5L3.5 20.5l1.1-4.4A8.5 8.5 0 1 1 20.5 12z"/>');
@@ -49,8 +50,14 @@
   /* ---------- S16 Nudge ---------- */
   function render(p){
     var key = D.cases[p.parts[0]] ? p.parts[0] : 'priya', c = D.cases[key];
+    if(c.result || c.now<2){ ui.hash = null; // won, lost or nothing shared yet: nothing to follow up
+      var why = c.result==='won' ? c.first+'\'s case is won.' : c.result==='lost' ? c.first+'\'s case is closed.' : 'Nothing has been shared with '+c.first+' yet.';
+      return '<div class="page ng fu"><header><a class="back" href="#case-'+key+'">'+Q.icon('back','i-sm')+'Back to '+Q.esc(c.name)+'</a>'+
+        '<h1 class="h1 display">Follow up with '+Q.esc(c.first)+'</h1><p class="ng-sub"><span class="num">#'+c.no+'</span></p></header>'+
+        '<section class="empty rise"><h2>No follow-up needed</h2><p>'+Q.esc(why)+'</p><a class="btn btn-secondary" href="#case-'+key+'">Open case</a></section></div>'; }
     if(location.hash!==ui.hash){ ui.hash = location.hash; var s0 = p.parts[1]==='three' ? 'quiet' : p.parts[1];
-      ui.st = s0==='draft' ? '' : s0 || (c.quiet ? 'quiet' : c.nudged ? 'sent' : c.snoozedTo ? 'snoozed' : ''); ui.snooze = '1'; ui.draft = draftFor(key, c); ui.asked = false; ui.cal = false; }
+      ui.st = s0==='draft' ? '' : s0 || (c.quiet ? 'quiet' : c.nudged ? 'sent' : c.snoozedTo ? 'snoozed' : '');
+      ui.openReply = ui.st==='reply'; if(ui.openReply) ui.st = ''; /* #nudge-<k>-reply opens the shared reply sheet (Q.reply) */ ui.snooze = '1'; ui.draft = draftFor(key, c); ui.asked = false; ui.cal = false; }
     var st = p.state==='empty' ? 'nodraft' : p.state==='error' ? 'error' : p.state==='loading' ? 'loading' : ui.st;
     var chips = demo('nudge-'+key, [['nodraft','No draft yet'],['draft','Draft'],['sent','Sent'],['snoozed','Snoozed'],['reply','Log a reply'],['quiet','Case quiet']], ui.st || 'draft');
     var head = '<header><a class="back" href="#case-'+key+'">'+Q.icon('back','i-sm')+'Back to '+Q.esc(c.name)+'</a>'+
@@ -58,11 +65,11 @@
       '<p class="ng-sub"><span class="num">#'+c.no+'</span><span class="dot-sep"></span>no reply for '+(c.quietDays||3)+' days</p></header>';
     var top = '', body, card = clientCard(key, c, st==='quiet');
     if(st==='snoozed') top = '<div class="banner" role="status">'+Q.icon('bell')+'<p>Snoozed until '+(c.snoozedTo||SNOOZE[ui.snooze])+'. We\'ll remind you then.</p><button class="btn-link" data-act="unsnooze">Undo</button></div>';
-    if(st==='error') top = '<div class="banner banner-error" role="alert">'+Q.icon('alert')+'<p>Couldn\'t draft the nudge. Nothing else was sent.</p><button class="btn-link" data-go="#gate-'+key+'">Try again</button></div>';
+    if(st==='error') top = '<div class="banner banner-error" role="alert">'+Q.icon('alert')+'<p>Couldn\'t draft the nudge. Nothing else was sent.</p><button class="btn-link" data-go="#gate-'+key+'-nudge">Try again</button></div>';
 
     if(st==='nodraft' || st==='error') body = card+'<section class="card hero ng-hero" aria-labelledby="ng-d"><p class="eyebrow">Follow-up</p><h2 id="ng-d">Draft a short nudge for '+Q.esc(c.first)+'</h2>'+
       '<p>Only '+Q.esc(c.first)+'\'s worry, one page of what you sent and placeholders like <span class="ph">[CLIENT]</span> are sent. Names go back in on this device.</p>'+
-      '<div><a class="btn btn-primary" href="#gate-'+key+'">Draft a nudge'+Q.icon('arrow','i-sm')+'</a></div></section>';
+      '<div><a class="btn btn-primary" href="#gate-'+key+'-nudge">Draft a nudge'+Q.icon('arrow','i-sm')+'</a></div></section>';
     else if(st==='loading') body = '<div class="card" aria-busy="true"><span class="skel" style="width:30%"></span><span class="skel skel-lg" style="width:100%;margin-top:16px;height:96px"></span></div>';
     else if(st==='sent'){
       var n = c.nudgesSent || 1, quiet = !!c.quiet;
@@ -80,11 +87,6 @@
         '<p>That\'s the limit you set in <a href="#prefs">Settings</a>. '+Q.esc(c.first)+' may just be busy. You can still reach out any time, or log a reply if one comes in.</p>'+
         '<div class="row"><button class="btn btn-secondary" data-act="reply">Log a reply</button><button class="btn btn-secondary" data-act="wake">Nudge once more</button><button class="btn btn-ghost" data-act="lost">Mark lost</button></div></section>'+
       '<div class="ng-acts"><a class="btn btn-primary" href="#case-'+key+'">Done</a></div>';
-    else if(st==='reply') body = '<section class="card ng-draft" aria-labelledby="ng-r"><h2 class="h3" id="ng-r">What did '+Q.esc(c.first)+' say?</h2>'+
-      '<div class="ng-opts" role="radiogroup" aria-labelledby="ng-r">'+['Wants to go ahead','Has questions','Wants a revised quote','Not interested'].map(function(o,i){
-        return '<label class="check"><input type="radio" name="ng-why" value="'+o+'"'+(i===1?' checked':'')+'> '+o+'</label>'; }).join('')+'</div>'+
-      '<div class="field"><label class="label" for="ng-note">Note <span class="muted" style="font-weight:400">(optional)</span></label><textarea class="textarea" id="ng-note" rows="3" placeholder="What they asked or said"></textarea></div></section>'+
-      '<div class="ng-acts"><button class="btn btn-primary" data-act="savereply">Save reply</button><button class="btn btn-ghost" data-act="back">Cancel</button></div>';
     else {
       body = card+'<section class="card ng-draft" aria-labelledby="ng-l"><div class="fu-dhead"><label class="h3" id="ng-l" for="ng-txt">Your message</label><span class="small muted">Edit anything</span></div>'+
         '<textarea class="textarea" id="ng-txt" rows="6">'+Q.esc(ui.draft)+'</textarea>'+
@@ -99,7 +101,7 @@
           '<div class="menu"><button class="btn btn-secondary" data-menu aria-haspopup="true" aria-expanded="false">'+Q.icon('bell','i-sm')+'Snooze</button><div class="menu-pop" role="menu">'+
             '<button role="menuitem" data-snooze="1">1 day · until '+SNOOZE['1']+'</button><button role="menuitem" data-snooze="3">3 days · until '+SNOOZE['3']+'</button></div></div>'+
           '<div class="menu"><button class="btn btn-ghost" data-menu aria-haspopup="true" aria-expanded="false" aria-label="More actions">'+Q.icon('more')+'<span class="desk-only">More</span></button><div class="menu-pop" role="menu">'+
-            '<button role="menuitem" data-act="won">Mark won</button><button role="menuitem" class="danger" data-act="lost">Mark lost</button></div></div></div>';
+            (Q.canWin(key)?'<button role="menuitem" data-act="won">Mark won</button>':'')+'<button role="menuitem" class="danger" data-act="lost">Mark lost</button></div></div></div>';
     }
     return '<div class="page ng fu">'+chips+head+top+body+'</div>';
   }
@@ -123,7 +125,9 @@
 
   function mount(el, p){
     var key = D.cases[p.parts[0]] ? p.parts[0] : 'priya', c = D.cases[key], pg = el.querySelector('.page');
+    if(c.result || c.now<2) return;
     var ta = pg.querySelector('#ng-txt');
+    if(ui.openReply){ ui.openReply = false; Q.reply(key); }
     if(ta) ta.addEventListener('input', function(){ ui.draft = ta.value; ta.removeAttribute('aria-invalid');
       }); // demo: Send on WhatsApp shows Q.waDemo (screens/wademo.js); the real app opens Q.waLink(c, ui.draft)
     function ask(by){ ui.asked = true; var a = pg.querySelector('.fu-ask'); if(a){ a.hidden = false; a.querySelector('b').textContent = 'Sent it '+(by==='email'?'by email':'on WhatsApp')+'?'; } }
@@ -142,11 +146,8 @@
       if(act==='cal'){ ui.cal = true; Q.refresh(); Q.toast('Added to Google Calendar · links back to case #'+c.no); }
       if(act==='wake'){ c.quiet = false; c.nudgeNo = maxN(); delete c.nudged; ui.st = ''; Q.refresh(); }
       if(act==='unsnooze' || act==='back'){ if(act==='unsnooze') delete c.snoozedTo; ui.st = ''; Q.refresh(); }
-      if(act==='replied' || act==='reply'){ ui.st = 'reply'; Q.refresh(); var r = document.querySelector('.ng input[type=radio]:checked'); if(r) r.focus(); }
-      if(act==='savereply'){ var r2 = pg.querySelector('input[name=ng-why]:checked');
-        if(c.now<3){ c.now = 3; c.dates.replied = D.today.date; } c.quiet = false;
-        Q.toast('Reply logged · '+(r2?r2.value.toLowerCase():'')); Q.go('#case-'+key); }
-      if(act==='won'){ c.result = 'won'; c.now = 7; c.dates.closed = D.today.date; Q.toast('Marked as won'); Q.go('#case-'+key); }
+      if(act==='replied' || act==='reply') Q.reply(key);
+      if(act==='won') Q.caseAct(key, 'won');
       if(act==='lost') Q.dialog({ title:'Why was '+c.first+'\'s case lost?',
         body:'<div class="opts" role="radiogroup">'+['Budget changed','Chose another adviser','Not ready','Other'].map(function(r,i){
           return '<label class="check"><input type="radio" name="why" value="'+r+'"'+(i===0?' checked':'')+'> '+r+'</label>'; }).join('')+'</div>',
@@ -156,7 +157,7 @@
     });
   }
 
-  Q.screen('nudge', { title:function(p){ var c = D.cases[p.parts[0]]; return 'Nudge'+(c?' '+c.name:''); }, nav:'cases', render:render, mount:mount });
+  Q.screen('nudge', { caseArg:true, title:function(p){ var c = D.cases[p.parts[0]]; return 'Nudge'+(c?' '+c.name:''); }, nav:'cases', render:render, mount:mount });
 
   /* ---------- S16t Reminder: Quotient's own phone notification (Update 2e). Case numbers only. ---------- */
   function renderRm(p){
@@ -179,7 +180,7 @@
       var b = e.target.closest('[data-rn]'); if(!b || b.disabled) return;
       var v = b.dataset.rn, c = D.cases[N.c];
       if(v==='open') return Q.go('#nudge-'+N.c+(c.nudged && !c.quiet ? '-draft' : '')); // after a sent nudge, the reminder opens the next draft
-      if(v==='replied') rm.st = 'replied';
+      if(v==='replied') return Q.reply(N.c); // same sheet as the case page
       if(v==='snooze') rm.st = 'snooze';
       if(v==='d1' || v==='d3'){ rm.days = v.slice(1); rm.st = 'snoozed'; c.snoozedTo = SNOOZE[rm.days]; delete c.nudged; }
       Q.refresh();

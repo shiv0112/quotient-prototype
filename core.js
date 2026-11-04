@@ -19,6 +19,7 @@
                             cases, writeup, mas and meetings to sessionStorage, so the state is shared by all screens.
                             ?reset (or Demo > Reset demo data) starts fresh.
      Q.status(caseKey)      {why, btn, go, needs}: the one short next step, used by Today, Cases and Case.
+     Q.reply(k) · Q.caseAct(k, 'reply'|'reviewed'|'won') · Q.wu(k) the case's write-up (Q.data.writeups[k] once a plan is chosen).
      Q.writeupProgress(k) / Q.masProgress(k)  {done,total}: the one count for write-up parts and firm review checks.
      Q.worry(case)          the kept worry text ('' if none or only suggested).
      Q.waLink(case, text)   WhatsApp click-to-chat URL: wa.me/<digits>?text= with the case mobile, else wa.me/?text= (WhatsApp asks for the chat).
@@ -50,20 +51,23 @@
   var qs = new URLSearchParams(location.search);
 
   /* ---------- shared case state (one store, all screens) ---------- */
-  var SAVED = ['cases','writeup','mas','meetings','transcripts','adviser'], VER = 6; // bump VER when the data shape changes
+  var SAVED = ['cases','writeup','writeups','mas','meetings','transcripts','adviser','sends'], VER = 8; // bump VER when the data shape changes
   try{
     if(qs.has('reset')) sessionStorage.removeItem('q-data');
     var saved = JSON.parse(sessionStorage.getItem('q-data') || 'null');
     if(saved && saved.v===VER) SAVED.forEach(function(k){ if(saved[k]) Q.data[k] = saved[k]; });
   }catch(e){}
-  Q.save = function(){ try{ var o = { v:VER }; SAVED.forEach(function(k){ o[k] = Q.data[k]; }); sessionStorage.setItem('q-data', JSON.stringify(o)); }catch(e){} };
+  Q.save = function(){ if(ppEl) return; /* phone preview open: the frame owns the data until it closes */ try{ var o = { v:VER }; SAVED.forEach(function(k){ o[k] = Q.data[k]; }); sessionStorage.setItem('q-data', JSON.stringify(o)); }catch(e){} };
   Q.resetData = function(){ try{ sessionStorage.removeItem('q-data'); }catch(e){} location.reload(); };
 
   /* ---------- small utils ---------- */
   Q.esc = function(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); };
   Q.money = function(n){ return n==null ? '' : 'S$' + Number(n).toLocaleString('en-SG'); };
   /* Update 2e: click-to-chat, https://faq.whatsapp.com/5913398998672934. Digits only, country code first; a bare 8-digit SG mobile gets 65. */
-  Q.waDigits = function(m){ var d = String(m||'').replace(/\D/g,''); return /^[89]\d{7}$/.test(d) ? '65'+d : d; };
+  Q.waDigits = function(m){ var d = String(m||'').trim().replace(/^\+/,'').replace(/\D/g,''); if(/^00/.test(d)) d = d.slice(2); // +65… / 0065… -> 65…
+    return /^[3689]\d{7}$/.test(d) ? '65'+d : d; }; // a bare 8-digit SG number (3, 6, 8 or 9 first) gets 65
+  console.assert(Q.waDigits('9123 4567')==='6591234567' && Q.waDigits('6123 4567')==='6561234567' && Q.waDigits('+65 9123 4567')==='6591234567' &&
+    Q.waDigits('0065 9123 4567')==='6591234567' && Q.waDigits('+61 412 345 678')==='61412345678' && Q.waDigits('')==='', 'waDigits self-check failed');
   Q.waLink = function(c, text){ var d = Q.waDigits(c && c.mobile); return 'https://wa.me/'+(d ? d : '')+'?text='+encodeURIComponent(text||''); };
   Q.notice = function(c, o){ c = c || Q.data.cases[Q.data.nudge.c]; o = o || {};
     return '<div class="rn" role="group" aria-label="Notification from Quotient"><div class="rn-top">'+Q.icon('bell','i-sm')+'<b>Quotient</b><time>'+(o.time||'now')+'</time></div>'+
@@ -77,45 +81,150 @@
   /* The client's main worry, only once the rep kept it (UPDATE-2 2b: never shown as fact until kept). */
   Q.worry = function(c){ var w = c && c.worry; return w && w.kept && w.text ? w.text : ''; };
 
-  /* One short next step per case, derived from the shared data. Today, Cases and Case all read this. */
+  /* One short next step per case, derived from the shared data. Today, Cases and Case all read this.
+     Every open stage has one action that moves the case on. '#case-<k>-reply|reviewed|won' open that action on the case page (Q.caseAct). */
   Q.status = function(k){
-    var D = Q.data, c = D.cases[k], n;
+    var D = Q.data, c = D.cases[k], n, r = '#case-'+k+'-reply';
     function s(why, btn, go, needs){ return { why:why, btn:btn, go:go, needs:!!needs }; }
     if(c.result==='won') return s('Policy with '+(c.chose||'the chosen insurer'), 'Open', '#case-'+k);
     if(c.result==='lost') return s(c.reason||'Lost', 'Open', '#case-'+k);
+    var won = s('Firm review done · mark won when the policy starts', 'Mark won', '#case-'+k+'-won', true);
     switch(c.now){
       case 0: return s('Add plans', 'Add plans', '#new-case-'+k);
       case 1: n = Q.toCheck(k).length;
         return n ? s(n+' number'+(n>1?'s':'')+' to check', 'Check', '#case-'+k, true) : s('Ready to share', 'Share', '#share-'+k, true);
       case 2:
-        if(c.quiet) return s('Quiet · '+(c.nudgesSent||c.nudgeNo||2)+' nudges sent, reminders stopped', 'Open', '#case-'+k);
-        if(c.nudged) return s('Nudge sent · next reminder '+c.nudged.next, 'Log reply', '#nudge-'+k+'-reply');
-        if(c.snoozedTo) return s('Snoozed until '+c.snoozedTo, 'Open', '#nudge-'+k);
+        if(c.quiet) return s('Quiet · '+(c.nudgesSent||c.nudgeNo||2)+' nudges sent, reminders stopped', 'Log a reply', r);
+        if(c.nudged) return s('Nudge sent · next reminder '+c.nudged.next, 'Log a reply', r);
+        if(c.snoozedTo) return s('Snoozed until '+c.snoozedTo, 'Log a reply', r);
         if((c.quietDays||0) >= D.adviser.waitDays) return s('No reply for '+c.quietDays+' days', 'Nudge', '#nudge-'+k, true);
-        return s('Shared · reminder '+D.share.remindOn, 'Open', '#case-'+k);
-      case 3: return s('Replied · note the plan '+c.first+' chose', 'Open', '#case-'+k, true);
-      case 4: return c.shareSent ? s('Revised plan shared · reminder '+D.share.remindOn, 'Log reply', '#nudge-'+k+'-reply')
-                                 : s('Revised plan ready to share', 'Share v2', '#share-'+k, true);
+        return s('Shared · reminder '+D.share.remindOn, 'Log a reply', r);
+      case 3: return s('Replied · note the plan '+c.first+' chose', 'Log a reply', r, true);
+      case 4: if(c.revising) return s('Wants changes · add the new illustration', 'Add illustration', '#new-case-'+k, true);
+        return c.shareSent ? s('Revised plan shared · reminder '+D.share.remindOn, 'Log a reply', r)
+                           : s('Revised plan ready to share', 'Share v'+Object.keys(c.tables).length, '#share-'+k, true);
       case 5: n = Q.writeupProgress(k);
+        if(!n.done) return s('Write-up · 0 of '+n.total+' parts done', 'Start the write-up', '#writeup-'+k, true);
         return n.done<n.total ? s('Write-up · '+n.done+' of '+n.total+' parts done', 'Continue', '#writeup-'+k, true) : s('Write-up ready to copy', 'Copy', '#writeup-'+k, true);
-      case 6: n = Q.masProgress(k); n = n.total - n.done;
-        return n ? s('Firm review · '+n+' check'+(n>1?'s':'')+' left', 'Open', '#mas-'+k, true) : s('Firm review done · mark won when the policy starts', 'Open', '#case-'+k);
+      case 6:
+        if(!c.selected) return c.reviewed ? won : s('Documentation review by your firm', 'Firm review done', '#case-'+k+'-reviewed', true);
+        n = Q.masProgress(k); n = n.total - n.done;
+        return n ? s('Firm review · '+n+' check'+(n>1?'s':'')+' left', 'Open checks', '#mas-'+k, true) : won;
     }
     return s('Open case', 'Open', '#case-'+k);
   };
+  Q.CASE_ACTS = { reply:1, reviewed:1, won:1 };
+  /* Mark won is offered only once the client has chosen a plan. */
+  Q.canWin = function(k){ var c = Q.data.cases[k]; return !!c && !c.result && c.now>=4 && !!c.chose; };
+  Q.caseAct = function(k, act){
+    var D = Q.data, c = D.cases[k];
+    if(act==='reply') return Q.reply(k);
+    if(act==='reviewed'){ c.reviewed = D.today.date; Q.go('#case-'+k); Q.toast('Firm review done · mark won when the policy starts'); }
+    if(act==='won' && !Q.canWin(k)){ Q.go('#case-'+k); return; }
+    if(act==='won') Q.dialog({ title:'Mark '+c.first+'\'s case won?', body:'<p>Do this when the policy with '+Q.esc(c.chose||'the insurer')+' starts.</p>',
+      actions:[{label:'Cancel',value:null},{label:'Mark won',value:'ok',kind:'primary'}], safe:null
+    }).then(function(v){ if(!v) return; c.result = 'won'; c.now = 7; c.dates.closed = D.today.date; Q.go('#case-'+k); Q.toast('Marked as won'); });
+  };
+
+  /* "What did <first> say?" Shared by the case page, the nudge screen and the reminder's "Already replied". */
+  Q.reply = function(k){
+    var D = Q.data, c = D.cases[k], vers = Object.keys(c.tables), t = c.tables[vers[vers.length-1]], today = D.today.date;
+    function label(ins){ return D.insurers[ins].name+(t.changed===ins?' '+vers[vers.length-1]:''); }
+    function radios(name, list){ return '<div class="rp-opts" role="radiogroup" aria-labelledby="'+name+'-l">'+list.map(function(o,i){
+      return '<label class="check"><input type="radio" name="'+name+'" value="'+Q.esc(o[0])+'"'+(i?'':' checked')+'> '+o[1]+'</label>'; }).join('')+'</div>'; }
+    var plans = t ? t.plans.map(function(ins){ return [ins, Q.esc(label(ins))+' <span class="small muted">'+Q.money(t.cells[ins].premium.v)+' a year</span>']; }) : [];
+    Q.sheet({ title:'What did '+c.first+' say?',
+      body:'<div class="field"><span class="label" id="rp-out-l">Reply</span>'+radios('rp-out', [['chose','Chose a plan'],['changes','Wants changes'],['no','Not going ahead']])+'</div>'+
+        '<div class="field" data-rp="chose"><span class="label" id="rp-plan-l">Which plan?</span>'+radios('rp-plan', plans)+'</div>'+
+        '<div class="field" data-rp="changes" hidden><label class="label" for="rp-note">What should change? <span class="muted">(optional)</span></label>'+
+          '<textarea class="textarea" id="rp-note" rows="2" placeholder="Lower premium, same cover"></textarea><span class="hint">Next you add the insurer\'s new illustration. We build v'+(vers.length+1)+' of the comparison to share.</span></div>'+
+        '<div class="field" data-rp="no" hidden><span class="label" id="rp-why-l">Why?</span>'+radios('rp-why', [['Budget changed','Budget changed'],['Chose elsewhere','Chose elsewhere'],['Other','Other']])+
+          '<label class="sr" for="rp-other">Other reason</label><input class="input" id="rp-other" placeholder="Reason" hidden></div>',
+      foot:'<button class="btn btn-primary" data-rp-save>Save reply</button><button class="btn btn-ghost" data-close>Cancel</button>',
+      mount:function(sh){
+        function val(n){ var x = sh.querySelector('input[name='+n+']:checked'); return x ? x.value : ''; }
+        sh.addEventListener('change', function(){ var o = val('rp-out');
+          sh.querySelectorAll('[data-rp]').forEach(function(x){ x.hidden = x.dataset.rp!==o; });
+          sh.querySelector('#rp-other').hidden = val('rp-why')!=='Other';
+          sh.querySelector('[data-rp-save]').textContent = o==='no' ? 'Mark lost' : 'Save reply'; });
+        sh.querySelector('[data-rp-save]').addEventListener('click', function(){
+          var o = val('rp-out'), other = sh.querySelector('#rp-other'), why = val('rp-why')==='Other' ? other.value.trim() : val('rp-why');
+          if(o==='no' && !why){ other.setAttribute('aria-invalid','true'); other.focus(); return; }
+          ['quiet','nudged','snoozedTo','shareSent','revising'].forEach(function(f){ delete c[f]; });
+          if(!c.dates.replied || c.now<3) c.dates.replied = today;
+          if(o==='chose'){ var ins = val('rp-plan'); c.choseIns = ins; c.chose = label(ins); delete c.chosenLabel;
+            c.dates.chosen = c.dates.writeup = today; c.now = 5; (D.writeups = D.writeups || {})[k] = Q.makeWriteup(k);
+            Q.closeSheet(); Q.go('#case-'+k); Q.toast(c.first+' chose '+c.chose+' · start the write-up'); }
+          if(o==='changes'){ c.revising = sh.querySelector('#rp-note').value.trim() || true; c.chosenLabel = 'Revised'; c.dates.chosen = today; c.now = 4;
+            Q.closeSheet(); Q.go('#case-'+k); Q.toast('Reply logged · add the new illustration'); }
+          if(o==='no'){ c.reason = why; c.lostAt = Math.min(c.now,6); c.result = 'lost'; c.now = 7; c.dates.closed = today;
+            Q.closeSheet(); Q.go('#case-'+k); Q.toast('Marked as lost'); }
+        });
+      } });
+  };
+
+  /* A write-up for any case, drafted from the kept worry and the chosen plan's table cells. Facts not in the notes stay as blanks. */
+  Q.makeWriteup = function(k){
+    var D = Q.data, c = D.cases[k], ver = Object.keys(c.tables).pop(), t = c.tables[ver], ins = Q.choseIns(k), f = c.first, w = c.worry;
+    function v(i, r){ return t.cells[i][r].v; }
+    function src(i, lbl, r){ return ['Table · '+D.insurers[i].short+(t.changed===i?' '+ver:'')+' · '+lbl, k+'/'+ver+'/'+i+'/'+r]; }
+    function line(text, i, lbl, r){ return [text].concat(src(i, lbl, r)); }
+    function blank(b, lead){ return [lead||b+': ', null, null, { blank:b }]; }
+    var plan = c.chose.replace(' Assurance','').replace(' Life','').replace(' Mutual','');
+    return { c:k, plan:c.chose, drafted:D.today.date, parts:[
+      { key:'needs', title:f+'\'s objectives, finances and needs', ref:'§35(a)', need:'req', ticked:false, s:[
+        w && w.kept ? ['Objective: '+w.text.charAt(0).toLowerCase()+w.text.slice(1)+'.'].concat(w.meeting && w.from ? [w.from, 'm:'+w.meeting+'@'+w.from.split(' · ')[1]] : ['Added by you', null]) : blank('Objective'),
+        blank('Risk tolerance'), blank('Income, assets and liabilities'), blank('Existing policies') ] },
+      { key:'why', title:'Why this plan suits '+f, ref:'§35(b) · §31', need:'req', ticked:false, s:[
+        line(plan+' costs '+Q.money(v(ins,'premium'))+' a year.', ins, 'premium', 'premium'),
+        line('It covers '+f+' with a sum assured of '+Q.money(v(ins,'sa'))+'.', ins, 'sum assured', 'sa'),
+        line('Riders: '+v(ins,'riders')+'.', ins, 'riders', 'riders') ] },
+      { key:'cons', title:'Disadvantages of this plan for '+f, ref:'§35(c)', need:'req', ticked:false, s:[
+        line('Ending the policy early returns less than '+f+' paid: at year 10 the guaranteed value is '+Q.money(v(ins,'g10'))+' against '+Q.money(v(ins,'premium')*10)+' in premiums.', ins, 'guaranteed year 10', 'g10'),
+        line('Illustrated values at 3.00% and 4.25% are not guaranteed and could be lower.', ins, '4.25% year 20', 'b20'),
+        line('Premiums are paid for '+v(ins,'term')+'.', ins, 'premium term', 'term') ] },
+      { key:'others', title:'Other plans considered', ref:'From the comparison', need:'opt', ticked:false, s:t.plans.filter(function(i){ return i!==ins; }).map(function(i){
+        return line(D.insurers[i].name+' costs '+Q.money(v(i,'premium'))+' a year for a sum assured of '+Q.money(v(i,'sa'))+'.', i, 'premium', 'premium'); }) },
+      { key:'switch', title:'Replacing an existing policy', ref:'§42 to §44', need:'cond', on:false, ticked:false, s:[
+        blank('Penalty for ending the old policy'), blank('Costs of switching'), blank('Benefits lost'), blank('Date disclosed in writing', 'Fees and charges disclosed to the client in writing (§44): ') ] },
+      { key:'chose', title:'Client chose differently', ref:'§32', need:'cond', on:false, ticked:false, s:[
+        blank('Plan the client chose', f+' chose a plan you did not recommend: '), blank('Date told in writing', 'You told '+f+' in writing that it is '+f+'\'s responsibility to make sure the plan suits them: ') ] } ] };
+  };
+  /* The insurer key of the chosen plan ('Harbour Assurance v2' -> 'harbour'). */
+  Q.choseIns = function(k){ var c = Q.data.cases[k], I = Q.data.insurers;
+    return c.choseIns || Object.keys(I).filter(function(i){ return (c.chose||'').indexOf(I[i].name)===0; })[0] || null; };
+  /* The write-up for a case: Siti's demo one, else the case's own, drafted from its data once a plan is chosen. null if no plan yet. */
+  Q.wu = function(k){ var D = Q.data, c = D.cases[k]; if(!c) return null;
+    if(D.writeup.c===k) return D.writeup;
+    D.writeups = D.writeups || {};
+    if(!D.writeups[k] && Q.choseIns(k) && Object.keys(c.tables).length) D.writeups[k] = Q.makeWriteup(k);
+    return D.writeups[k] || null; };
   /* Write-up progress: required parts (plus conditional parts that apply) ticked. Optional parts never count. */
   Q.wuCounts = function(p){ return p.need==='req' || (p.need==='cond' && p.on); };
   Q.writeupProgress = function(k){
-    var W = Q.data.writeup; if(W.c!==k) return { done:0, total:3 };
+    var W = Q.wu(k); if(!W) return { done:0, total:3 };
     var req = W.parts.filter(Q.wuCounts);
     return { done:req.filter(function(p){ return p.ticked; }).length, total:req.length };
   };
   /* Firm review progress (FAA-N16 safeguards). A call-back not needed because a supervisor was there throughout counts as done. */
   Q.masDone = function(x){ return x.done || (x.id==='call' && x.sup); };
   Q.masProgress = function(k){
-    var M = Q.data.mas; if(M.c!==k) return { done:5, total:5 };
+    var M = Q.masFor(k);
     return { done:M.checklist.filter(Q.masDone).length, total:M.checklist.length };
   };
+  /* The Selected Client test and firm checks for a case (saved). Marcus's come from data.js, Siti's answers from data-c.js;
+     other cases start with only the age question answered (from the case), the rest unanswered. */
+  Q.masFor = function(k){
+    var D = Q.data, M = D.mas[k], base = D.mas.marcus, c = D.cases[k]; if(M) return M;
+    var src = k==='siti' && window.QD && QD.c ? QD.c.masSiti.questions : null;
+    return D.mas[k] = { override:null, ns:{},
+      questions: base.questions.map(function(q, i){ return { q:q.q, note:q.note, from: i===0 ? 'From the case: age '+c.age : null,
+        answer: src ? src[i].answer : i===0 ? (c.age<62 ? 'yes' : 'no') : null }; }),
+      checklist: base.checklist.map(function(x){ return { id:x.id, t:x.t, ref:x.ref, faq:x.faq, done:false, path:x.id==='ti' ? 'a' : undefined }; }) };
+  };
+  /* Unknown case in the route: a clear not-found page, never another case. */
+  Q.noCase = function(arg, what){ return '<div class="page"><div class="todo"><span class="chip chip-outline">404</span><h1 class="h2">No '+(what||'case')+' #'+Q.esc(arg)+'</h1>'+
+    '<p class="muted">There is no '+(what||'case')+' with that number on this device.</p><a class="btn btn-secondary" href="#cases">Back to Cases</a></div></div>'; };
   /* All meetings and quick notes for a case, oldest first. Each: {m, upcoming}. */
   Q.caseMeetings = function(k){
     var M = Q.data.meetings, out = [];
@@ -196,6 +305,7 @@
         '<a class="btn btn-secondary" href="#today">Back to Today</a></div></div>'; } };
     }
     var p = params(r);
+    if(def.caseArg && p.parts[0] && !Q.data.cases[p.parts[0]]) def = { id:'todo', rail:true, title:'Not found', render:function(){ return Q.noCase(p.parts[0]); } };
     document.body.classList.toggle('focus', def.rail===false);
     el.classList.remove('enter');
     try{ el.innerHTML = def.render(p); }
@@ -392,7 +502,7 @@
   var rec = null;
   Q.recording = {
     get: function(){ return rec; },
-    start: function(o){ rec = { call: !!(o&&o.callAudio) && Q.edition()==='desktop', secs:0, paused:false }; rec.timer = setInterval(function(){ if(!rec.paused){ rec.secs++; paintRec(); } }, 1000); paintRec(); },
+    start: function(o){ if(rec) Q.recording.stop(); rec = { call: !!(o&&o.callAudio) && Q.edition()==='desktop', secs:0, paused:false }; rec.timer = setInterval(function(){ if(!rec.paused){ rec.secs++; paintRec(); } }, 1000); paintRec(); },
     pause: function(){ if(rec){ rec.paused = true; paintRec(); } },
     resume: function(){ if(rec){ rec.paused = false; paintRec(); } },
     stop: function(){ if(rec){ clearInterval(rec.timer); rec = null; paintRec(); Q.emit('recording-stopped'); } }
@@ -450,7 +560,7 @@
     if(framed && d.q==='go' && d.hash && d.hash!==location.hash) location.hash = d.hash;
     if(!framed && ppEl && d.q==='top'){
       var st = ppEl.querySelector('.pp-status'); if(st && d.bg){ st.style.background = d.bg; st.style.color = isDark(d.bg) ? 'var(--hero-ink)' : ''; }
-      if(d.hash && d.hash!==location.hash) location.hash = d.hash;
+      if(d.hash && d.hash!==location.hash) history.replaceState(null, '', d.hash); // no hashchange: nothing echoes back to the frame
     }
   });
   window.addEventListener('hashchange', function(){
@@ -509,14 +619,23 @@
     if(e.key==='Escape' && ppEl){ Q.phonePreview(false); return; }
     if(e.key==='Escape'){ if(sheetEl) Q.closeSheet(); document.querySelectorAll('.menu.open,.demo.open').forEach(function(x){ x.classList.remove('open'); }); }
     var typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) || document.activeElement.isContentEditable;
-    if(!typing && !e.metaKey && !e.ctrlKey && !e.altKey && (e.key==='n'||e.key==='N') && !document.body.classList.contains('focus') && !sheetEl) Q.go('#new-case');
+    if(!typing && !e.metaKey && !e.ctrlKey && !e.altKey && (e.key==='n'||e.key==='N') && !document.body.classList.contains('focus') && !sheetEl && !document.querySelector('.dialog-wrap,.wa-wrap,.fu-ss-wrap,.pp')) Q.go('#new-case');
   });
-  window.addEventListener('hashchange', function(){ if(sheetEl) Q.closeSheet(); render(true); });
+  window.addEventListener('hashchange', function(){
+    if(ppEl) return; // phone preview open: the frame has the screen; the parent reloads on close
+    if(sheetEl) Q.closeSheet();
+    if(Q.waDemo && Q.waDemo.close) Q.waDemo.close();
+    document.querySelectorAll('.fu-ss-wrap').forEach(function(x){ x.remove(); });
+    render(true); });
 
   /* ---------- boot ---------- */
   var booted = false;
   ['theme','edition','state'].forEach(function(k){ var v = qs.get(k); if(v) store('q-'+k, (v==='system'||v==='normal')?null:v); });
   var th = Q.theme(); if(th!=='system') document.documentElement.setAttribute('data-theme', th);
+  // Demo params are applied once, then dropped from the URL so a reload (or the phone frame) doesn't wipe or reset again.
+  (function(){ var q = new URLSearchParams(location.search), had = false;
+    ['reset','theme','edition','state'].forEach(function(k){ if(q.has(k)){ q.delete(k); had = true; } });
+    if(had){ var s = q.toString(); history.replaceState(null, '', location.pathname+(s?'?'+s:'')+location.hash); } })();
   document.addEventListener('DOMContentLoaded', function(){
     booted = true; paintUser(); buildJump(); syncDemo();
     // Phone tab bar (UPDATE-2 C): 4 tabs. Calendar = #meetings. Phone records notes inside each case (Record notes for this case).

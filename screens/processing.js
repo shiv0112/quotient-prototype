@@ -4,7 +4,9 @@
   var D = Q.data, B = QD.b, run = null;
 
 
-  function ctx(p){ var key = D.cases[p.parts[0]] && QB.feature(p.parts[0]) ? p.parts[0] : 'wei'; var f = QB.feature(key); return { key:key, c:D.cases[key], f:f, fl:B.flow[f] }; }
+  function ctx(p){ var key = p.parts[0] || 'wei', f = QB.gateFor(key, p.parts[1]); return { key:key, c:D.cases[key], f:f, fl:B.flow[f] }; }
+  function nothingPage(x){ return '<div class="page s10"><header class="s10-head rise"><p class="eyebrow">'+Q.esc(x.c.name)+' · Case #'+x.c.no+'</p><h1 class="h1">Nothing to send</h1>'+
+    '<p class="sub">Nothing was sent for this request.</p></header><a class="btn btn-secondary" href="#case-'+x.key+'">Back to '+Q.esc(x.c.name)+'</a></div>'; }
 
   function liftLine(x, back){
     var name = x.c.first;
@@ -12,7 +14,8 @@
   }
 
   function render(p){
-    var x = ctx(p), v = QB.view(x.key), nothing = /^compare/.test(x.f) && B.nothing;
+    var x = ctx(p); if(!x.f) return nothingPage(x);
+    var v = QB.view(x.key), nothing = /^compare/.test(x.f) && B.nothing;
     var s = QB.local('processing', ['running','done','error','offline'], 'running', p);
     var at = s.s==='done' ? 99 : s.s==='error' ? 3 : s.s==='offline' ? 1 : (run && run.hash===location.hash ? run.at : 0);
     var steps = x.fl.steps.map(function(t,i){
@@ -41,7 +44,8 @@
   function finish(x){ var c = x.c; if(c.pending && !Object.keys(c.tables).length){ c.tables = c.pending; delete c.pending; c.now = 1; c.dates.compared = D.today.date; Q.save(); } }
 
   function mount(el, p){
-    var x = ctx(p), s = QB.local('processing', ['running','done','error','offline'], 'running', p);
+    var x = ctx(p); if(!x.f) return;
+    var s = QB.local('processing', ['running','done','error','offline'], 'running', p);
     if(s.s==='done' || (run && run.hash===location.hash && run.at>=x.fl.steps.length)) finish(x);
     el.querySelector('.page').addEventListener('click', function(e){ var a = e.target.closest('[data-act="retry"]'); if(a){ s.s = 'running'; run = null; Q.refresh(); } });
     if(s.s!=='running') return;
@@ -71,5 +75,5 @@
     })();
   }
 
-  Q.screen('processing', { title:function(p){ return ctx(p).fl.title; }, rail:false, nav:'', render:render, mount:mount });
+  Q.screen('processing', { caseArg:true, title:function(p){ var x = ctx(p); return x.f ? x.fl.title : 'Nothing to send'; }, rail:false, nav:'', render:render, mount:mount });
 })();

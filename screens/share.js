@@ -7,6 +7,10 @@
   'use strict';
   var D = Q.data, C = QD.c, ui = { hash:null, st:'', method:'whatsapp', page:0 };
   var isPhone = function(){ return window.innerWidth < 480; };
+  Q.on('render', function(p){ if(p.id!=='share') ui.hash = null; }); // coming back (browser Back) starts fresh, never a stale "Did you send it?"
+  var NG = /not guaranteed/i;
+  function ngWarn(){ return NG.test(ui.msg||'') ? '<span class="hint" data-ng>Keeps the line "Illustrated values are not guaranteed."</span>'
+    : '<span class="hint sh-ngwarn" data-ng role="status">'+Q.icon('alert','i-sm')+'Your message no longer says illustrated values are not guaranteed. The PDF footer still says it on every page.</span>'; }
   var I_CHAT = '<svg class="i i-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 12a8.5 8.5 0 0 1-12.4 7.5L3.5 20.5l1.1-4.4A8.5 8.5 0 1 1 20.5 12z"/></svg>';
 
 
@@ -33,13 +37,13 @@
         if(x.v==null) return '<td class="miss">Not shown</td>';
         return '<td>'+(r.kind==='money'?Q.money(x.v):Q.esc(x.v))+'</td>'; }).join('')+'</tr>'; }).join('');
   }
-  function head(t, ver){ return '<thead><tr><th></th>'+t.plans.map(function(ins){ return '<th>'+Q.esc(D.insurers[ins].short)+(t.changed===ins?' v2':'')+'</th>'; }).join('')+'</tr></thead>'; }
+  function head(t, ver){ return '<thead><tr><th></th>'+t.plans.map(function(ins){ return '<th>'+Q.esc(D.insurers[ins].short)+(t.changed===ins?' '+ver:'')+'</th>'; }).join('')+'</tr></thead>'; }
   function pdfPage(key, c, i){
     var vers = Object.keys(c.tables), ver = vers[vers.length-1], t = c.tables[ver], body;
-    if(i===0) body = '<h4>Plan summary</h4><table>'+head(t)+'<tbody>'+rowsOf(t,['premium','term','sa','riders'])+'</tbody></table>'+
-      '<h4>Guaranteed value</h4><table>'+head(t)+'<tbody>'+rowsOf(t,['g10','g20','g65'])+'</tbody></table>'+(Q.u2Chart ? Q.u2Chart(key, ver) : '');
-    else if(i===1) body = '<h4>Illustrated total at 3.00% a year<span class="sh-ng">Not guaranteed</span></h4><table>'+head(t)+'<tbody>'+rowsOf(t,['a10','a20','a65'])+'</tbody></table>'+
-      '<h4>Illustrated total at 4.25% a year<span class="sh-ng">Not guaranteed</span></h4><table>'+head(t)+'<tbody>'+rowsOf(t,['b10','b20','b65'])+'</tbody></table>';
+    if(i===0) body = '<h4>Plan summary</h4><table>'+head(t, ver)+'<tbody>'+rowsOf(t,['premium','term','sa','riders'])+'</tbody></table>'+
+      '<h4>Guaranteed value</h4><table>'+head(t, ver)+'<tbody>'+rowsOf(t,['g10','g20','g65'])+'</tbody></table>'+(Q.u2Chart ? Q.u2Chart(key, ver) : '');
+    else if(i===1) body = '<h4>Illustrated total at 3.00% a year<span class="sh-ng">Not guaranteed</span></h4><table>'+head(t, ver)+'<tbody>'+rowsOf(t,['a10','a20','a65'])+'</tbody></table>'+
+      '<h4>Illustrated total at 4.25% a year<span class="sh-ng">Not guaranteed</span></h4><table>'+head(t, ver)+'<tbody>'+rowsOf(t,['b10','b20','b65'])+'</tbody></table>';
     else body = '<h4>How to read this</h4><p class="lead">Every figure comes from the insurer\'s own policy illustration.</p>'+
       '<p class="lead">Guaranteed values are what the policy pays at least. <span class="ngline">Illustrated values depend on future returns and are not guaranteed.</span></p>'+
       '<h4>Sources</h4><table><tbody>'+t.plans.map(function(ins){ var n = D.insurers[ins]; return '<tr><td>'+Q.esc(n.name)+'</td><td>'+Q.esc(n.file)+' · '+n.pages+' pages</td></tr>'; }).join('')+'</tbody></table>';
@@ -58,10 +62,13 @@
 
   function render(p){
     var key = D.cases[p.parts[0]] ? p.parts[0] : 'wei', c = D.cases[key];
+    if(!Object.keys(c.tables).length) return '<div class="page sh"><header><a class="back" href="#case-'+key+'">'+Q.icon('back','i-sm')+'Back to '+Q.esc(c.name)+'</a>'+
+      '<h1 class="h1 display">Share with '+Q.esc(c.name)+'</h1></header><section class="empty rise"><h2>No plans to share yet.</h2>'+
+      '<p>Add 3 to 5 policy illustration PDFs (2 allowed) to build the comparison first.</p><a class="btn btn-primary" href="#new-case-'+key+'">'+Q.icon('plus')+'Add plans</a></section></div>';
     if(location.hash!==ui.hash){ ui.hash = location.hash; ui.st = p.parts[1]||''; if(ui.st==='share'||ui.st==='unsupported') ui.st = ''; ui.openSheet = ui.st==='sheet'; ui.page = 0; ui.method = ui.st==='email' ? 'email' : 'whatsapp'; ui.msg = message(key, c); }
     var st = p.state==='loading' ? 'making' : p.state==='error' ? 'error' : ui.st;
-    var demoSet = p.parts[1]; // explicit demo state: show as if numbers are checked
-    var left = demoSet ? 0 : Q.toCheck(key).length, isWeb = p.edition!=='desktop';
+    var left = Q.toCheck(key).length, isWeb = p.edition!=='desktop'; // yellow numbers block every way to share, demo states included
+    if(left && st==='sent') st = '';
     var back = '<a class="back" href="#case-'+key+'">'+Q.icon('back','i-sm')+'Back to '+Q.esc(c.name)+'</a>';
     var plans = c.tables[Object.keys(c.tables).pop()] ? c.tables[Object.keys(c.tables).pop()].plans.length : 0;
 
@@ -88,7 +95,7 @@
           '<button type="button" class="btn-link sh-switch" data-method="'+(wa?'email':'whatsapp')+'">'+(wa?'Email instead':'Use WhatsApp instead')+'</button></div>'+
         (wa ? '' : '<div class="field"><label class="label" for="sh-to">To</label><input class="input" id="sh-to" type="email" value="'+Q.esc(C.emails[key]||'')+'" autocomplete="off"></div>')+
         '<div class="field"><label class="label" for="sh-msg">Message</label><textarea class="textarea" id="sh-msg" rows="5">'+Q.esc(ui.msg)+'</textarea>'+
-          '<span class="hint">Keeps the line "Illustrated values are not guaranteed."</span></div>'+
+          ngWarn()+'</div>'+
         '<p class="sh-private">'+Q.icon('device','i-sm')+'<span>This PDF is made on this device and goes from you to '+Q.esc(c.first)+'. Nothing is uploaded.</span></p>'+
         '<div class="sh-acts">'+primary+(making||deskWa?'':(wa?'<button class="btn-link" data-act="sheet"'+dis+'>Share…</button>':'')+'<button class="btn-link" data-act="download"'+dis+'>Download PDF</button>')+
           '<span class="spacer"></span><a class="btn btn-ghost" href="#case-'+key+'">Cancel</a></div></section>';
@@ -96,7 +103,7 @@
 
     return '<div class="page sh">'+demo(key, ui.st)+
       '<header>'+back+'<h1 class="h1 display">Share with '+Q.esc(c.name)+'</h1>'+
-        '<p class="lede" style="margin-top:var(--s-2)">'+plans+' plans side by side'+(c.tables.v2?' · Harbour v2':'')+'<span class="dot-sep"></span>case #'+c.no+'</p></header>'+
+        '<p class="lede" style="margin-top:var(--s-2)">'+plans+' plans side by side'+(function(){ var vs = Object.keys(c.tables), t = c.tables[vs[vs.length-1]]; return t.changed ? ' · '+Q.esc(D.insurers[t.changed].short)+' '+vs[vs.length-1] : ''; })()+'<span class="dot-sep"></span>case #'+c.no+'</p></header>'+
       top+'<div class="sh-grid">'+form+preview(key, c)+'</div></div>';
   }
 
@@ -133,19 +140,23 @@
 
   function mount(el, p){
     var key = D.cases[p.parts[0]] ? p.parts[0] : 'wei', c = D.cases[key], pg = el.querySelector('.page');
+    if(!Object.keys(c.tables).length) return;
+    function blocked(){ return Q.toCheck(key).length > 0; }
     // Phone: lay the preview out at 440px and zoom it to the column width, so no column is cut off (same as the PDF sheet).
     var pdf = pg.querySelector('.sh-scroll .pdf'), pw = pdf && pdf.parentNode.clientWidth;
     if(pdf && pw && pw < 440){ pdf.style.minWidth = pdf.style.width = '440px'; pdf.style.zoom = pw/440; }
     var msg = pg.querySelector('#sh-msg'), dl = pg.querySelector('[data-act="dlwa"]');
-    if(msg) msg.addEventListener('input', function(){ ui.msg = msg.value; });
+    if(msg) msg.addEventListener('input', function(){ var had = NG.test(ui.msg||''); ui.msg = msg.value;
+      if(had!==NG.test(ui.msg)){ var h = pg.querySelector('[data-ng]'); if(h) h.outerHTML = ngWarn(); } });
     function sent(){ if(ui.hash===location.hash){ ui.st='sent'; Q.refresh(); } }
-    if(ui.openSheet){ ui.openSheet = false; shareSheet(c, sent); } // demo state: open the sheet straight away
+    if(ui.openSheet){ ui.openSheet = false; if(!blocked()) shareSheet(c, sent); } // demo state: open the sheet straight away
     pg.addEventListener('click', function(e){
       var m = e.target.closest('[data-method]'); if(m){ ui.method = m.dataset.method; Q.refresh(); return; }
       var t = e.target.closest('[data-page]'); if(t){ ui.page = +t.dataset.page; Q.refresh(); return; }
       var a = e.target.closest('[data-act]'); if(!a) return;
       if(a.getAttribute('aria-disabled')==='true'){ e.preventDefault(); return; }
       var act = a.dataset.act;
+      if(blocked() && /^(dlwa|sheet|send|download|yes)$/.test(act)) return; // yellow numbers can't go to a client
       // Desktop: the real link opens WhatsApp in a new tab; the PDF download is simulated. Then ask, as with the share sheet.
       // Demo: the PDF download is simulated and WhatsApp is shown by Q.waDemo; the real app opens Q.waLink(c, ui.msg).
       if(act==='dlwa'){ Q.toast('PDF saved to Downloads'); Q.waDemo({ c:c, text:ui.msg, file:'Plan comparison · '+c.name+'.pdf', onSent:sent }); return; }
@@ -161,12 +172,12 @@
       if(act==='yes'){
         c.sharedVia = ui.method;
         if(c.now<2){ c.now = 2; c.dates.shared = D.today.date; }
-        else c.shareSent = D.today.date; // e.g. Alvin's revised plan: the case moves on to shared, waiting for a reply
+        else if(c.now===4) c.shareSent = D.today.date; // e.g. Alvin's revised plan: the case moves on to shared, waiting for a reply
         Q.toast('Shared with '+c.first+' · we\'ll remind you on '+D.share.remindOn+' if there\'s no reply');
         Q.go('#case-'+key);
       }
     });
   }
 
-  Q.screen('share', { title:function(p){ var c = D.cases[p.parts[0]]; return 'Share'+(c?' with '+c.name:''); }, nav:'cases', render:render, mount:mount });
+  Q.screen('share', { caseArg:true, title:function(p){ var c = D.cases[p.parts[0]]; return 'Share'+(c?' with '+c.name:''); }, nav:'cases', render:render, mount:mount });
 })();
