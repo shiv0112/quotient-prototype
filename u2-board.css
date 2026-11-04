@@ -97,8 +97,6 @@
 .bd-card .skel{display:block}
 .bd-av.skel{width:44px;height:44px}
 
-/* floating New case: phone only */
-.bd-fab{display:none}
 
 @media (max-width:480px){
   .bd-head{padding-bottom:var(--s-4)}
@@ -110,9 +108,4 @@
   .bd-tabs .chip{padding:0 var(--s-3);min-height:var(--target);flex:0 1 auto}
   .bd-act{min-height:var(--target)}
   .bd-meet a{margin-left:0}
-  .bd-fab{display:inline-flex;align-items:center;gap:var(--s-2);position:fixed;z-index:30;
-    right:calc(var(--gutter) + env(safe-area-inset-right,0px));bottom:calc(var(--s-4) + var(--bd-fab-lift,var(--u2-tab,64px)) + env(safe-area-inset-bottom,0px)); /* lift clears the 4-tab bar (u2-phone.css sets --u2-tab) */
-    min-height:52px;padding:0 var(--s-5);border-radius:var(--r-pill);background:var(--accent);color:var(--on-accent);font-weight:var(--w-semi);text-decoration:none;box-shadow:var(--shadow-pop)}
-  .bd-fab:hover{background:var(--accent-hover);color:var(--on-accent)}
-  .bd{padding-bottom:120px}
 }

@@ -1,5 +1,5 @@
 /* Record notes (no calendar meeting). Any [data-quick-notes] button starts it; data-quick-notes="<case>" pre-picks that case.
-   Same permission dialog every time, same mic-only bar. After Stop: transcribe on this device, then "Save these notes":
+   Same permission dialog every time, same mic-only bar. After Stop: transcribe (on the device in desktop, speech service on web), then "Save these notes":
    title, attach to a case, start a new case, or keep unfiled (shows in Meetings under "Notes"). */
 (function(){
   'use strict';
@@ -16,7 +16,7 @@
   Q.on('recording-stopped', function(){
     if(!active) return;
     var a = active; active = null;
-    Q.sheet({ title:'Save these notes', body:'<p class="qn-busy" aria-live="polite"><span class="wu-spin" aria-hidden="true"></span>Writing up the transcript on this device…</p>' });
+    Q.sheet({ title:'Save these notes', body:'<p class="qn-busy" aria-live="polite"><span class="wu-spin" aria-hidden="true"></span>Writing up the transcript'+(Q.edition()==='desktop'?' on this device':'')+'…</p>' });
     setTimeout(function(){ openSave(a.c, Math.max(1, Math.round((Date.now()-a.t0)/60000))); }, 1800);
   });
 
@@ -31,7 +31,7 @@
           radio('case', 'Add to a case', '<label class="sr" for="qn-case">Case</label><select class="select" id="qn-case">'+opts+'</select>')+
           radio('new', 'Start a new case')+
           radio('none', 'Keep unfiled · find them in Meetings under Notes')+'</fieldset>'+
-        '<p class="device-line small">'+Q.icon('device','i-sm')+'The recording and transcript stay on this device.</p>',
+        '<p class="device-line small">'+Q.icon('device','i-sm')+(Q.recCopy()?Q.recCopy()+' ':'')+Q.aiRule+'</p>',
       foot:'<button class="btn btn-primary" data-qn="save">Save notes</button><button class="btn btn-ghost" data-close>Close</button>',
       onClose:function(){ if(!saved){ save('', 'none'); Q.toast('Saved in Meetings · Notes'); } }, // never lose a recording
       mount:function(sh){

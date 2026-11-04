@@ -82,7 +82,7 @@
     Q.sheet({ title: w.text ? 'Their main worry' : 'Add their main worry',
       body:'<div class="field"><label class="label" for="bd-w">What worries '+Q.esc(c.first)+' most</label>'+
         '<input class="input" id="bd-w" maxlength="80" value="'+Q.esc(w.text||'')+'" placeholder="In their words, one short line">'+
-        '<p class="hint">Stays on this device. Your nudge and write-up use it once you save.</p></div>'+
+        '<p class="hint">Your nudge and write-up use it once you save.</p></div>'+
         (w.quote ? '<figure class="bd-quote"><blockquote>"'+Q.esc(w.quote)+'"</blockquote><figcaption>'+
           (Q.meetingById(w.meeting) ? '<a href="#meeting-'+w.meeting+(ts[1]?'@'+ts[1]:'')+'">From your meeting · '+Q.esc(ts[0])+(ts[1]?' at '+ts[1]:'')+'</a>' : 'From your notes')+'</figcaption></figure>' : ''),
       foot:'<button class="btn btn-ghost" type="button" data-close>Cancel</button><button class="btn btn-primary" type="button" data-save>Save</button>',
@@ -138,12 +138,11 @@
       '<div><p class="eyebrow">'+D.today.long+'</p>'+
       '<h1 class="h1 display">Morning, '+Q.esc(D.adviser.first)+'</h1>'+
       (n==null?'':'<p class="lede">'+(n ? n+' client'+(n===1?' needs':'s need')+' you today' : 'No one needs you right now')+'</p>')+
-      '<button class="btn btn-secondary btn-sm bd-rec phone-only" type="button" data-quick-notes>'+Q.icon('mic','i-sm')+'Record notes</button></div>'+
+      '</div>'+
       '<a class="btn btn-secondary bd-new" href="#new-case">'+Q.icon('plus')+'New case</a>'+
     '</header>';
   }
 
-  var fab = '<a class="bd-fab" href="#new-case">'+Q.icon('plus')+'New case</a>';
 
   function tabs(g){
     function t(id, label, n){ return '<button class="chip" type="button" data-tab="'+id+'" aria-pressed="'+(tab===id)+'" aria-controls="bd-'+id+'">'+label+' <span class="num">'+n+'</span></button>'; }
@@ -171,8 +170,7 @@
         panel('needs', g.needs.length ? list(g.needs) : none('Nothing needs you right now.'))+
         panel('prog', g.prog.length ? list(g.prog) : none('No other open cases.'))+
         panel('won', (g.won.length ? list(g.won) : none('No won cases yet.'))+
-          (g.lost.length ? '<h2 class="bd-sub">Closed</h2>'+list(g.lost) : ''))+
-        fab+'</div>';
+          (g.lost.length ? '<h2 class="bd-sub">Closed</h2>'+list(g.lost) : ''))+'</div>';
     },
     mount:function(el){
       var page = el.querySelector('.page');

@@ -17,7 +17,11 @@
       '<a class="back" href="#case-'+key+'">'+Q.icon('back','i-sm')+'Back to '+Q.esc(c.name)+'</a>'+
       '<header class="page-head rise"><div><h1 class="h1">What left your device <span class="case-no">· '+Q.esc(c.name)+' #'+c.no+'</span></h1>'+
       '<p class="sub">Every piece of text sent to the AI for this case, exactly as sent.</p></div></header>';
-    var fixed = '<ul class="s17-fixed rise">'+D.log.fixed.map(function(t){ return '<li>'+Q.icon('device','i-sm')+Q.esc(t)+'</li>'; }).join('')+'</ul>';
+    // Web/phone send meeting audio to the speech service (UPDATE-2 2c); desktop transcribes on the device.
+    var web = Q.edition()!=='desktop';
+    var audio = !web || s.s==='empty' ? '' : Q.caseMeetings(key).filter(function(x){ return !x.upcoming && x.m.len; }).reverse().map(function(x){
+      return '<li class="s17-audio">'+Q.icon('mic','i-sm')+'<span>Audio · '+Q.esc(x.m.len)+' · sent for transcription · deleted after<small>'+Q.esc(x.m.date)+'</small></span></li>'; }).join('');
+    var fixed = '<ul class="s17-fixed rise">'+audio+D.log.fixed.map(function(t){ return '<li>'+Q.icon('device','i-sm')+Q.esc(t)+'</li>'; }).join('')+'</ul>';
     var body;
     if(s.s==='loading') body = '<div aria-busy="true">'+[1,2,3].map(function(){ return '<div class="skel-row"><span class="skel" style="width:30%"></span><span class="skel" style="width:16%"></span><span class="skel" style="width:12%"></span></div>'; }).join('')+'</div>';
     else if(s.s==='error') body = '<div class="banner banner-error" role="alert">'+Q.icon('alert')+'<p>Couldn\'t load this log. Nothing was changed.</p><button class="btn-link" data-bstate="normal">Try again</button></div>';

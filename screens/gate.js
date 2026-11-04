@@ -43,7 +43,7 @@
     if(s.s==='summary') return '<div class="page s08">'+head+picker(x, v)+
       '<section class="s08-rc u2-gsum rise" aria-label="Outgoing text summary"><p class="u2-gline">'+Q.icon('device')+'<span><b class="num">'+v.charsLabel+'</b> characters<span class="dot-sep"></span><b class="num">'+v.count+'</b> details replaced on this device</span>'+
         '<button class="btn-link" data-bstate="normal">See details</button></p>'+
-        '<p class="small muted">Kept on this device: the PDFs, names, NRIC, phone, email, address.</p></section>'+
+        '<p class="small muted">Not sent: the PDFs, names, NRIC, phone, email, address.</p></section>'+
       '<div class="s08-acts u2-dock"><button class="btn btn-primary" data-act="send">Send this text</button><span class="spacer"></span><a class="btn btn-ghost" href="'+fl.back+'">Cancel</a></div></div>';
     return '<div class="page s08">'+head+picker(x, v)+
       '<article class="s08-rc rise" aria-label="Outgoing text">'+
@@ -53,7 +53,7 @@
         '<hr class="s08-cut"><p class="s08-sec">The exact text</p>'+exact(v, x)+
         '<hr class="s08-dbl"><div class="s08-tot"><span class="l">Details replaced</span><span class="v num" data-count="'+v.count+'">'+v.count+'</span>'+
         '<span class="l">Characters sent</span><span class="v big num" data-count="'+v.chars+'">'+v.charsLabel+'</span></div>'+
-        '<p class="s08-kept">'+Q.icon('device','i-sm')+'<span>Kept on this device: the PDFs, names, NRIC, phone, email, address. Names go back in when the answer returns.</span></p>'+
+        '<p class="s08-kept">'+Q.icon('device','i-sm')+'<span>Not sent: the PDFs, names, NRIC, phone, email, address. Names go back in when the answer returns.</span></p>'+
       '</article>'+
       '<div class="s08-acts u2-dock"><button class="btn btn-primary" data-act="send">Send this text</button><a class="btn btn-secondary" href="#gate-edit-'+x.key+'">Edit what is sent</a>'+
       '<span class="spacer"></span><a class="btn btn-ghost" href="'+fl.back+'">Cancel</a></div></div>';

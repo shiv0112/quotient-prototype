@@ -91,7 +91,7 @@
   }
 
   function pasteSheet(){
-    Q.sheet({ title:'Paste notes', body:'<p class="small muted">For a meeting that is not on your calendar. Notes stay on this device.</p>'+
+    Q.sheet({ title:'Paste notes', body:'<p class="small muted">For a meeting that is not on your calendar. '+Q.aiRule+'</p>'+
       '<div class="field"><label class="label" for="pn-who">Client name</label><input class="input" id="pn-who" autocomplete="off"></div>'+
       '<div class="field"><label class="label" for="pn-txt">Notes or transcript</label><textarea class="textarea" id="pn-txt" rows="10"></textarea></div>',
       foot:'<button class="btn btn-primary" data-act="save">Save notes</button><button class="btn btn-ghost" data-close>Cancel</button>',

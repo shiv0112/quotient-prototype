@@ -36,7 +36,7 @@
 
       sec('Chips', 'Status chips, proof chips (page refs), placeholders, blanks, source links.',
         '<div class="row"><span class="chip">Compared</span><span class="chip chip-ok chip-dot">Won</span><span class="chip chip-warn">Selected Client</span><span class="chip chip-err">Couldn\'t send</span>'+
-        '<span class="chip chip-device">'+I('device','i-sm')+'Stays on this device</span><span class="chip chip-outline">S08</span><span class="chip">Not guaranteed</span></div>'+
+        '<span class="chip chip-device">'+I('device','i-sm')+'Checked on this device</span><span class="chip chip-outline">S08</span><span class="chip">Not guaranteed</span></div>'+
         '<p style="margin-top:16px"><span class="ph">[CLIENT]</span>, age 35, project manager at <span class="ph">[EMPLOYER]</span>. Two children, <span class="ph">[CHILD 1]</span> (8) and <span class="ph">[CHILD 2]</span> (11).</p>'+
         '<p style="margin-top:12px">Existing cover: <span class="blank">blank</span> Harbour v2 costs S$3,300 a year.<a class="source" href="#gallery">Table · Harbour v2 · premium</a><a class="source" href="#gallery">Meeting 12:04</a></p>'+
         '<div class="row" style="margin-top:12px"><button class="proof" data-sheet="wei/v1/harbour/premium">p.3</button><span class="small muted">Proof chip: opens the PDF page</span></div>')+

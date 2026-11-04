@@ -183,7 +183,7 @@
   function transcript(mid, at){
     var x = Q.meetingById(mid), tr = D.transcripts[mid]; if(!x || !tr) return;
     var c = x.m.c ? D.cases[x.m.c] : null;
-    Q.sheet({ title:'Meeting with '+x.m.who+' · '+x.m.date, body:'<p class="small muted">'+Q.icon('device','i-sm')+' Transcript on this device · '+(tr.labels?'You and Client':'mic only')+(c?' · Case #'+c.no:'')+'</p><ul class="transcript">'+tr.lines.map(function(l){
+    Q.sheet({ title:'Meeting with '+x.m.who+' · '+x.m.date, body:'<p class="small muted">Transcript · '+(tr.labels?'You and Client':'mic only')+(c?' · Case #'+c.no:'')+'</p><ul class="transcript">'+tr.lines.map(function(l){
       var t = tr.labels ? l[1] : l[0], txt = tr.labels ? l[0]+': '+l[2] : l[1], hit = t===at;
       return '<li style="grid-template-columns:52px 1fr;'+(hit?'background:var(--ph-bg);color:var(--ph-ink);border-radius:6px;padding:6px 8px;margin:0 -8px':'padding:6px 0')+'"><span class="num'+(hit?'':' muted')+'">'+t+'</span><span>'+Q.esc(txt)+'</span></li>'; }).join('')+'</ul>',
       foot:'<a class="btn btn-secondary" href="#meeting-'+mid+'">Open meeting</a><button class="btn btn-ghost" data-close>Close</button>' });

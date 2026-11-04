@@ -17,7 +17,7 @@
     return '<aside class="au-brand" aria-label="About Quotient">'+
       '<span class="wordmark">Quotient</span>'+
       '<div class="au-pitch rise">'+
-        '<h2>Client files, made on your device. <em>Nothing leaves without you seeing it.</em></h2>'+
+        '<h2>Client files, made on your device. <em>Nothing goes to the AI without you seeing it.</em></h2>'+
         '<dl class="au-spec" aria-label="Example of what the AI sees">'+
           '<div><dt>Your notes</dt><dd>Wei Tan, born 14 Mar 1991, works at Straits Freight. Children Jia Hui and Jia Le.</dd></div>'+
           '<div><dt>What the AI sees</dt><dd><span class="ph">[CLIENT]</span>, age 35, works at <span class="ph">[EMPLOYER]</span>. Children <span class="ph">[CHILD 1]</span> and <span class="ph">[CHILD 2]</span>.</dd></div>'+

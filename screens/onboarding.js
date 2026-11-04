@@ -94,7 +94,7 @@
       '<div class="ob-tg-who">'+A.logo.telegram+'<span><b>Quotient reminders</b><small>'+A.bot+'</small></span></div>'+
       '<p class="ob-bubble">'+Q.esc(D.nudge.telegram)+'</p>'+
       '<div class="ob-bubble-acts" aria-hidden="true"><span>Nudge</span><span>Already replied</span><span>Snooze</span></div>'+
-      '<figcaption class="small muted">Case numbers only. Client names stay on your device.</figcaption></figure>';
+      '<figcaption class="small muted">Case numbers only. Client names are never sent to Telegram.</figcaption></figure>';
     return shell(3, top+'<h2 class="h3 u2-sub">Connect Telegram</h2>'+
       '<div aria-live="polite">'+status+'</div>'+helper+'<div class="ob-acts u2-dock">'+acts+'</div>'+preview);
   }

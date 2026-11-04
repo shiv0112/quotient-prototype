@@ -32,10 +32,10 @@
       : '<a class="btn-link" href="'+x.fl.back+'">Cancel</a>';
     return '<div class="page s10">'+QB.demo([['running','Running'],['done','Done'],['error','Error'],['offline','Offline']], s.s)+
       '<header class="s10-head rise"><p class="eyebrow">'+Q.esc(x.c.name)+' · Case #'+x.c.no+'</p><h1 class="h1" aria-live="polite">'+Q.esc(title)+'</h1>'+
-      '<p class="sub">'+(done?'Everything is back on this device.':'This takes a few seconds. You can leave this screen.')+'</p></header>'+
+      '<p class="sub">'+(done?'Names put back on this device.':'This takes a few seconds. You can leave this screen.')+'</p></header>'+
       (top?'<div style="margin-bottom:var(--s-5)">'+top+'</div>':'')+
       '<section class="card card-flush rise"><ol class="s10-steps" aria-label="Progress">'+steps+'</ol></section>'+lift+
-      '<div class="s10-foot"><p class="s10-safe">'+Q.icon('device','i-sm')+'Your PDFs and notes are safe on this device.</p>'+foot+'</div></div>';
+      '<div class="s10-foot"><p class="s10-safe">'+Q.icon('device','i-sm')+Q.aiRule+'</p>'+foot+'</div></div>';
   }
 
   // Daniel's plans become a real comparison once the run is done, so the case, Today and Cases move on.

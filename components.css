@@ -898,6 +898,8 @@ button.proof,a.proof{border:0;cursor:pointer;text-decoration:none}
 .s17-fixed{list-style:none;margin:var(--s-6) 0 0;padding:0;display:flex;flex-direction:column;gap:var(--s-3)}
 .s17-fixed li{display:flex;gap:var(--s-3);align-items:flex-start;color:var(--link);font-size:var(--t-sm);font-weight:var(--w-med)}
 .s17-fixed .i{margin-top:3px}
+.s17-fixed li.s17-audio{color:var(--text-2)}
+.s17-audio small{display:block;color:var(--text-3);font-weight:var(--w-reg,400)}
 @media (max-width:760px){.s17-list summary{grid-template-columns:1fr auto;padding:var(--s-3) 0;row-gap:2px}.s17-list summary .w{grid-row:2}.s17-list summary .x{grid-column:1/-1;justify-self:start;min-height:36px}.s17-sum{gap:var(--s-5)}}
 
 /* share (screens/share.js) */

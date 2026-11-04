@@ -1,5 +1,6 @@
 /* Update 2 · u2-phone. Tokens only. See docs/design/UPDATE-2.md C (phone version). */
 
+.u2-top{display:none}
 /* Desktop: phone-only docks never show. */
 @media (min-width:480px){ .u2-ponly{display:none!important} }
 
@@ -39,8 +40,6 @@
   body.focus:has(.u2-dock) .toasts{bottom:96px}
   /* nudge and share docks stack two buttons */
   body:has(.ng-acts) .toasts, body:has(.sh-acts) .toasts{bottom:calc(var(--u2-tab) + 150px + env(safe-area-inset-bottom,0px))}
-  /* The board's floating New case is the main action there: lift it over the tab bar. */
-  .bd{--bd-fab-lift:var(--u2-tab)}
 
   /* Share and nudge (markup owned by the follow-up screens): same sticky treatment for their action row. */
   .sh-acts,.ng-acts{position:fixed;left:0;right:0;bottom:calc(var(--u2-tab) + env(safe-area-inset-bottom,0px));z-index:34;
@@ -69,9 +68,17 @@
   .fx-cards{align-items:flex-start}
   .u2-chart-slot:empty{display:none}
 
-  /* Today: Record notes as a quiet secondary action under the greeting. */
   .bd-head{align-items:flex-start}
-  .bd-rec{margin-top:var(--s-3);min-height:40px}
+
+  /* Top bar (UPDATE-2 2c): wordmark + New case on every screen with the tab bar. Replaces the Demo pill's empty band. */
+  .u2-top{display:flex;align-items:center;justify-content:space-between;gap:var(--s-3);
+    padding:calc(var(--s-2) + env(safe-area-inset-top,0px)) var(--gutter) var(--s-2);background:var(--bg);border-bottom:1px solid var(--line)}
+  .u2-top .wordmark{text-decoration:none;font-size:22px}
+  .u2-top-new{min-height:var(--target);padding:0 var(--s-4);gap:var(--s-2)}
+  body.focus .u2-top{display:none}
+  body:not(.focus) .page,.in-phone-frame .page{padding-top:var(--s-5)}
+  /* Prototype Demo pill sits inside the top bar, right of the wordmark. */
+  body:not(.focus) .demo{top:calc(env(safe-area-inset-top,0px) + var(--s-2) + 6px);right:auto;left:calc(var(--gutter) + 112px)}
 
   /* Cases: one card per client. */
   .cs-card{padding:0;background:none;border:0;box-shadow:none}

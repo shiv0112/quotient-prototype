@@ -230,7 +230,7 @@
       { feature:'Comparison', when:'Mon 2 Nov, 16:40', text:'[CLIENT], age 35, project manager at [EMPLOYER]. Married with two children, [CHILD 1] (8) and [CHILD 2] (11). Wants life cover to age 65 and a fund for the children\'s university. Budget about S$4,000 a year.' } ],
     priya: [ { feature:'Nudge', when:'Tue 3 Nov, 08:05', text:'[CLIENT]\'s biggest worry: the uni fund for [CHILD 1] and [CHILD 2] if she ever can\'t work.\n\nComparison PDF, page 1: which plans keep paying after an early critical illness.' },
              { feature:'Comparison', when:'Tue 27 Oct, 15:20', text:'[CLIENT], age 41, nurse. Wants cover to age 65.' } ],
-    fixed:[ 'MAS checks: plain rules on this device. Nothing sent.', 'Shares: the PDF went from you to the client. Nothing uploaded.', 'Recordings and transcripts stay on this device.' ]
+    fixed:[ 'MAS checks: plain rules on this device. Nothing sent.', 'Shares: the PDF went from you to the client. Nothing uploaded.' ]
   };
 
   /* Write-up for Siti, laid out as FAA-N16 para 35 (with 31 and 36). need: 'req' | 'opt' | 'cond' (shown only when on).

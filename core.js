@@ -25,6 +25,7 @@
      Q.caseMeetings(k)      [{m, upcoming}] every meeting and quick note on a case, oldest first.  Q.meetingById(id) -> {m, past}.
      [data-quick-notes]     any button starts Record notes (screens/quicknotes.js); ='<case>' pre-picks that case.
      Q.go('#case-wei')      navigate.          Q.refresh()   re-render current screen, keeps scroll, no entrance motion.
+     Q.aiRule · Q.recCopy()     privacy lines; recCopy is '' on desktop (UPDATE-2 2c).
      Q.state()              'normal'|'empty'|'error'|'loading'  (demo toolbar). Render the matching state.
      Q.edition()            'web'|'desktop'.   Q.theme(t?) get/set 'light'|'dark'|'system'.
      Q.openSheet(ref)       PDF page viewer for a table cell. ref = 'wei/v1/harbour/b20' (case/version/insurer/row).
@@ -216,6 +217,9 @@
     if(v===undefined) return store('q-edition') || 'web';
     store('q-edition', v); paintUser(); syncDemo(); Q.refresh();
   };
+  /* Honest privacy copy by edition (UPDATE-2 2c). Only desktop writes up on the device. No storage claims. */
+  Q.aiRule = 'Only the text you approve goes to the AI, with names replaced.';
+  Q.recCopy = function(){ return Q.edition()==='desktop' ? '' : 'Audio is sent to our speech service to be written up, then deleted. Not used for training.'; };
   Q.state = function(v){
     if(v===undefined) return store('q-state') || 'normal';
     store('q-state', v==='normal'?null:v); syncDemo(); Q.refresh();
@@ -474,7 +478,7 @@
   var th = Q.theme(); if(th!=='system') document.documentElement.setAttribute('data-theme', th);
   document.addEventListener('DOMContentLoaded', function(){
     booted = true; paintUser(); buildJump(); syncDemo();
-    // Phone tab bar (UPDATE-2 C): 4 tabs. Calendar = #meetings. Record notes lives on Today and in each case.
+    // Phone tab bar (UPDATE-2 C): 4 tabs. Calendar = #meetings. Phone records notes inside each case (Record notes for this case).
     var tb = document.querySelector('.tabbar');
     if(tb) tb.innerHTML = [['today','today','Today'],['cases','cases','Cases'],['meetings','meetings','Calendar'],['prefs','prefs','Settings']].map(function(t){
       return '<a href="#'+t[0]+'" data-nav="'+t[0]+'">'+Q.icon(t[1])+'<span>'+t[2]+'</span></a>'; }).join('');

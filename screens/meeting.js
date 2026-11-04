@@ -92,11 +92,11 @@
   }
   function transcript(id, ms){
     var plain = !ms.lines.some(function(l){ return l.sp; });
-    if(ms.phase==='transcribing') return '<section class="card rise" aria-busy="true"><h2 class="h3">Writing up the transcript on this device…</h2>'+
+    if(ms.phase==='transcribing') return '<section class="card rise" aria-busy="true"><h2 class="h3">Writing up the transcript'+(Q.edition()==='desktop'?' on this device':'')+'…</h2>'+
       '<p class="small muted">You can leave this screen. We\'ll keep going.</p><div class="s06-prog"><i></i></div></section>';
     var live = ms.phase==='recording';
     var head = '<div class="s06-tr-head"><div><h2 class="h3">'+(live?'Live transcript':'Transcript')+'</h2><p class="small muted">'+
-      (live?'Writing on this device as you talk':!ms.lines.length?'Nothing recorded yet':(plain?'Microphone only · one transcript':'You and Client · call audio was on'))+'</p></div>'+
+      (live?(Q.edition()==='desktop'?'Writing on this device as you talk':'Writing up as you talk'):!ms.lines.length?'Nothing recorded yet':(plain?'Microphone only · one transcript':'You and Client · call audio was on'))+'</p></div>'+
       (ms.phase==='done'?'<label class="s06-search"><span class="sr">Search the transcript</span>'+Q.icon('search','i-sm')+'<input class="input" type="search" data-act="search" placeholder="Search"></label>':'')+'</div>';
     var body = ms.lines.length ? '' : '<p class="s06-empty">Notes will appear here after you record or paste them.</p>';
     var notes = ms.phase==='done' ? '<div class="field" style="margin-top:var(--s-5)"><label class="label" for="yn">Your notes</label><textarea class="textarea" id="yn" rows="3" placeholder="Points you want to remember"></textarea></div>' : '';
@@ -107,14 +107,15 @@
     if(c && !Object.keys(c.tables).length){ h = 'Next: add the plans you\'re comparing'; btn = '<a class="btn btn-primary" href="#new-case-'+x.m.c+'">'+Q.icon('plus')+'Add plans to case #'+c.no+'</a>'; }
     else if(c){ h = 'Add these notes to '+c.first+'\'s case'; btn = '<button class="btn btn-primary" data-act="add">Add to case #'+c.no+'</button>'; }
     else { h = 'Start a case from these notes'; btn = '<a class="btn btn-primary" href="#new-case">'+Q.icon('plus')+'Start case from these notes</a>'; }
-    return '<section class="card s06-cta rise"><div><h2>'+Q.esc(h)+'</h2><p class="small muted">The transcript stays on this device.</p></div>'+btn+'</section>';
+    return '<section class="card s06-cta rise"><div><h2>'+Q.esc(h)+'</h2><p class="small muted">'+Q.aiRule+'</p></div>'+btn+'</section>';
   }
   function side(){
     return '<aside class="card s06-side stack rise" style="gap:var(--s-3)" aria-labelledby="ow-h"><h2 class="h3" id="ow-h">Other ways in</h2>'+
       '<button class="btn btn-secondary btn-block" data-act="paste">'+Q.icon('file','i-sm')+'Paste notes</button>'+
       '<button class="btn btn-secondary btn-block" data-act="upload">'+Q.icon('share','i-sm')+'Upload transcript file</button><p class="hint">Zoom or Teams transcript, .vtt or .txt</p>'+
       '<input type="file" accept=".vtt,.txt" hidden data-file>'+
-      '<p class="device-line small">'+Q.icon('device','i-sm')+'Recordings and transcripts stay on this device.</p></aside>';
+      (Q.recCopy()?'<p class="small muted">'+Q.recCopy()+' The desktop app does this on your device.</p>':'')+
+      '<p class="device-line small">'+Q.icon('device','i-sm')+Q.aiRule+'</p></aside>';
   }
 
   var STATES = [['before','Upcoming'],['dialog','Permission dialog'],['recording','Recording'],['call','Recording + call audio'],['paused','Paused'],['transcribing','Transcribing'],['done','Done'],['mic','Mic blocked'],['upload','Upload error'],['callperm','Call audio permission']];
@@ -169,7 +170,7 @@
       var act = a.dataset.act;
       if(act==='record') askRecord(id);
       if(act==='clear'){ ms.banner = null; Q.refresh(); }
-      if(act==='paste') Q.sheet({ title:'Paste notes', body:'<p class="small muted">For '+Q.esc(x.m.who)+'. Notes stay on this device.</p><div class="field"><label class="label" for="pn">Notes or transcript</label><textarea class="textarea" id="pn" rows="12"></textarea></div>',
+      if(act==='paste') Q.sheet({ title:'Paste notes', body:'<p class="small muted">For '+Q.esc(x.m.who)+'. '+Q.aiRule+'</p><div class="field"><label class="label" for="pn">Notes or transcript</label><textarea class="textarea" id="pn" rows="12"></textarea></div>',
         foot:'<button class="btn btn-primary" data-save>Add notes</button><button class="btn btn-ghost" data-close>Cancel</button>',
         mount:function(sh){ var t = sh.querySelector('#pn'); t.focus();
           sh.querySelector('[data-save]').addEventListener('click', function(){
@@ -205,7 +206,7 @@
     var pick = x.m.c;
     var opts = D.caseOrder.map(function(k){ var c = D.cases[k]; return '<option value="'+k+'"'+(k===x.m.c?' selected':'')+'>'+Q.esc(c.name)+' #'+c.no+'</option>'; }).join('');
     Q.dialog({ title:x.m.c ? 'Move to another case' : 'Add to a case',
-      body:'<div class="field"><label class="label" for="mv-case">Case</label><select class="select" id="mv-case">'+opts+'</select></div><p class="small muted">The transcript stays on this device.</p>',
+      body:'<div class="field"><label class="label" for="mv-case">Case</label><select class="select" id="mv-case">'+opts+'</select></div><p class="small muted">'+Q.aiRule+'</p>',
       actions:[{label:'Cancel',value:null},{label:'Move',value:'ok',kind:'primary'}], safe:null,
       mount:function(w){ var sel = w.querySelector('#mv-case'); pick = sel.value; sel.addEventListener('change', function(){ pick = sel.value; }); } })
     .then(function(v){ if(!v || pick===x.m.c) return; x.m.c = pick; Q.refresh(); Q.toast('Moved to case #'+D.cases[pick].no); });
