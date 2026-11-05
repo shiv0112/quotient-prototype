@@ -148,3 +148,18 @@
 
 /* Share: inline warning when the message drops the "not guaranteed" line (audit #21). */
 .sh-ngwarn{display:flex;gap:var(--s-1);align-items:flex-start;background:var(--confirm-bg);color:var(--confirm-ink);border-radius:var(--r-sm);padding:var(--s-1) var(--s-2);margin-top:var(--s-1)}
+
+/* WhatsApp look for the demo (5 Nov 2026): reads as WhatsApp at a glance. These colours stand for another app, so they live in their own tokens. */
+:root{--waa-head:#008069;--waa-head-ink:#FFFFFF;--waa-wall:#EFE7DE;--waa-out:#D9FDD3;--waa-ink:#111B21;--waa-meta:#667781;--waa-send:#00A884;--waa-bar:#F0F2F5;--waa-field:#FFFFFF;--waa-tick:#53BDEB}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--waa-head:#202C33;--waa-head-ink:#E9EDEF;--waa-wall:#0B141A;--waa-out:#005C4B;--waa-ink:#E9EDEF;--waa-meta:#8696A0;--waa-send:#00A884;--waa-bar:#202C33;--waa-field:#2A3942}}
+:root[data-theme="dark"]{--waa-head:#202C33;--waa-head-ink:#E9EDEF;--waa-wall:#0B141A;--waa-out:#005C4B;--waa-ink:#E9EDEF;--waa-meta:#8696A0;--waa-send:#00A884;--waa-bar:#202C33;--waa-field:#2A3942}
+.wa-head{background:var(--waa-head);color:var(--waa-head-ink)}
+.wa-head .wa-av{background:color-mix(in srgb,var(--waa-head-ink) 25%,transparent);color:var(--waa-head-ink)}
+.wa-body{background-color:var(--waa-wall);background-image:radial-gradient(color-mix(in srgb,var(--waa-meta) 14%,transparent) 1px,transparent 1.5px);background-size:18px 18px}
+.wa-msg{background:var(--waa-out);color:var(--waa-ink);border-radius:8px 8px 2px 8px;box-shadow:0 1px .5px rgba(11,20,26,.13)}
+.wa-msg time{color:var(--waa-meta)}
+.wa-msg .wa-file.in b{color:var(--waa-ink)}.wa-msg .wa-file.in small{color:var(--waa-meta)}
+.wa-compose{background:var(--waa-bar);border-top:0}
+.wa-input{background:var(--waa-field);color:var(--waa-ink);border:0;border-radius:22px}
+.wa-send{background:var(--waa-send);color:#FFFFFF}
+.wa-title{background:var(--waa-bar);color:var(--waa-meta)}

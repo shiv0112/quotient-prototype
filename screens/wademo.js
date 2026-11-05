@@ -11,7 +11,7 @@
   function ini(n){ return String(n).split(' ').map(function(w){ return w[0]; }).join('').slice(0,2).toUpperCase(); }
   function phone(){ return window.innerWidth < 480; }
 
-  function close(){ if(!el) return; document.removeEventListener('keydown', esc); el.remove(); el = null; document.body.classList.remove('wa-on');
+  function close(){ if(!el) return; document.removeEventListener('keydown', esc); el.remove(); el = null; document.body.classList.remove('wa-on'); window.dispatchEvent(new Event('scroll'));
     if(opener && document.contains(opener)) opener.focus({preventScroll:true}); }
   function esc(e){ if(e.key==='Escape') close(); }
 
@@ -37,8 +37,7 @@
     var desk = !phone(), body = step==='pick' ? picker() : chat(o);
     el.innerHTML = '<div class="wa-scrim" data-wa-x></div>'+
       '<div class="wa-win'+(desk?' desk':'')+'" role="dialog" aria-modal="true" aria-label="WhatsApp (demo)">'+
-      (desk ? '<div class="wa-title"><span class="wa-dots" aria-hidden="true"><i></i><i></i><i></i></span><span>WhatsApp</span></div>' : '')+
-      '<p class="wa-demo">Demo · the real app opens WhatsApp '+(step==='pick' ? 'and asks for the chat' : 'in '+Q.esc(o.c.first)+'\'s chat')+'. You press Send there.</p>'+body+'</div>';
+      (desk ? '<div class="wa-title"><span class="wa-dots" aria-hidden="true"><i></i><i></i><i></i></span><span>WhatsApp</span></div>' : '')+body+'</div>';
     var f = el.querySelector(step==='pick' ? '[data-wa-pick]' : '[data-wa-send]'); if(f) f.focus({preventScroll:true});
   }
 
@@ -48,6 +47,7 @@
     el = document.createElement('div'); el.className = 'wa-wrap'; document.body.appendChild(el); document.body.classList.add('wa-on');
     var step = (o.pick || !Q.waDigits(o.c.mobile)) ? 'pick' : 'chat';
     render(o, step);
+    window.dispatchEvent(new Event('scroll')); // phone preview: status bar follows the WhatsApp header
     document.addEventListener('keydown', esc);
     el.addEventListener('click', function(e){
       if(e.target.closest('[data-wa-x]')){ close(); return; }
