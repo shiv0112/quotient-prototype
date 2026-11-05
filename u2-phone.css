@@ -158,3 +158,7 @@ body.pp-on{overflow:hidden}
 
 /* Phone preview: the Demo pill stays bottom right and drives the phone screen. */
 body.pp-on .demo{z-index:90} /* same bottom-right place as on desktop and web */
+
+/* Phone preview: phones show no permanent scrollbar; scrolling still works. */
+.in-phone-frame,.in-phone-frame body,.in-phone-frame *{scrollbar-width:none}
+.in-phone-frame ::-webkit-scrollbar{display:none;width:0;height:0}
