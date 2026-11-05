@@ -557,6 +557,7 @@
   window.addEventListener('message', function(e){
     var d = e.data; if(!d || typeof d!=='object') return;
     if(framed && d.q==='go' && d.hash && d.hash!==location.hash) location.hash = d.hash;
+    if(framed && d.q==='demo'){ if(d.theme) Q.theme(d.theme); if(d.state) Q.state(d.state); }
     if(!framed && ppEl && d.q==='top'){
       var st = ppEl.querySelector('.pp-status'); if(st && d.bg){ st.style.background = d.bg; st.style.color = isDark(d.bg) ? 'var(--hero-ink)' : ''; }
       if(d.hash && d.hash!==location.hash) history.replaceState(null, '', d.hash); // no hashchange: nothing echoes back to the frame
@@ -608,6 +609,14 @@
     document.querySelectorAll('.menu.open').forEach(function(x){ if(!m || x!==m.parentElement) { x.classList.remove('open'); var b=x.querySelector('[data-menu]'); if(b) b.setAttribute('aria-expanded','false'); } });
     if(m){ var open = m.parentElement.classList.toggle('open'); m.setAttribute('aria-expanded', String(open)); }
     var d = t.closest('#demo [data-theme],#demo [data-edition],#demo [data-state]');
+    if(d && ppEl){ // phone preview open: Web/Desktop leave the phone view; theme and state go straight to the phone (instant)
+      if(d.dataset.edition){ Q.phonePreview(false); Q.edition(d.dataset.edition); return; }
+      var f = ppEl.querySelector('iframe'), msg = { q:'demo' };
+      if(d.dataset.theme){ msg.theme = d.dataset.theme; Q.theme(d.dataset.theme); }
+      if(d.dataset.state){ msg.state = d.dataset.state; Q.state(d.dataset.state); }
+      try{ f.contentWindow.postMessage(msg, '*'); }catch(err){}
+      return;
+    }
     if(d){ if(d.dataset.theme) Q.theme(d.dataset.theme); if(d.dataset.edition) Q.edition(d.dataset.edition); if(d.dataset.state) Q.state(d.dataset.state); }
     if(t.closest('[data-reset]')){ Q.resetData(); return; }
     if(t.closest('[data-phone]')){ Q.phonePreview(true); return; }
